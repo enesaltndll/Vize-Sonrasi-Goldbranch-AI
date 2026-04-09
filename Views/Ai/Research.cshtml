@@ -1,0 +1,236 @@
+@{
+    ViewData["Title"] = "AI Geliştirici Asistanı";
+}
+
+<div class="row justify-content-center mt-4 mb-5 fade-in-up">
+    <div class="col-lg-10 col-xl-8">
+        <!-- HEADER -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,rgba(34,211,238,0.2),rgba(59,130,246,0.1));border:1px solid rgba(34,211,238,0.3);">
+                <i class="fa-solid fa-code text-info" style="font-size:1.5rem;"></i>
+            </span>
+            <div>
+                <h2 class="text-light fw-bold mb-0">AI <span class="text-info">Araştırma Paneli</span></h2>
+                <p class="text-muted mb-0 small">Kod yazarken takıldığınız yerleri direkt yapay zekaya sorun. (Sistem veritabanına kaydedilir).</p>
+            </div>
+        </div>
+
+        <!-- SOHBET PANELİ -->
+        <div class="card bg-dark border-0 shadow-lg h-100" style="border-radius:20px;border-top:3px solid #22d3ee !important;">
+            <div class="card-body p-4 d-flex flex-column" style="min-height: 500px;">
+                
+                <!-- History Container -->
+                <div id="chatHistory" class="flex-grow-1 overflow-auto pe-2 mb-4 d-flex flex-column gap-3" style="max-height: 500px;">
+                    <!-- İlk Mesaj (Sistem) -->
+                    <div class="d-flex gap-3 fade-in-up">
+                        <div class="flex-shrink-0">
+                            <span class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);">
+                                <i class="fa-solid fa-robot text-info"></i>
+                            </span>
+                        </div>
+                        <div class="p-3 rounded-4 bg-dark" style="border:1px solid rgba(255,255,255,0.05); border-top-left-radius: 0 !important; color:#e2e8f0; font-size: 0.95rem;">
+                            Selam! Ben senin kodlama asistanınım. Hata aldığın bir kodu incelememi isteyebilir, yeni bir teknoloji hakkında soru sorabilir veya algoritma oluşturmama yardımcı olmamı isteyebilirsin. Nasıl yardımcı olabilirim?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Alanı -->
+                <div class="mt-auto">
+                    <div class="position-relative">
+                        <textarea id="aiInput" class="form-control bg-dark text-light shadow-sm pe-5" 
+                                  style="border:1px solid rgba(34,211,238,0.3); border-radius:16px; min-height:60px; max-height: 200px; resize:none; padding-top:14px; padding-bottom:14px; line-height:1.5;" 
+                                  placeholder="Buraya sorunuzu veya hata veren kodunuzu yapıştırın..."
+                                  oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+                                  
+                        <button id="aiSendBtn" class="btn position-absolute top-50 translate-middle-y end-0 me-2 rounded-circle shadow d-flex align-items-center justify-content-center"
+                                style="width:42px;height:42px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:white;border:none;transition:all 0.3s ease;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="text-end mt-2">
+                        <small class="text-muted" style="font-size: 0.7rem;">Cevaplar Multi-LLM (Cohere / SambaNova / Claude) tarafından üretilir. İşlemlerinizin loglandığını unutmayın.</small>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Scrollbar */
+    #chatHistory::-webkit-scrollbar { width: 6px; }
+    #chatHistory::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+    #chatHistory::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.2); border-radius: 3px; }
+    #chatHistory::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.5); }
+    
+    /* Markdown Styles (Generated dynamically) */
+    .ai-response pre { 
+        background-color: #0d1117 !important; 
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+    }
+    .ai-response code { 
+        font-family: 'JetBrains Mono', 'Consolas', monospace; 
+        color: #e2e8f0;
+        font-size: 0.85rem;
+    }
+    .ai-response p { margin-bottom: 0.5rem; }
+    .ai-response ul { margin-bottom: 0.5rem; }
+</style>
+
+<!-- Marked.js for Markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sendBtn = document.getElementById("aiSendBtn");
+            const inputField = document.getElementById("aiInput");
+            const chatHistory = document.getElementById("chatHistory");
+
+            let isWaiting = false;
+
+            // Enter ile Gönder (Shift+Enter alt satır)
+            inputField.addEventListener("keydown", function(e) {
+                if(e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendBtn.addEventListener("click", sendMessage);
+
+            async function sendMessage() {
+                const text = inputField.value.trim();
+                if(!text || isWaiting) return;
+
+                // 1. Yazılanı UI'ye User Mesajı Olarak Ekle
+                appendUserMessage(text);
+                inputField.value = "";
+                inputField.style.height = "60px"; // Reset height
+                scrollToBottom();
+
+                // 2. Bekleme Göstergesi
+                isWaiting = true;
+                sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+                const loadingId = appendLoadingIndicator();
+                scrollToBottom();
+
+                // 3. API İstek
+                try {
+                    const response = await fetch("/Ai/AskResearch", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ question: text })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    removeElement(loadingId);
+
+                    if (data.success) {
+                        appendAiMessage(data.answer);
+                    } else {
+                        appendErrorMessage(data.error || "Sunucu hatası.");
+                    }
+                } catch(err) {
+                    removeElement(loadingId);
+                    appendErrorMessage("Bağlantı kurulamadı: " + err.message);
+                } finally {
+                    isWaiting = false;
+                    sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+                    scrollToBottom();
+                }
+            }
+
+            function appendUserMessage(text) {
+                const id = "msg_" + Date.now();
+                const html = `
+                    <div class="d-flex gap-3 justify-content-end fade-in-up" id="${id}">
+                        <div class="p-3 rounded-4 shadow-sm" style="background:#2d3748; border-top-right-radius: 0 !important; color:#f8fafc; font-size: 0.95rem; max-width: 80%;">
+                            ${escapeHtml(text)}
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span class="d-flex align-items-center justify-content-center rounded-circle bg-secondary text-white" style="width:40px;height:40px;">
+                                <i class="fa-solid fa-user"></i>
+                            </span>
+                        </div>
+                    </div>
+                `;
+                chatHistory.insertAdjacentHTML('beforeend', html);
+                return id;
+            }
+
+            function appendAiMessage(markdownResult) {
+                const id = "msg_" + Date.now();
+                // Parse markdown securely
+                const parsedHtml = marked.parse(markdownResult);
+                
+                const html = `
+                    <div class="d-flex gap-3 fade-in-up" id="${id}">
+                        <div class="flex-shrink-0">
+                            <span class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;">
+                                <i class="fa-solid fa-brain text-white"></i>
+                            </span>
+                        </div>
+                        <div class="p-3 rounded-4 bg-dark ai-response w-100" style="border:1px solid rgba(34,211,238,0.2); border-top-left-radius: 0 !important; color:#e2e8f0; font-size: 0.95rem; overflow-x: auto;">
+                            ${parsedHtml}
+                        </div>
+                    </div>
+                `;
+                chatHistory.insertAdjacentHTML('beforeend', html);
+                return id;
+            }
+
+            function appendErrorMessage(errorMsg) {
+                const html = `
+                    <div class="d-flex justify-content-center my-2 fade-in-up">
+                        <span class="badge bg-danger rounded-pill px-3 py-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> ${escapeHtml(errorMsg)}</span>
+                    </div>
+                `;
+                chatHistory.insertAdjacentHTML('beforeend', html);
+            }
+
+            function appendLoadingIndicator() {
+                const id = "loading_" + Date.now();
+                const html = `
+                    <div class="d-flex gap-3 fade-in-up" id="${id}">
+                        <div class="flex-shrink-0">
+                            <span class="d-flex align-items-center justify-content-center rounded-circle outline-glow" style="width:40px;height:40px;background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);">
+                                <i class="fa-solid fa-circle-notch fa-spin text-info"></i>
+                            </span>
+                        </div>
+                        <div class="p-3 rounded-4 bg-dark text-muted d-flex align-items-center" style="border:1px solid rgba(255,255,255,0.05); border-top-left-radius: 0 !important; font-size: 0.9rem;">
+                            AI kodu analiz ediyor ve düşünüyor...
+                        </div>
+                    </div>
+                `;
+                chatHistory.insertAdjacentHTML('beforeend', html);
+                return id;
+            }
+
+            function removeElement(id) {
+                const el = document.getElementById(id);
+                if(el) el.remove();
+            }
+
+            function scrollToBottom() {
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+
+            function escapeHtml(unsafe) {
+                return unsafe
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;")
+                     .replace(/\n/g, "<br>");
+            }
+        });
+    </script>
+}

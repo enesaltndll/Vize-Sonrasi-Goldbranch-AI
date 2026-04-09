@@ -1,0 +1,362 @@
+@model IEnumerable<GoldBranchAI.Models.TodoTask>
+
+@{
+    ViewData["Title"] = L.Get("Tasks");
+    var userRole = ViewBag.UserRole as string;
+    
+    // Sort tasks into lanes
+    var activeTasks = Model.Where(t => t.Status != "Tamamlandi").OrderBy(t => t.DueDate).ToList();
+    var gecikenler = activeTasks.Where(t => t.DueDate < DateTime.Now).ToList();
+    var buHafta = activeTasks.Where(t => t.DueDate >= DateTime.Now && t.DueDate <= DateTime.Now.AddDays(7)).ToList();
+    var gelecekHafta = activeTasks.Where(t => t.DueDate > DateTime.Now.AddDays(7) && t.DueDate <= DateTime.Now.AddDays(14)).ToList();
+    var ileriTarihli = activeTasks.Where(t => t.DueDate > DateTime.Now.AddDays(14)).ToList();
+    var totalActive = activeTasks.Count;
+
+    var lanes = new List<dynamic>
+    {
+        new { Title = L.Get("CriticalOverdue"), Tasks = gecikenler, BorderColor = "danger", Icon = "fa-truck-fast", Badge = "bg-danger text-white", Key = "kritik" },
+        new { Title = L.Get("ThisWeek"), Tasks = buHafta, BorderColor = "warning", Icon = "fa-calendar-day", Badge = "bg-warning text-dark", Key = "buhafta" },
+        new { Title = L.Get("NextWeek"), Tasks = gelecekHafta, BorderColor = "info", Icon = "fa-calendar-week", Badge = "bg-info text-dark", Key = "gelecek" },
+        new { Title = L.Get("FutureDated"), Tasks = ileriTarihli, BorderColor = "secondary", Icon = "fa-calendar-days", Badge = "bg-secondary text-white", Key = "ileri" }
+    };
+
+    // Motivational greetings
+    var hour = DateTime.Now.Hour;
+    var greeting = hour < 12 ? L.Get("GoodMorning") : (hour < 18 ? L.Get("GoodAfternoon") : L.Get("GoodEvening"));
+    var greetIcon = hour < 12 ? "☀️" : (hour < 18 ? "🚀" : "🌙");
+}
+
+<div class="gb-page">
+    <div class="gb-page-header fade-in-up">
+        <div>
+            <h2 class="gb-title">
+                <i class="fa-solid fa-laptop-code text-warning me-2"></i> @L.Get("WorkingDesk")
+            </h2>
+            <p class="gb-subtitle mb-0">@L.Get("ManageTasksTimeline")</p>
+        </div>
+
+        <div class="gb-actions" style="min-width: min(520px, 100%);">
+            <div class="input-group" style="flex: 1; min-width: 260px;">
+                <span class="input-group-text bg-transparent border-0 pe-0" style="color: var(--gb-text-secondary);">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input id="gbTaskSearch" class="form-control gb-input" type="search" placeholder="@L.Get("SearchTaskPersonStatus")" autocomplete="off" />
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-action="Kanban" class="btn btn-outline-warning rounded-pill px-3 fw-bold btn-sm">
+                    <i class="fa-solid fa-chess-board me-1"></i> @L.Get("Kanban")
+                </a>
+                <a asp-action="Calendar" class="btn btn-outline-info rounded-pill px-3 fw-bold btn-sm">
+                    <i class="fa-regular fa-calendar-check me-1"></i> @L.Get("Calendar")
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GREETING + QUICK STATS -->
+    <div class="row g-3 mb-4 fade-in-up" style="animation-delay: 0.1s;">
+        <!-- Greeting Card -->
+        <div class="col-lg-5">
+            <div class="gb-glass-card p-4 h-100" style="border-left:4px solid var(--gb-gold) !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size:2.5rem;">@greetIcon</span>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-light">@greeting, @(User?.Identity?.Name ?? L.Get("UserRolePlaceholder"))!</h4>
+                        @if (totalActive == 0)
+                        {
+                            <p class="text-muted mb-0 small">@L.Get("NoActiveTask")</p>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0 small">@L.Get("Today") <strong class="text-warning">@totalActive</strong> @L.Get("TasksWaitingForYou")</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (userRole == "Gelistirici")
+        {
+            <div class="col-lg-7">
+                <div class="row g-3 h-100">
+                    <div class="col-4">
+                        <div class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3">
+                            <div class="quick-action-icon bg-warning text-dark"><i class="fa-solid fa-list-check"></i></div>
+                            <div><div class="small text-muted">@L.Get("Total")</div><h4 class="mb-0 fw-bold">@ViewBag.MyTotal</h4></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3">
+                            <div class="quick-action-icon bg-success text-white"><i class="fa-solid fa-circle-check"></i></div>
+                            <div><div class="small text-muted">@L.Get("Completed")</div><h4 class="mb-0 fw-bold">@ViewBag.MyCompleted</h4></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3">
+                            <div class="quick-action-icon bg-danger text-white"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                            <div><div class="small text-muted">@L.Get("DelayedLabel")</div><h4 class="mb-0 fw-bold">@ViewBag.MyUrgent</h4></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Proje Şefi veya Admin için Quick Actions -->
+            <div class="col-lg-7">
+                <div class="row g-3 h-100">
+                    <div class="col-4">
+                        <a asp-controller="Ai" asp-action="Breakdown" class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3 text-decoration-none hover-shine-box" style="cursor:pointer;">
+                            <div class="quick-action-icon" style="background:#a78bfa;color:#fff;"><i class="fa-solid fa-brain"></i></div>
+                            <div><div class="small text-muted">@L.Get("AIAgent")</div><span class="fw-bold small text-light">@L.Get("BreakdownTasks")</span></div>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a asp-controller="Task" asp-action="Create" class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3 text-decoration-none hover-shine-box" style="cursor:pointer;">
+                            <div class="quick-action-icon bg-warning text-dark"><i class="fa-solid fa-plus"></i></div>
+                            <div><div class="small text-muted">@L.Get("Quick")</div><span class="fw-bold small text-light">@L.Get("AddTask")</span></div>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a asp-controller="Task" asp-action="Dashboard" class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3 text-decoration-none hover-shine-box" style="cursor:pointer;">
+                            <div class="quick-action-icon" style="background:#38bdf8;color:#fff;"><i class="fa-solid fa-chart-pie"></i></div>
+                            <div><div class="small text-muted">@L.Get("ReportLabel")</div><span class="fw-bold small text-light">@L.Get("Dashboard")</span></div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (totalActive == 0)
+    {
+        <!-- EMPTY STATE — Full Creative Experience -->
+        <div class="fade-in-up" style="animation-delay: 0.2s;">
+            <!-- Hero Empty State -->
+            <div class="gb-glass-card p-5 text-center mb-4" style="border:1px solid rgba(251,191,36,0.15) !important;">
+                <div style="font-size:4rem;margin-bottom:1rem;animation:emptyBounce 3s ease-in-out infinite;">🏖️</div>
+                <h3 class="fw-bold text-light mb-2">@L.Get("AllTasksDone")</h3>
+                <p class="text-muted mb-4" style="max-width:500px;margin:0 auto;">@L.Get("GreatJobNoActiveTasks")</p>
+                
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    @if (userRole == "Proje Sefi" || userRole == "Admin")
+                    {
+                        <a asp-controller="Ai" asp-action="Breakdown" class="btn btn-warning rounded-pill px-4 fw-bold">
+                            <i class="fa-solid fa-brain me-2"></i>@L.Get("CreateTaskWithAI")
+                        </a>
+                        <a asp-controller="Task" asp-action="Create" class="btn btn-outline-light rounded-pill px-4 fw-bold">
+                            <i class="fa-solid fa-plus me-2"></i>@L.Get("AddManualTask")
+                        </a>
+                    }
+                    <a asp-controller="Task" asp-action="Dashboard" class="btn btn-outline-info rounded-pill px-4 fw-bold">
+                        <i class="fa-solid fa-chart-pie me-2"></i>@L.Get("PerformanceReport")
+                    </a>
+                </div>
+            </div>
+
+            <!-- Creative Widgets Row -->
+            <div class="row g-4 mb-4">
+                <!-- Productivity Tip -->
+                <div class="col-md-4">
+                    <div class="gb-glass-card p-4 h-100 hover-shine-box">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div style="width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,0.12);display:flex;align-items:center;justify-content:center;">
+                                <i class="fa-solid fa-lightbulb" style="color:#a78bfa;"></i>
+                            </div>
+                            <span class="fw-bold small text-light">Verimlilik İpucu</span>
+                        </div>
+                        <p class="text-muted small mb-3" id="dailyTipText">"Pomodoro tekniğini dene: 25 dk çalış, 5 dk mola. 4 turdan sonra uzun mola ver."</p>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-yin-yang" style="color:#a855f7;font-size:0.8rem;"></i>
+                            <a href="javascript:void(0)" onclick="document.getElementById('zenModeBtn').click();" class="text-decoration-none small fw-bold" style="color:#a855f7;">Zen Modunu Aç</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="col-md-4">
+                    <div class="gb-glass-card p-4 h-100 hover-shine-box">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div style="width:36px;height:36px;border-radius:10px;background:rgba(56,189,248,0.12);display:flex;align-items:center;justify-content:center;">
+                                <i class="fa-solid fa-bolt" style="color:#38bdf8;"></i>
+                            </div>
+                            <span class="fw-bold small text-light">Hızlı Erişim</span>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <a asp-controller="Chat" asp-action="Index" class="d-flex align-items-center gap-2 text-decoration-none p-2 rounded-3" style="background:rgba(255,255,255,0.02);transition:background 0.3s;">
+                                <i class="fa-solid fa-comments" style="color:#22d3ee;font-size:0.85rem;"></i>
+                                <span class="text-muted small">Takım Sohbeti</span>
+                                <i class="fa-solid fa-chevron-right ms-auto text-muted" style="font-size:0.6rem;"></i>
+                            </a>
+                            <a asp-controller="Billing" asp-action="Index" class="d-flex align-items-center gap-2 text-decoration-none p-2 rounded-3" style="background:rgba(255,255,255,0.02);transition:background 0.3s;">
+                                <i class="fa-solid fa-gem" style="color:#fbbf24;font-size:0.85rem;"></i>
+                                <span class="text-muted small">Plan & Abonelik</span>
+                                <i class="fa-solid fa-chevron-right ms-auto text-muted" style="font-size:0.6rem;"></i>
+                            </a>
+                            <a asp-controller="Task" asp-action="Kanban" class="d-flex align-items-center gap-2 text-decoration-none p-2 rounded-3" style="background:rgba(255,255,255,0.02);transition:background 0.3s;">
+                                <i class="fa-solid fa-chess-board" style="color:#fb923c;font-size:0.85rem;"></i>
+                                <span class="text-muted small">Kanban Tahtası</span>
+                                <i class="fa-solid fa-chevron-right ms-auto text-muted" style="font-size:0.6rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Focus -->
+                <div class="col-md-4">
+                    <div class="gb-glass-card p-4 h-100 hover-shine-box">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div style="width:36px;height:36px;border-radius:10px;background:rgba(52,211,153,0.12);display:flex;align-items:center;justify-content:center;">
+                                <i class="fa-solid fa-clock" style="color:#34d399;"></i>
+                            </div>
+                            <span class="fw-bold small text-light">Bugünün Özeti</span>
+                        </div>
+                        <div class="d-flex flex-column gap-3">
+                            <div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">Günlük İlerleme</span>
+                                    <span class="small fw-bold" style="color:#34d399;">Harika!</span>
+                                </div>
+                                <div class="progress" style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;">
+                                    <div class="progress-bar" style="width:100%;background:linear-gradient(90deg,#34d399,#22d3ee);border-radius:3px;"></div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-1">
+                                <span style="font-size:2rem;">🏆</span>
+                                <div class="text-muted small mt-1">Bugün için başarıyla tamamlandı!</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- KANBAN BOARD — Direkt göster, skeleton yok -->
+        <div class="kanban-board d-flex gap-4 fade-in-up" style="animation-delay: 0.2s;">
+            @foreach (var lane in lanes)
+            {
+                <div class="kanban-lane" data-gb-lane="@lane.Key" style="border-top: 4px solid var(--bs-@lane.BorderColor);">
+                    <div class="kanban-header d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0 text-@lane.BorderColor">
+                            <i class="fa-solid @lane.Icon me-2"></i> @lane.Title
+                        </h6>
+                        <span class="badge @lane.Badge rounded-pill">@(lane.Tasks.Count)</span>
+                    </div>
+                    <div class="kanban-body">
+                        @if (!((List<GoldBranchAI.Models.TodoTask>)lane.Tasks).Any())
+                        {
+                            @if (lane.Key == "kritik")
+                            {
+                                <div class="gb-empty-lane">
+                                    <span class="gb-empty-lane-icon">🎉</span>
+                                    <div class="gb-empty-lane-text">Kritik görev yok!</div>
+                                    <div class="gb-empty-lane-sub">Mükemmel iş, acil bir şey yok.</div>
+                                </div>
+                            }
+                            else if (lane.Key == "buhafta")
+                            {
+                                <div class="gb-empty-lane">
+                                    <span class="gb-empty-lane-icon">☕</span>
+                                    <div class="gb-empty-lane-text">Bu hafta boş!</div>
+                                    <div class="gb-empty-lane-sub">Rahat bir hafta seni bekliyor.</div>
+                                </div>
+                            }
+                            else if (lane.Key == "gelecek")
+                            {
+                                <div class="gb-empty-lane">
+                                    <span class="gb-empty-lane-icon">🔮</span>
+                                    <div class="gb-empty-lane-text">Gelecek hafta temiz!</div>
+                                    <div class="gb-empty-lane-sub">Planlama yapmak için doğru an.</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="gb-empty-lane">
+                                    <span class="gb-empty-lane-icon">🌊</span>
+                                    <div class="gb-empty-lane-text">Uzak ufukta görev yok</div>
+                                    <div class="gb-empty-lane-sub">İleri tarihler seni bekliyor.</div>
+                                </div>
+                            }
+                        }
+                        @foreach (var task in (List<GoldBranchAI.Models.TodoTask>)lane.Tasks)
+                        {
+                            var searchable = (task.Title + " " + (task.AppUser?.FullName ?? "") + " " + task.Status).ToLower();
+                            <div class="compact-task gb-task" 
+                                 data-search="@searchable"
+                                 data-task-id="@task.Id"
+                                 style="border-left: 4px solid @(task.Status == "Revize" ? "#fb923c" : (task.Status == "Onay Bekliyor" ? "#c084fc" : "#38bdf8"));">
+                                
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="text-light fw-bold mb-0" style="font-size: 0.9rem;">@task.Title</h6>
+                                </div>
+
+                                @if (task.Status == "Onay Bekliyor")
+                                {
+                                    <div class="mb-2"><span class="badge bg-info text-dark w-100 text-start small"><i class="fa-solid fa-spinner fa-spin me-1"></i> Onay Bekliyor</span></div>
+                                }
+                                else if (task.Status == "Revize")
+                                {
+                                    <div class="mb-2"><span class="badge bg-warning text-dark w-100 text-start small"><i class="fa-solid fa-rotate-left me-1"></i> Revize İsteği</span></div>
+                                }
+
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                                    <span class="badge bg-dark border border-secondary small">
+                                        <i class="fa-regular fa-clock me-1"></i> @task.DueDate.ToString("dd MMM")
+                                    </span>
+                                    <a asp-action="Details" asp-route-id="@task.Id" class="text-info text-decoration-none small fw-bold">
+                                        Detay <i class="fa-solid fa-chevron-right ms-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchInput = document.getElementById('gbTaskSearch');
+
+            function applyFilters() {
+                const q = (searchInput.value || "").toLowerCase().trim();
+                document.querySelectorAll('.gb-task').forEach(card => {
+                    const text = card.getAttribute('data-search') || "";
+                    card.style.display = (!q || text.includes(q)) ? "" : "none";
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', applyFilters);
+            }
+
+            // Productivity Tips rotation
+            const tips = [
+                '"Pomodoro: 25 dk çalış, 5 dk mola. 4 turdan sonra uzun mola."',
+                '"En zor görevi güne ilk başladığında yap — Eat the Frog!"',
+                '"Multitasking verimliliği %40 düşürür. Tek göreve odaklan."',
+                '"2 dakikada bitirebileceğin işi erteleme, hemen yap!"',
+                '"Her gün için max 3 öncelikli görev belirle."',
+                '"Görev tanımını net yaz. Belirsizlik = erteleme."',
+                '"90 dakikalık derin çalışma bloğu oluştur."'
+            ];
+            const tipEl = document.getElementById('dailyTipText');
+            if (tipEl) {
+                tipEl.textContent = tips[Math.floor(Math.random() * tips.length)];
+                setInterval(() => {
+                    tipEl.style.opacity = '0';
+                    setTimeout(() => {
+                        tipEl.textContent = tips[Math.floor(Math.random() * tips.length)];
+                        tipEl.style.opacity = '1';
+                    }, 300);
+                }, 12000);
+            }
+        });
+    </script>
+}

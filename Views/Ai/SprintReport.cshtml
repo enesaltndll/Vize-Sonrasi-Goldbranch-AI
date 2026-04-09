@@ -1,0 +1,71 @@
+@{
+    ViewData["Title"] = "AI Sprint Raporu";
+    var reportText = ViewBag.ReportText as string ?? string.Empty;
+}
+
+<div class="container-fluid pt-4 fade-in-up">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-warning pb-3">
+        <div>
+            <h2 class="text-white fw-bold mb-0"><i class="fa-solid fa-robot text-warning me-2"></i> Multi-LLM Sprint Raporu</h2>
+            <small class="text-muted">Son 7 günlük takım performansı ve AI değerlendirmesi</small>
+        </div>
+        <button class="btn btn-outline-warning shadow-lg fw-bold px-4" onclick="window.print()">
+            <i class="fa-solid fa-print me-2"></i> PDF Olarak İndir / Yazdır
+        </button>
+    </div>
+
+    <!-- Rapor Kartı -->
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card bg-dark border-0 shadow-lg print-area" style="border-radius: 15px; border-top: 5px solid #a855f7 !important;">
+                <div class="card-body p-5 markdown-content text-light" id="reportContent" style="line-height: 1.8;">
+                    @Html.Raw(Html.Encode(reportText).Replace("\n", "<br>"))
+                </div>
+            </div>
+            
+            <div class="text-center mt-4 pb-5">
+                <a href="/Task/Dashboard" class="btn btn-secondary px-5 py-2 fw-bold text-uppercase" style="letter-spacing: 1px;">Radara Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Marked.js for better Markdown parsing if needed -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const rawText = `@Html.Raw(System.Text.Json.JsonSerializer.Serialize(reportText))`;
+            // Remove surround quotes from serialize
+            const cleanText = JSON.parse(rawText);
+            document.getElementById('reportContent').innerHTML = marked.parse(cleanText);
+        });
+    </script>
+    
+    <style>
+        @@media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-area, .print-area * {
+                visibility: visible;
+                color: #000 !important;
+            }
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                background: white !important;
+                border: none !important;
+            }
+        }
+        
+        /* Markdown Custom Styles */
+        .markdown-content h1 { color: #facc15; font-weight: 900; margin-bottom: 20px; font-size: 2.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .markdown-content h2 { color: #c084fc; font-weight: 800; margin-top: 30px; font-size: 1.6rem; }
+        .markdown-content h3 { color: #38bdf8; font-weight: bold; margin-top: 20px; }
+        .markdown-content ul { padding-left: 20px; }
+        .markdown-content li { margin-bottom: 10px; }
+        .markdown-content strong { color: #34d399; }
+    </style>
+}

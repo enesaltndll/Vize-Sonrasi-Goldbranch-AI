@@ -1,0 +1,196 @@
+@model IEnumerable<GoldBranchAI.Models.DailyTimeLog>
+
+@{
+    ViewData["Title"] = L.Get("WeeklyZReportTitle");
+}
+
+<div class="row mb-4 align-items-center fade-in-up">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.2);">
+                <i class="fa-solid fa-file-invoice text-warning" style="font-size:1.3rem;"></i>
+            </span>
+            <div>
+                <div class="d-flex align-items-center">
+                    <h2 class="text-light fw-bold mb-0 me-3">@L.Get("WeeklyZReport")</h2>
+                    <a asp-action="ExportWorkReportsCsv" class="btn btn-sm btn-outline-success rounded-pill" style="border: 1px solid rgba(16, 185, 129, 0.4);"><i class="fa-solid fa-download me-1"></i> @L.Get("DownloadCsv")</a>
+                </div>
+                <p class="text-muted mb-0 small mt-1">@L.Get("TeamLast7DaysWork")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="d-inline-flex gap-2">
+            <div class="bg-dark border border-secondary rounded-3 px-3 py-2 text-start" style="min-width:120px;">
+                <span class="text-muted d-block" style="font-size:0.6rem; letter-spacing:1px;">@L.Get("TotalRecords")</span>
+                <span class="text-warning fw-bold" style="font-family:'JetBrains Mono',monospace;">@Model.Count()</span>
+            </div>
+            <div class="bg-dark border border-info border-opacity-25 rounded-3 px-3 py-2 text-start" style="min-width:120px;">
+                <span class="text-muted d-block" style="font-size:0.6rem; letter-spacing:1px;">@L.Get("Average")</span>
+                <span class="text-info fw-bold" style="font-family:'JetBrains Mono',monospace;">
+                    @{
+                        var avg = Model.Any() ? Model.Average(m => m.TotalMinutes) : 0;
+                    }
+                    @((int)avg) @L.Get("Mins")
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtre Butonları -->
+<div class="row mb-3 fade-in-up">
+    <div class="col-12">
+        <div class="btn-group shadow-sm" role="group" aria-label="Z-Raporu Filtreleme">
+            <input type="radio" class="btn-check gb-filter-radio" name="zReportFilter" id="filterAll" value="all" autocomplete="off" checked>
+            <label class="btn btn-outline-warning text-light" for="filterAll">
+                <i class="fa-solid fa-layer-group me-1"></i>Tümü
+            </label>
+
+            <input type="radio" class="btn-check gb-filter-radio" name="zReportFilter" id="filterBugun" value="bugun" autocomplete="off">
+            <label class="btn btn-outline-warning text-light" for="filterBugun">
+                <i class="fa-solid fa-sun me-1"></i>Bugün
+            </label>
+
+            <input type="radio" class="btn-check gb-filter-radio" name="zReportFilter" id="filterDun" value="dun" autocomplete="off">
+            <label class="btn btn-outline-warning text-light" for="filterDun">
+                <i class="fa-solid fa-cloud-moon me-1"></i>Dün
+            </label>
+
+            <input type="radio" class="btn-check gb-filter-radio" name="zReportFilter" id="filterOncesi" value="oncesi" autocomplete="off">
+            <label class="btn btn-outline-warning text-light" for="filterOncesi">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i>Öncesi
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-column gap-3 mt-2" id="zReportListContainer">
+    @{ int itemIdx = 0; }
+    @foreach (var log in Model)
+    {
+        int hours = log.TotalMinutes / 60;
+        int minutes = log.TotalMinutes % 60;
+        string timeDisplay = hours > 0 ? $"{hours}{L.Get("Hrs")} {minutes}{L.Get("Mins")}" : $"{minutes}{L.Get("Mins")}";
+
+        int percent = (int)Math.Round((double)(log.TotalMinutes) / 480 * 100);
+        if (percent > 100) percent = 100;
+
+        string barColor = percent > 75 ? "rgba(16, 185, 129, 1)" : (percent > 30 ? "rgba(56, 189, 248, 1)" : "rgba(251, 191, 36, 1)");
+        string barShadow = percent > 75 ? "0 0 15px rgba(16, 185, 129, 0.5)" : (percent > 30 ? "0 0 15px rgba(56, 189, 248, 0.5)" : "0 0 15px rgba(251, 191, 36, 0.5)");
+        
+        string filterClass = "oncesi";
+        if (log.LogDate.Date == DateTime.Today) filterClass = "bugun";
+        else if (log.LogDate.Date == DateTime.Today.AddDays(-1)) filterClass = "dun";
+
+        <div class="p-3 px-4 rounded-4 shadow-sm fade-in-up hover-glow-card position-relative overflow-hidden z-report-item @filterClass" 
+             style="background: var(--gb-bg-card); border: 1px solid var(--gb-border); animation-delay: @(0.1 + itemIdx * 0.08)s;">
+             
+             <!-- Sparkle accent line -->
+             <div class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none opacity-0 hover-sparkle" 
+                  style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent); transition: opacity 0.3s; transform: skewX(-45deg); left: -100%;">
+             </div>
+
+            <div class="row align-items-center position-relative z-1">
+                <!-- Date column -->
+                <div class="col-12 col-md-2 mb-2 mb-md-0 border-end border-secondary border-opacity-25">
+                    <div class="d-flex flex-column">
+                        <span class="text-uppercase small text-muted" style="font-size:0.6rem; letter-spacing:1px;">@L.Get("DateLabel")</span>
+                        <span class="text-warning fw-bold"><i class="fa-regular fa-calendar-days me-1 opacity-75"></i> @log.LogDate.ToString("dd MMM yyyy")</span>
+                    </div>
+                </div>
+                
+                <!-- Person column -->
+                <div class="col-12 col-md-4 mb-2 mb-md-0 border-end border-secondary border-opacity-25 ps-md-4">
+                    <div class="d-flex align-items-center">
+                        <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,rgba(255,255,255,0.05),transparent);display:flex;align-items:center;justify-content:center;margin-right:12px;border:1px solid rgba(255,255,255,0.1);">
+                            <i class="fa-solid fa-user-astronaut text-muted"></i>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="text-light fw-bold" style="letter-spacing:0.5px;">@log.AppUser?.FullName</span>
+                            <span class="badge bg-dark border border-secondary text-muted align-self-start mt-1" style="font-size:0.65rem;">@log.AppUser?.Role</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time column -->
+                <div class="col-12 col-md-2 mb-3 mb-md-0 ps-md-4">
+                    <div class="d-flex flex-column">
+                        <span class="text-uppercase small text-muted" style="font-size:0.6rem; letter-spacing:1px;">@L.Get("ActiveWork")</span>
+                        <span class="fw-bold" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--gb-accent-cyan);">@timeDisplay</span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar column -->
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-uppercase small text-muted" style="font-size:0.6rem; letter-spacing:1px;">@L.Get("DailyEfficiency")</span>
+                        <span class="fw-bold" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:@barColor;">@percent%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 4px; background: rgba(255,255,255,0.05); overflow:visible;">
+                        <!-- Custom animated bar width using CSS variables -->
+                        <div class="progress-bar rounded-pill" role="progressbar" 
+                             style="width: 0%; background: @barColor; box-shadow: @barShadow; --target-width: @percent%;
+                                    animation: growBar 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; animation-delay: @(0.3 + itemIdx * 0.1)s;" 
+                             data-target-width="@percent%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        itemIdx++;
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 fade-in-up" style="background: rgba(255,255,255,0.02); border-radius:20px; border:1px dashed rgba(255,255,255,0.1);">
+            <i class="fa-solid fa-ghost fa-3x mb-3 text-muted" style="animation: float 3s ease-in-out infinite;"></i><br />
+            <span class="text-muted fw-bold">@L.Get("NoWorkRecords7Days")</span>
+        </div>
+    }
+</div>
+
+<style>
+    /* Hover Card Effects */
+    .hover-glow-card { transition: all 0.3s ease; }
+    .hover-glow-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255,255,255,0.15) !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3) !important;
+    }
+    .hover-glow-card:hover .hover-sparkle {
+        opacity: 1;
+        animation: shimmerSweep 1s forwards;
+    }
+    
+    @@keyframes growBar {
+        from { width: 0%; }
+        to { width: var(--final-width); }
+    }
+    @@keyframes shimmerSweep {
+        0% { left: -100%; }
+        100% { left: 200%; }
+    }
+</style>
+
+<script>
+    // Set custom CSS property for keyframes to animate width dynamically
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            let target = bar.getAttribute('data-target-width');
+            bar.style.setProperty('--final-width', target);
+        });
+
+        // Filter Logic
+        const filterRadios = document.querySelectorAll('.gb-filter-radio');
+        const items = document.querySelectorAll('.z-report-item');
+        filterRadios.forEach(r => {
+            r.addEventListener('change', (e) => {
+                const val = e.target.value;
+                items.forEach(item => {
+                    item.style.display = (val === 'all' || item.classList.contains(val)) ? 'block' : 'none';
+                });
+            });
+        });
+    });
+</script>

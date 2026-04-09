@@ -1,0 +1,99 @@
+@inject GoldBranchAI.Services.LocalizationService L
+@{
+    ViewData["Title"] = L.Get("PerformanceLeague"); int rank = 1;
+}
+
+<div class="text-center mb-5 fade-in-up">
+    <div class="mb-3">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.25);animation: float 3s ease-in-out infinite;">
+            <i class="fa-solid fa-trophy text-warning" style="font-size:2rem;"></i>
+        </span>
+    </div>
+    <h1 class="fw-bold" style="font-size:2.5rem;background:linear-gradient(135deg,#fbbf24,#fcd34d,#d97706);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite;">
+        @L.Get("ChampionsLeague")
+    </h1>
+    <p class="text-muted">@L.Get("ChampionsLeagueDesc")</p>
+    <a asp-action="ExportLeaderboardCsv" class="btn btn-outline-success rounded-pill mt-2" style="border: 1px solid rgba(16, 185, 129, 0.4);"><i class="fa-solid fa-download me-1"></i> @L.Get("DownloadCsv")</a>
+</div>
+
+<div class="row justify-content-center fade-in-up mt-4" style="animation-delay: 0.1s;">
+    <div class="col-md-9 col-lg-8">
+        @foreach (var dev in ViewBag.TopDevs)
+        {
+            // Rank Themes
+            string medalIcon = rank == 1 ? "fa-crown" : (rank == 2 ? "fa-medal" : (rank == 3 ? "fa-award" : "fa-hashtag"));
+            
+            // Base Colors
+            string colorBase = rank == 1 ? "#fbbf24" : (rank == 2 ? "#94a3b8" : (rank == 3 ? "#b45309" : "#475569"));
+            string colorGlow = rank == 1 ? "rgba(251,191,36,0.4)" : (rank == 2 ? "rgba(148,163,184,0.3)" : (rank == 3 ? "rgba(180,83,9,0.3)" : "rgba(71,85,105,0.1)"));
+            string colorBg = rank == 1 ? "rgba(251,191,36,0.1)" : (rank == 2 ? "rgba(148,163,184,0.08)" : (rank == 3 ? "rgba(180,83,9,0.08)" : "rgba(71,85,105,0.05)"));
+            
+            // High-End Styling
+            string cardScale = rank == 1 ? "transform: scale(1.03); z-index: 10;" : "";
+            string glowShadow = rank == 1 ? $"box-shadow: 0 0 30px {colorGlow}, inset 0 0 20px {colorBg} !important;" : 
+                               (rank == 2 ? $"box-shadow: 0 0 20px {colorGlow} !important;" : 
+                               (rank == 3 ? $"box-shadow: 0 0 15px {colorGlow} !important;" : "box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;"));
+                               
+            string iconAnim = rank == 1 ? "animation: float 3s ease-in-out infinite, glowPulse 2s infinite;" : "";
+            string bgShimmer = rank <= 3 ? $"background: linear-gradient(135deg, var(--gb-bg-card), {colorBg});" : "background: var(--gb-bg-card);";
+
+            <div class="p-3 px-4 rounded-4 mb-4 position-relative overflow-hidden fade-in-up" 
+                 style="border: 1px solid @colorBase; @bgShimmer @cardScale @glowShadow transition: all 0.4s ease; background: var(--gb-bg-card); animation-delay: @(0.15 + rank * 0.1)s;">
+                 
+                 @if (rank <= 3)
+                 {
+                     <!-- Winner Sparkle Sweep -->
+                     <div class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none opacity-50" 
+                          style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transform: skewX(-45deg); animation: shimmerSweep 4s infinite; @(rank==1 ? "animation-duration: 2s;" : "")"></div>
+                 }
+
+                <div class="d-flex align-items-center justify-content-between position-relative z-1">
+                    <div class="d-flex align-items-center">
+                        <!-- Rank Badge -->
+                        <div class="position-relative" style="margin-right:20px;">
+                            <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg, @colorBg, transparent);border:1px solid @colorBase;display:flex;align-items:center;justify-content:center;box-shadow: 0 0 15px @colorGlow;">
+                                <i class="fa-solid @medalIcon" style="color:@colorBase;font-size:1.8rem; @iconAnim"></i>
+                            </div>
+                            @if (rank == 1)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-light" style="font-size:0.6rem; animation: pulse 1s infinite;"><i class="fa-solid fa-star"></i> @L.Get("Champion")</span>
+                            }
+                        </div>
+                        
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h4 class="mb-0 text-light fw-bold" style="letter-spacing:0.5px; text-shadow: 0 0 10px rgba(255,255,255,0.2);">@dev.User.FullName</h4>
+                                <span class="badge rounded-pill" style="background:@colorBg; border:1px solid @colorBase; color:@colorBase; font-family:'JetBrains Mono',monospace;">#@rank</span>
+                            </div>
+                            <span class="text-muted d-block" style="font-size:0.85rem;">
+                                <i class="fa-solid fa-spinner fa-spin me-1 opacity-50" style="color:var(--gb-accent-cyan);"></i> @L.Get("ActiveTaskCount") <strong style="color:var(--gb-accent-cyan);">@dev.ActiveCount</strong>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end ps-3 border-start border-secondary border-opacity-25">
+                        <div class="d-flex flex-column align-items-end">
+                            <span class="fw-bold" style="font-family:'JetBrains Mono',monospace; font-size:2.5rem; line-height:1; color: var(--gb-accent-emerald); text-shadow: 0 0 15px rgba(16,185,129,0.4);">
+                                @dev.CompletedCount
+                            </span>
+                            <span class="text-muted text-uppercase" style="font-size: 0.65rem; letter-spacing: 2px; opacity:0.8;">@L.Get("Completed")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            rank++;
+        }
+    </div>
+</div>
+
+<style>
+    @@keyframes glowPulse {
+        0% { filter: drop-shadow(0 0 5px currentColor); }
+        50% { filter: drop-shadow(0 0 15px currentColor); }
+        100% { filter: drop-shadow(0 0 5px currentColor); }
+    }
+    @@keyframes shimmerSweep {
+        0% { left: -100%; }
+        100% { left: 200%; }
+    }
+</style>

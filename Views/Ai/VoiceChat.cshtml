@@ -1,0 +1,240 @@
+
+@{
+    ViewData["Title"] = L.Get("AiVoiceChatTitle");
+}
+
+<div class="gb-page pb-4">
+    <div class="gb-page-header mb-4">
+        <div>
+            <h1 class="gb-title mb-0 animate__animated animate__fadeInLeft" style="background: linear-gradient(135deg, #a855f7, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <i class="fa-solid fa-brain" style="-webkit-text-fill-color:#a855f7;"></i> @L.Get("AiVoiceChatTitle")
+            </h1>
+            <p class="gb-subtitle mb-0 mt-1">@L.Get("AiVoiceChatDesc")</p>
+        </div>
+        <div class="gb-actions d-flex gap-2">
+            <button class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="offcanvas" data-bs-target="#memoryOffcanvas" onclick="loadMemory()">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> @L.Get("Proje Hafizası")
+            </button>
+            <select id="vcMicSelect" class="form-select form-select-sm" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 220px; font-size: 0.75rem;">
+                <option value="">@L.Get("MicLoading")</option>
+            </select>
+            <button class="btn btn-sm btn-outline-light" onclick="loadMics()" title="@L.Get("Refresh")">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- SLIDING MEMORY PANEL -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="memoryOffcanvas" style="background: rgba(13,17,23,0.95); backdrop-filter: blur(10px); border-left: 1px solid rgba(255,255,255,0.1); width: 400px; color: #fff;">
+      <div class="offcanvas-header border-bottom" style="border-color: rgba(255,255,255,0.05)!important; background:rgba(0,0,0,0.3);">
+        <h5 class="offcanvas-title text-info fw-bold"><i class="fa-solid fa-brain me-2"></i> @L.Get("ProjectMemory")</h5>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-danger py-1 px-2" style="font-size: 0.75rem;" onclick="clearAllMemory()" title="Tümünü Sil"><i class="fa-solid fa-trash-can"></i></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+      </div>
+      <div class="offcanvas-body p-3" id="memoryListContainer" style="overflow-y: auto;">
+          <!-- Items will be loaded here via JS -->
+      </div>
+    </div>
+    
+    <div class="alert alert-warning py-2 small d-flex align-items-center mb-4 border-0" style="background: rgba(251,191,36,0.1); color: #fbbf24;">
+        <i class="fa-solid fa-circle-info me-2"></i>
+        <span><strong>Bluetooth Kulaklık İçin Bilgi:</strong> Sesli asistan (Web Speech API) daima <strong>Windows'un Varsayılan İletişim Aygıtını</strong> kullanır. Eğer kulaklığınız algılanmıyorsa lütfen Windows Ses Ayarlarından onu varsayılan mikrofon yapın. Listeden seçmek tarayıcı kısıtlaması nedeniyle her zaman yeterli olmayabilir.</span>
+    </div>
+    
+    <input type="hidden" id="txtReady" value="@L.Get("ReadyStatus")" />
+    <input type="hidden" id="txtThinking" value="@L.Get("ThinkingStatus")" />
+    <input type="hidden" id="txtListening" value="🎤 Dinleniyor... Konuşun" />
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <div class="card border-0 rounded-4 shadow-lg position-relative" style="background: rgba(13,17,23,0.7); border: 1px solid rgba(255,255,255,0.05) !important; min-height: 70vh; display: flex; flex-direction: column; overflow: hidden;">
+                
+                <!-- Mesaj Alanı -->
+                <div id="vcMessages" class="flex-grow-1 p-4" style="overflow-y: auto; max-height: 60vh; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;background:linear-gradient(135deg,#a855f7,#6366f1);">
+                            <i class="fa-solid fa-robot text-white" style="font-size:1rem;"></i>
+                        </div>
+                        <div style="max-width:85%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:16px 20px;border-radius:4px 18px 18px 18px;color:#e4e4e7;font-size:0.95rem;line-height:1.6;">
+                            @Html.Raw(L.Get("AiGreetingBody"))
+                            
+                            <div class="d-flex gap-3 mt-4 flex-wrap" id="vcQuickActions">
+                                <button class="btn btn-outline-light d-flex align-items-center gap-2 px-3 py-2 rounded-3 action-card" onclick="openAcademicForm()" style="border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.05);">
+                                    <i class="fa-solid fa-graduation-cap text-warning fs-5"></i> 
+                                    <div class="text-start">
+                                        <div class="fw-bold text-warning" style="font-size:0.85rem;">@L.Get("AdvSchoolProject")</div>
+                                        <div class="text-muted" style="font-size:0.7rem;">@L.Get("AdvSchoolProjectDesc")</div>
+                                    </div>
+                                </button>
+                                <button class="btn btn-outline-light d-flex align-items-center gap-2 px-3 py-2 rounded-3 action-card" onclick="sendQuestion('@Html.Raw(L.Get("PresentationPrompt"))')" style="border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.05);">
+                                    <i class="fa-solid fa-chart-pie text-info fs-5"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold text-info" style="font-size:0.85rem;">@L.Get("PresentationBlueprint")</div>
+                                        <div class="text-muted" style="font-size:0.7rem;">@L.Get("PresentationBlueprintDesc")</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Akademik Form Overlay (Gizli) -->
+                <div id="academicFormOverlay" class="position-absolute w-100 h-100 d-none" style="top:0; left:0; background: rgba(13,17,23,0.95); z-index:10; backdrop-filter: blur(10px); flex-direction:column;">
+                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: rgba(255,255,255,0.05)!important; background:rgba(0,0,0,0.3);">
+                        <div class="fw-bold text-warning"><i class="fa-solid fa-graduation-cap me-2"></i> @L.Get("SchoolProjectEngine")</div>
+                        <button class="btn-close btn-close-white" onclick="closeAcademicForm()"></button>
+                    </div>
+                    <div class="p-4" style="overflow-y:auto; flex-grow:1;">
+                        <p class="text-muted small mb-4">@L.Get("AdvSchoolProjHelpText")</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold">@L.Get("UniversityOrSchoolName")</label>
+                            <input type="text" id="acUni" class="form-control bg-dark border-secondary text-light" placeholder="@L.Get("ExUniversity")">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold">@L.Get("FacultyOrDepartment")</label>
+                            <input type="text" id="acDept" class="form-control bg-dark border-secondary text-light" placeholder="@L.Get("ExFaculty")">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold">@L.Get("ResearchTopic") <span class="text-danger">*</span></label>
+                            <textarea id="acTopic" class="form-control bg-dark border-secondary text-light" rows="2" placeholder="@L.Get("ExResearchTopic")"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold">@L.Get("AdditionalRequests")</label>
+                            <input type="text" id="acExtra" class="form-control bg-dark border-secondary text-light" placeholder="@L.Get("ExAdditionalRequests")">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-light small fw-bold">@L.Get("SchoolLogoCover")</label>
+                            <input type="file" id="acLogo" class="form-control bg-dark border-secondary text-light" accept="image/png, image/jpeg">
+                            <small class="text-muted" style="font-size:0.7rem;">@L.Get("SchoolLogoHelpText")</small>
+                        </div>
+
+                        <button id="acSubmitBtn" class="btn btn-warning w-100 fw-bold rounded-3 py-2 shadow-sm" onclick="submitAcademicForm()">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> @L.Get("GenerateProject")
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Bar -->
+                <div class="p-3" style="border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2); z-index:5;">
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="vcMicBtn" class="btn rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(168,85,247,0.1);border:2px solid rgba(168,85,247,0.3);transition:all 0.3s;" title="@L.Get("AskWithVoice")">
+                            <i id="vcMicIcon" class="fa-solid fa-microphone" style="color:#a855f7;font-size:1.2rem;"></i>
+                        </button>
+                        <div id="vcVisualizerWrap" class="flex-shrink-0 d-none" style="width:48px;height:48px;position:relative;">
+                            <canvas id="vcCanvas" width="48" height="48" style="width:100%;height:100%;"></canvas>
+                        </div>
+                        <input id="vcInput" type="text" class="form-control" placeholder="@L.Get("TypeOrSpeakYourQuestion")"
+                               style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:12px;padding:12px 16px;font-size:0.9rem;" autocomplete="off">
+                        <button id="vcSendBtn" class="btn rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:linear-gradient(135deg,#a855f7,#6366f1);border:none;" title="@L.Get("Send")">
+                            <i class="fa-solid fa-paper-plane text-white" style="font-size:1rem;"></i>
+                        </button>
+                    </div>
+                    <div id="vcStatus" class="text-muted text-center mt-2" style="font-size:0.7rem;">@L.Get("ReadyStatus")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTML ŞABLONLARI (JS sızıntısını önlemek için buraya taşındı) -->
+<template id="tmplUserMsg">
+    <div class="d-flex justify-content-end mb-3">
+        <div class="vc-user-msg"></div>
+    </div>
+</template>
+
+<template id="tmplAiMsg">
+    <div class="d-flex align-items-start gap-3 mb-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;background:linear-gradient(135deg,#a855f7,#6366f1);">
+            <i class="fa-solid fa-robot text-white" style="font-size:1rem;"></i>
+        </div>
+        <div class="vc-ai-msg w-100"></div>
+    </div>
+</template>
+
+<template id="tmplThinkRow">
+    <div class="d-flex align-items-start gap-3 mb-3 vc-think-row">
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;background:linear-gradient(135deg,#a855f7,#6366f1);">
+            <i class="fa-solid fa-robot text-white" style="font-size:1rem;"></i>
+        </div>
+        <div class="vc-thinking"><i class="fa-solid fa-spinner fa-spin me-2"></i>AI düşünüyor...</div>
+    </div>
+</template>
+
+<template id="tmplErrorMsg">
+    <div class="d-flex align-items-start gap-3 mb-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;background:rgba(239,68,68,0.2);">
+            <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+        </div>
+        <div class="vc-ai-msg" style="border-color:rgba(239,68,68,0.2);color:#fca5a5;"></div>
+    </div>
+</template>
+
+<style>
+    .vc-user-msg {
+        max-width: 75%;
+        background: linear-gradient(135deg, #a855f7, #6366f1);
+        color: #fff;
+        padding: 12px 18px;
+        border-radius: 18px 18px 4px 18px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+    .vc-ai-msg {
+        max-width: 80%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #e4e4e7;
+        padding: 16px 20px;
+        border-radius: 4px 18px 18px 18px;
+        font-size: 0.95rem;
+        line-height: 1.65;
+        word-break: break-word;
+    }
+    .vc-ai-msg pre {
+        background: rgba(0,0,0,0.4);
+        padding: 12px 16px;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        margin: 10px 0;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .vc-ai-msg strong { color: #c4b5fd; font-weight: 600; }
+    .vc-ai-msg h1, .vc-ai-msg h2, .vc-ai-msg h3 { color: #fff; margin-top: 1rem; margin-bottom: 0.5rem; }
+    .vc-thinking {
+        max-width: 60%;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+        color: #71717a;
+        padding: 12px 18px;
+        border-radius: 4px 18px 18px 18px;
+        font-size: 0.85rem;
+    }
+    @@keyframes vcPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.4); }
+        50% { box-shadow: 0 0 20px 8px rgba(168,85,247,0.2); }
+    }
+    .vc-recording { animation: vcPulse 1.5s infinite; border-color: #ef4444 !important; background: rgba(239,68,68,0.15) !important; }
+    .action-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+    /* A4 Preview Card Styles */
+    .a4-preview-card {
+        background: #fff;
+        color: #000;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        width: 100%;
+        max-width: 600px;
+        margin-top: 10px;
+        font-family: "Times New Roman", Times, serif;
+    }
+    .a4-preview-card h1, .a4-preview-card h2, .a4-preview-card h3 { color: #000 !important; }
+</style>
+
+<script src="~/js/voicechat.js" asp-append-version="true"></script>

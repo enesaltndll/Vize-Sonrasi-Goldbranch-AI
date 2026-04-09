@@ -1,0 +1,374 @@
+@{
+    ViewData["Title"] = "GOLDBRANCH_AI_CORE - YOL HARITASI";
+}
+
+<style>
+    .roadmap-page {
+        font-family: 'Inter', sans-serif;
+        color: #e2e8f0;
+    }
+    
+    .holo-card {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(56, 189, 248, 0.05);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .holo-card::before {
+        content: ''; position: absolute; top:0; left:0; right:0; height:1px;
+        background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+    }
+    
+    .holo-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(56, 189, 248, 0.5);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7), inset 0 0 30px rgba(56, 189, 248, 0.1);
+    }
+
+    .hero-glitch {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 3.5rem;
+        font-weight: 900;
+        letter-spacing: -2px;
+        background: linear-gradient(135deg, #fff, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        position: relative;
+    }
+
+    .timeline-container { position: relative; padding-left: 50px; }
+    .timeline-container::before {
+        content: '';
+        position: absolute; left: 24px; top: 0; bottom: 0; width: 2px;
+        background: linear-gradient(to bottom, #38bdf8, #818cf8, #fbbf24, #ef4444, transparent);
+    }
+
+    .timeline-step { position: relative; margin-bottom: 40px; }
+    .timeline-step::before {
+        content: '';
+        position: absolute; left: -34px; top: 5px; width: 18px; height: 18px;
+        border-radius: 50%; background: #0f172a; border: 3px solid #38bdf8;
+        box-shadow: 0 0 15px #38bdf8; z-index: 2;
+        transition: all 0.3s ease;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .timeline-step:hover::before { transform: scale(1.3); background: #38bdf8; }
+    
+    .timeline-step.completed::before {
+        content: '\f00c';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        font-size: 10px;
+        color: #10b981;
+        border-color: #10b981;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    .timeline-step.completed:hover::before {
+        background: #10b981;
+        color: #fff;
+    }
+
+    .stat-ring { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #38bdf8; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; text-shadow: 0 0 10px #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 20px rgba(56, 189, 248, 0.3); }
+
+    .glow-text { text-shadow: 0 0 15px currentColor; }
+</style>
+
+<div class="roadmap-page pb-5">
+
+    <!-- HERO / KAPAK (Slayt 1) -->
+    <div class="row mb-5 fade-in-up">
+        <div class="col-12 text-center position-relative py-5">
+            <!-- Arkaplan grid efekti -->
+            <div style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:radial-gradient(circle at center, rgba(56, 189, 248, 0.1) 0%, transparent 60%); z-index:-1; pointer-events:none;"></div>
+            
+            <div class="badge px-3 py-2 bg-dark border border-info text-info rounded-pill font-monospace mb-3 shadow" style="letter-spacing:2px;">
+                <i class="fa-solid fa-satellite-dish me-2" style="animation: pulse 2s infinite;"></i> AKADEMIK UZAY GOREVI BASLATILDI
+            </div>
+            
+            <h1 class="hero-glitch mb-3">GOLDBRANCH_AI</h1>
+            <h4 class="text-light fw-light mb-4" style="letter-spacing: 1px;">Remote Work Wellness & AI Task Manager (V2.0)</h4>
+            
+            <div class="d-inline-flex flex-wrap justify-content-center gap-3 mt-3">
+                <div class="badge bg-dark border border-secondary text-light px-4 py-3 rounded text-start" style="font-size: 0.9rem;">
+                    <span class="text-info d-block mb-1 font-monospace" style="font-size: 0.7rem;">GELISTIRICI / YURUTUCU</span>
+                    <i class="fa-solid fa-user-astronaut me-2"></i> Enes ALTINDAL <br/>
+                    <small class="text-muted"><i class="fa-solid fa-id-card me-1 ms-4 mt-2"></i> No: 247017024</small><br/>
+                    <small class="text-muted"><i class="fa-solid fa-network-wired me-1 ms-4 mt-1"></i> Internet ve Ag Teknolojileri</small>
+                </div>
+                <div class="badge bg-dark border border-secondary text-light px-4 py-3 rounded text-start" style="font-size: 0.9rem;">
+                    <span class="text-warning d-block mb-1 font-monospace" style="font-size: 0.7rem;">DANISMAN KAPTAN</span>
+                    <i class="fa-solid fa-chalkboard-user me-2 mt-1"></i> Ogr. Gor. Ekrem SAYDAM
+                </div>
+                <div class="badge bg-dark border border-secondary text-light px-4 py-3 rounded text-start" style="font-size: 0.9rem;">
+                    <span class="text-success d-block mb-1 font-monospace" style="font-size: 0.7rem;">GOREV TIPI</span>
+                    <i class="fa-solid fa-clock me-2 mt-1"></i> 200 Saatlik (Adam-Saat) <br><i class="fa-solid fa-code me-2 ms-4 mt-2"></i> Tam Yigin (Full-Stack) Web Projesi
+                </div>
+            </div>
+            
+            <div class="mt-5 p-4 rounded-3 d-inline-block shadow-lg" style="background: linear-gradient(90deg, rgba(251,191,36,0.1), rgba(251,191,36,0.02)); border-left: 4px solid var(--gb-gold); max-width:800px;">
+                <h5 class="text-warning fw-bold mb-2 font-monospace"><i class="fa-solid fa-quote-left me-2"></i> VIZYON SLOGANI</h5>
+                <h3 class="fw-bold fst-italic text-light mb-0" style="text-shadow: 0 0 10px rgba(251,191,36,0.2);">
+                    "Isinize Yapay Zeka, Sagliginiza Altin Dal Dokunusu."
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- CORE ANALYSIS (Slayt 2 & 9) -->
+    <div class="row mb-5 g-4 fade-in-up" style="animation-delay: 0.1s;">
+        <div class="col-md-6">
+            <div class="holo-card p-4 h-100" style="border-left: 4px solid #ef4444;">
+                <h5 class="text-danger fw-bold font-monospace mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i> PROBLEM ANALIZI</h5>
+                <p class="text-muted" style="line-height:1.7;">
+                    Uzaktan calisanlarin ve yazilimcilarin kontrolsuz ekran suresi nedeniyle yasadigi goz yorgunlugu, uyku bozuklugu ve <strong>"Burnout" (tukenmislik) sendromu.</strong>
+                </p>
+                <div class="bg-danger bg-opacity-10 p-3 rounded" style="border: 1px dashed rgba(239, 68, 68, 0.4);">
+                    <i class="fa-solid fa-skull-crossbones text-danger opacity-50 fa-2x float-end mb-2"></i>
+                    Hedef kitledeki verim kaybi, mevcut projelerde dogrudan maliyet artisina ve urun kalitesi dususune neden olmaktadir.
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="holo-card p-4 h-100" style="border-left: 4px solid #10b981;">
+                <h5 class="text-success fw-bold font-monospace mb-3"><i class="fa-solid fa-shield-heart me-2"></i> COZUM YAKLASIMI & NIHAI HEDEF</h5>
+                <p class="text-muted" style="line-height:1.7;">
+                    Kullanicinin sadece isini degil, sagligini da yoneten yapay zeka tabanli bir web ekosistemi kurmak.
+                </p>
+                <div class="bg-success bg-opacity-10 p-3 rounded" style="border: 1px dashed rgba(16, 185, 129, 0.4);">
+                    <i class="fa-solid fa-rocket text-success opacity-50 fa-2x float-end mb-2"></i>
+                    Ogrenciler ve profesyoneller icin sadece "ne yapacaklarini" degil, "ne zaman durmalari gerektigini" de soyleyen, piyasadaki en kapsamli proje yonetim aracini ortaya koymak.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TECH / API MODULES (Slayt 3, 4, 5) -->
+    <div class="row mb-5 g-4 fade-in-up" style="animation-delay: 0.2s;">
+        <div class="col-12"><h3 class="fw-bold font-monospace text-info border-bottom border-secondary pb-3"><i class="fa-solid fa-microchip me-2"></i> SİSTEM MİMARİSİ VE MODÜLLER</h3></div>
+        
+        <div class="col-md-4">
+            <div class="holo-card p-4 h-100 text-center">
+                <i class="fa-brands fa-microsoft fa-3x text-info mb-3 glow-text"></i>
+                <h5 class="fw-bold text-light">Yazilim Mimarisi</h5>
+                <ul class="text-start text-muted mt-3 small" style="line-height:2;">
+                    <li><strong class="text-info">Backend:</strong> Modern C# ve ASP.NET Core MVC</li>
+                    <li><strong class="text-info">Veritabani:</strong> MS SQL Server & EF Core (Code-First)</li>
+                    <li><strong class="text-info">Frontend:</strong> HTML5, CSS3, ES6+, Bootstrap 5</li>
+                    <li><strong class="text-info">Guvenlik:</strong> OAuth 2.0 Şifresiz Giris ve yerlesik Hash'leme</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="holo-card p-4 h-100 text-center">
+                <i class="fa-solid fa-brain fa-3x text-warning mb-3 glow-text"></i>
+                <h5 class="fw-bold text-light">Akilli API'ler</h5>
+                <ul class="text-start text-muted mt-3 small" style="line-height:2;">
+                    <li><strong class="text-warning">AI Arastirma Beyni:</strong> Multi-LLM (Cohere / SambaNova / Claude) entegrasyonu.</li>
+                    <li><strong class="text-warning">Web Speech API:</strong> Sesli komutla is atama.</li>
+                    <li><strong class="text-warning">Service Worker:</strong> Arka planda masaustu bildirimi (Notification API).</li>
+                    <li><strong class="text-warning">Canvas API:</strong> Sosyal medyada paylasilabilir gorsel "Basari Karti".</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="holo-card p-4 h-100 text-center">
+                <i class="fa-solid fa-leaf fa-3x text-success mb-3 glow-text"></i>
+                <h5 class="fw-bold text-light">Wellness Cozumleri</h5>
+                <ul class="text-start text-muted mt-3 small" style="line-height:2;">
+                    <li><strong class="text-success text-opacity-50 text-decoration-line-through">Uyku Kalkani:</strong> <span class="badge rounded-pill border border-warning text-warning ms-1" style="font-size: 0.65rem;">GELİŞTİRME AŞAMASINDA</span></li>
+                    <li><strong class="text-success">Zen Modu:</strong> Spotify ile odaklanma fanusu.</li>
+                    <li><strong class="text-success">Aura Logic:</strong> Teslim tarihine gore (Kırmızı/Turuncu/Yesil) otomatik akilli tasnif algoritmasi.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPRINT PLANNING / MAN-HOUR (Slayt 6) -->
+    <div class="bg-dark rounded-4 p-5 shadow-lg border border-secondary mb-5 fade-in-up" style="animation-delay: 0.3s; background: linear-gradient(180deg, rgba(34, 211, 238, 0.05), transparent);">
+        <div class="row align-items-center text-center text-md-start">
+            <div class="col-md-5 mb-4 mb-md-0 d-flex justify-content-center justify-content-md-start gap-4">
+                <div class="text-center">
+                    <div class="stat-ring text-info mb-2">10</div>
+                    <span class="text-muted fw-bold font-monospace">HAFTA SPRINT</span>
+                </div>
+                <div class="text-center">
+                    <div class="stat-ring text-warning mb-2" style="border-color:#fbbf24; text-shadow:0 0 10px #fbbf24; box-shadow:0 0 20px rgba(251,191,36,0.3), inset 0 0 20px rgba(251,191,36,0.3);">200</div>
+                    <span class="text-muted fw-bold font-monospace">TOPLAM SAAT</span>
+                </div>
+                <div class="text-center">
+                    <div class="stat-ring text-danger mb-2" style="border-color:#ef4444; border-width:2px; box-shadow:none;">20</div>
+                    <span class="text-muted fw-bold font-monospace">SAAT/HAFTA</span>
+                </div>
+            </div>
+            <div class="col-md-7 border-start border-secondary ps-md-5">
+                <h4 class="fw-bold text-light"><i class="fa-solid fa-crosshairs text-primary me-2"></i> Adam-Saat Yonetimi (Man-Hour)</h4>
+                <p class="text-muted mt-3" style="line-height:1.6;">
+                    <strong>Metodoloji:</strong> Endustri standartlarina uygun olarak haftalik <span class="text-light">20 saatlik efor (Sprint)</span> planlamasi yapilmistir. <br><br>
+                    <strong>Dagilim:</strong> Her 20 saatlik dilim mikro duzeyde su sekilde planlanmistir: 
+                    <br/><i class="fa-solid fa-server text-info ms-2 me-1"></i> Backend (10 saat)
+                    <br/><i class="fa-solid fa-desktop text-info ms-2 me-1"></i> Frontend (7 saat) 
+                    <br/><i class="fa-solid fa-vial text-info ms-2 me-1"></i> Test/Optimizasyon (3 saat)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPRINT TIMELINE (Slayt 7, 8) -->
+    <div class="row fade-in-up" style="animation-delay: 0.4s;">
+        <div class="col-12"><h3 class="fw-bold font-monospace text-warning border-bottom border-secondary pb-3 mb-5"><i class="fa-solid fa-rocket me-2"></i> 200 SAAT | GELISTIRME SPRINTLERI</h3></div>
+        
+        <div class="col-md-10 mx-auto">
+            <div class="timeline-container">
+            
+                <!-- WEEK 1 -->
+                <div class="timeline-step completed">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 01: Mimari Kurulum <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[3 Saat]</strong> ASP.NET Core MVC iskeletinin olusturulmasi.</li>
+                            <li><strong class="text-light">[12 Saat]</strong> MS SQL Server kurulumu, EF Core ile Kullanicilar ve Gorevler tablolarinin baglanmasi.</li>
+                            <li><strong class="text-light">[5 Saat]</strong> Bootstrap 5 ile UI iskeletinin cikarilmasi.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 2 -->
+                <div class="timeline-step completed">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 02: Guvenlik ve OAuth 2.0 <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[6 Saat]</strong> Sifre Hash'leme ve standart giris sisteminin yazilmasi.</li>
+                            <li><strong class="text-light">[9 Saat]</strong> Google ile OAuth 2.0 sosyal giris entegrasyonu.</li>
+                            <li><strong class="text-light">[5 Saat]</strong> Google API baglanti testleri.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 3 -->
+                <div class="timeline-step completed">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 03: CRUD Islemleri ve Sayac <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[7 Saat]</strong> Gorev ekleme, silme, guncelleme islemlerinin Backend'de kodlanmasi.</li>
+                            <li><strong class="text-light">[10 Saat]</strong> Canli Ekran Suresi Sayaci'nin JS ile View katmanina eklenmesi.</li>
+                            <li><strong class="text-light">[3 Saat]</strong> Veritabani veri akisi testleri.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 4 -->
+                <div class="timeline-step completed">
+                    <div class="holo-card p-4" style="border-left: 2px solid #a855f7;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0" style="color:#a855f7 !important;">Hafta 04: Aura Logic ve Smart Sorting <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[12 Saat]</strong> "Aura Logic" renk algoritmasinin C# ile yazilmasi.</li>
+                            <li><strong class="text-light">[2 Saat]</strong> .sort() ve .filter() ile "Smart Sorting" sisteminin kodlanmasi.</li>
+                            <li><strong class="text-light">[6 Saat]</strong> Algoritmalarin arayuz ile senkronizasyonu.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 5 -->
+                <div class="timeline-step completed">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 05: AI Beyin Entegrasyonu <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[8 Saat]</strong> Yapay Zeka API anahtarlarinin Backend'e guvenli entegrasyonu.</li>
+                            <li><strong class="text-light">[8 Saat]</strong> Buyuk projeleri AI ile JSON formatinda alt gorevlere bolen motorun yazilmasi.</li>
+                            <li><strong class="text-light">[4 Saat]</strong> Donen verilerin SQL tablosuna otomatik kaydi.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 6 -->
+                <div class="timeline-step completed">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 06: Sesli Komut ve UX <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[7 Saat]</strong> Web Speech API mikrofon izinlerinin ayarlanmasi.</li>
+                            <li><strong class="text-light">[8 Saat]</strong> Sesten metne cevrilen verinin C# Backend'e aktarilmasi.</li>
+                            <li><strong class="text-light">[5 Saat]</strong> UX testleri ve hata yakalama (try-catch) bloklari.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 7 -->
+                <div class="timeline-step">
+                    <div class="holo-card p-4" style="border-left: 2px solid #10b981;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0" style="color:#10b981 !important;">Hafta 07: Wellness ve Zen Modu <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[10 Saat]</strong> Spotify API ile "Odaklanma Muzigi" panelinin eklenmesi.</li>
+                            <li><strong class="text-light">[5 Saat]</strong> "Uyku Kalkani" zaman dongulerinin (setInterval) kodlanmasi.</li>
+                            <li><strong class="text-light">[5 Saat]</strong> Zen Modu CSS/JS animasyonlari.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 8 -->
+                <div class="timeline-step">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 08: Arka Plan Bildirimleri <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[6 Saat]</strong> Notification API masaustu uyari entegrasyonu.</li>
+                            <li><strong class="text-light">[10 Saat]</strong> Service Worker kodlari ile kapali sekmede sayac takibi.</li>
+                            <li><strong class="text-light">[4 Saat]</strong> LocalStorage kaza kurtarma testleri.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 9 -->
+                <div class="timeline-step">
+                    <div class="holo-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-info mb-0">Hafta 09: Veri Analitigi ve Canvas API <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[6 Saat]</strong> "Performans Analitik Algoritmasi"nin yazilmasi (Zaman tasarrufu hesabi).</li>
+                            <li><strong class="text-light">[9 Saat]</strong> Canvas API ile sanal tuvale "Basari Karti" cizdirilmesi.</li>
+                            <li><strong class="text-light">[5 Saat]</strong> Gorselin .toDataURL() ile indirilebilir formata cevrilmesi.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WEEK 10 -->
+                <div class="timeline-step" style="margin-bottom:0;">
+                    <div class="holo-card p-4" style="border-left: 2px solid #fbbf24; background: rgba(251,191,36,0.05);">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold text-warning mb-0">Hafta 10: Final Release ve Canliya Alma <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.8rem;">20 Saat</span></h4>
+                        </div>
+                        <ul class="text-muted small mb-0" style="line-height:1.8;">
+                            <li><strong class="text-light">[10 Saat]</strong> End-to-End Bug-Fix testleri.</li>
+                            <li><strong class="text-light">[7 Saat]</strong> Mobil cihazlar icin responsive (uyumluluk) kontrolleri.</li>
+                            <li><strong class="text-light">[3 Saat]</strong> Projenin ve veritabaninin Hosting sunucusuna yuklenerek canliya alinmasi.</li>
+                        </ul>
+                        <hr class="border-secondary my-3">
+                        <div class="text-center text-warning fw-bold font-monospace"><i class="fa-solid fa-flag-checkered me-2"></i> GOREV TAMAMLANDI</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,161 @@
+@model IEnumerable<GoldBranchAI.Models.TodoTask>
+@inject GoldBranchAI.Services.LocalizationService L
+@{
+    ViewData["Title"] = L.Get("KanbanBoardTitle");
+}
+
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 20px;
+        overflow-x: auto;
+        padding-bottom: 20px;
+        min-height: 70vh;
+    }
+    .kanban-column {
+        flex: 1;
+        min-width: 300px;
+        background: rgba(13, 17, 23, 0.9);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: var(--gb-radius-lg);
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+    .kanban-header {
+        font-weight: 800;
+        font-family: 'JetBrains Mono', monospace;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid;
+    }
+    .kanban-item {
+        background: rgba(22, 27, 34, 0.9);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: var(--gb-radius-md);
+        padding: 15px;
+        margin-bottom: 10px;
+        cursor: grab;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kanban-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .kanban-item:active { cursor: grabbing; opacity: 0.8; }
+</style>
+
+<div class="mb-4 d-flex justify-content-between align-items-center fade-in-up">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-chess-board text-warning"></i> @L.Get("KanbanRadarTitle")</h2>
+        <p class="text-muted mb-0">@L.Get("KanbanRadarDesc")</p>
+    </div>
+    <a asp-controller="Task" asp-action="Index" class="btn btn-outline-secondary rounded-pill fw-bold">
+        <i class="fa-solid fa-table me-2"></i> @L.Get("ListViewBtn")
+    </a>
+</div>
+
+<div class="kanban-board fade-in-up" id="kanbanBoard">
+    <!-- Bekleyen / Yapılacaklar -->
+    <div class="kanban-column" id="col-todo" data-status="Bekliyor">
+        <div class="kanban-header text-info" style="border-color: rgba(56,189,248,0.3);">
+            @L.Get("KanbanTodo") <span class="badge bg-secondary ms-2">@Model.Count(t => !t.IsCompleted && t.Status != "Devam Ediyor")</span>
+        </div>
+        <div class="kanban-items" style="min-height: 100px;">
+            @foreach(var t in Model.Where(t => !t.IsCompleted && t.Status != "Devam Ediyor" && t.Status != "Onay Bekliyor"))
+            {
+                <div class="kanban-item" draggable="true">
+                    <div class="fw-bold text-light mb-1">@t.Title</div>
+                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                    <span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;">@L.Get("KanbanWaiting")</span>
+                    <a href="/Task/Details/@t.Id" class="stretched-link"></a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Devam Edenler -->
+    <div class="kanban-column" id="col-progress" data-status="Devam Ediyor">
+        <div class="kanban-header text-warning" style="border-color: rgba(251,191,36,0.3);">
+            @L.Get("KanbanInProgress") <span class="badge bg-secondary ms-2">@Model.Count(t => t.Status == "Devam Ediyor")</span>
+        </div>
+        <div class="kanban-items" style="min-height: 100px;">
+            @foreach(var t in Model.Where(t => t.Status == "Devam Ediyor"))
+            {
+                <div class="kanban-item border-warning border-opacity-25" draggable="true">
+                    <div class="fw-bold text-light mb-1">@t.Title</div>
+                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;"><i class="fa-solid fa-spinner fa-spin"></i> @L.Get("KanbanProcessing")</span>
+                    <a href="/Task/Details/@t.Id" class="stretched-link"></a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Onay Bekleyenler -->
+    <div class="kanban-column" id="col-review" data-status="Onay Bekliyor">
+        <div class="kanban-header" style="color: #c084fc; border-color: rgba(192,132,252,0.3);">
+            @L.Get("KanbanReview") <span class="badge bg-secondary ms-2">@Model.Count(t => t.Status == "Onay Bekliyor")</span>
+        </div>
+        <div class="kanban-items" style="min-height: 100px;">
+            @foreach(var t in Model.Where(t => t.Status == "Onay Bekliyor" && !t.IsCompleted))
+            {
+                <div class="kanban-item" draggable="true" style="border-left: 3px solid #c084fc;">
+                    <div class="fw-bold text-light mb-1">@t.Title</div>
+                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                    <span class="badge" style="background: rgba(192,132,252,0.2); color: #c084fc;">@L.Get("KanbanLeadWait")</span>
+                    <a href="/Task/Details/@t.Id" class="stretched-link"></a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Tamamlananlar -->
+    <div class="kanban-column" id="col-done" data-status="Tamamlandı">
+        <div class="kanban-header text-success" style="border-color: rgba(16,185,129,0.3);">
+            @L.Get("KanbanDone") <span class="badge bg-secondary ms-2">@Model.Count(t => t.IsCompleted)</span>
+        </div>
+        <div class="kanban-items" style="min-height: 100px;">
+            @foreach(var t in Model.Where(t => t.IsCompleted))
+            {
+                <div class="kanban-item" draggable="true" style="opacity: 0.6;">
+                    <div class="fw-bold text-success mb-1 text-decoration-line-through">@t.Title</div>
+                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                    <span class="badge bg-success bg-opacity-25 text-success"><i class="fa-solid fa-check-double"></i> @L.Get("KanbanFinished")</span>
+                    <a href="/Task/Details/@t.Id" class="stretched-link"></a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Basit Sürükle Bırak Animasyon Scripti (Front-End Simülasyonu)
+        const items = document.querySelectorAll('.kanban-item');
+        const columns = document.querySelectorAll('.kanban-column');
+
+        items.forEach(item => {
+            item.addEventListener('dragstart', () => {
+                item.classList.add('dragging');
+                item.style.opacity = '0.5';
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging');
+                item.style.opacity = '1';
+                // Not: AJAX entegrasyonu ile durum Backend'e yazılabilir.
+            });
+        });
+
+        columns.forEach(column => {
+            column.addEventListener('dragover', e => {
+                e.preventDefault();
+                const dragging = document.querySelector('.dragging');
+                if(dragging) {
+                    column.querySelector('.kanban-items').appendChild(dragging);
+                }
+            });
+        });
+    </script>
+}

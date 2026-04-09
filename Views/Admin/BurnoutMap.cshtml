@@ -1,0 +1,135 @@
+@inject GoldBranchAI.Services.LocalizationService L
+@{
+    ViewData["Title"] = L.Get("HeatMap");
+}
+
+<div class="row mb-4 align-items-center fade-in-up">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,rgba(251,113,133,0.15),rgba(251,113,133,0.05));border:1px solid rgba(251,113,133,0.2);">
+                <i class="fa-solid fa-fire-flame-curved text-danger" style="font-size:1.3rem;"></i>
+            </span>
+            <div>
+                <h2 class="text-light fw-bold mb-0">@L.Get("BurnoutRadar")</h2>
+                <p class="text-muted mb-0 small">@L.Get("BurnoutRadarDesc")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    @{ int burnIdx = 0; }
+    @foreach (Tuple<GoldBranchAI.Models.AppUser, int> item in ViewBag.BurnoutData)
+    {
+        var user = item.Item1;
+        var totalMinutes = item.Item2;
+
+        int percent = (int)Math.Round((double)totalMinutes / 2400 * 100);
+        if (percent > 100) percent = 100;
+
+        bool isCritical = percent > 80;
+        bool isWarning = percent > 50 && !isCritical;
+
+        string barColor = isCritical ? "background: linear-gradient(90deg, #ef4444, #f87171); box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);" : 
+                          (isWarning ? "background: linear-gradient(90deg, #f59e0b, #fbbf24); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);" : 
+                                      "background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);");
+                                      
+        string statusIcon = isCritical ? $"<i class='fa-solid fa-skull-crossbones text-danger fa-bounce'></i> {L.Get("BurnoutCritical")}" :
+                            (isWarning ? $"<i class='fa-solid fa-battery-half text-warning'></i> {L.Get("BurnoutTired")}" : $"<i class='fa-solid fa-battery-full text-success'></i> {L.Get("BurnoutSafe")}");
+
+        string statusBg = isCritical ? "rgba(239, 68, 68, 0.1)" : (isWarning ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.1)");
+        string statusBorder = isCritical ? "rgba(239, 68, 68, 0.3)" : (isWarning ? "rgba(245, 158, 11, 0.3)" : "rgba(16, 185, 129, 0.3)");
+        
+        string cardClass = isCritical ? "burnout-critical" : (isWarning ? "burnout-warning" : "burnout-safe");
+
+        <div class="col-12 col-xl-6 mb-4 fade-in-up" style="animation-delay: @(0.15 + burnIdx * 0.08)s;">
+            <div class="p-4 rounded-4 position-relative overflow-hidden @cardClass" 
+                 style="background: rgba(13,17,23,0.9); border: 1px solid var(--gb-border); transition: 0.3s; height: 100%;">
+                 
+                <!-- Dynamic background glow for critical -->
+                @if (isCritical)
+                {
+                    <div class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="background: radial-gradient(circle at center, rgba(239, 68, 68, 0.1) 0%, transparent 70%); animation: pulseBg 2s infinite;"></div>
+                }
+
+                <div class="d-flex justify-content-between align-items-start mb-4 position-relative z-1">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="position-relative">
+                            <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-user-tie text-light" style="font-size:1.2rem;"></i>
+                            </div>
+                            @if (isCritical)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="animation: pulse 1s infinite;"></span>
+                            }
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-bold text-light" style="font-size:1.1rem; letter-spacing:0.5px;">@user.FullName</span>
+                            <span class="text-muted small" style="font-family:'JetBrains Mono',monospace;">@user.Role</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="d-block fw-bold" style="font-family:'JetBrains Mono',monospace; font-size:1.3rem; color: var(--gb-text-primary);">@(totalMinutes / 60)<span class="text-muted" style="font-size:0.9rem;">h</span></span>
+                        <span class="text-muted small text-uppercase" style="font-size:0.65rem; letter-spacing:1px;">@L.Get("TotalScreenTime")</span>
+                    </div>
+                </div>
+
+                <div class="position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="px-3 py-1 rounded-pill fw-bold" style="background:@statusBg; border:1px solid @statusBorder; font-size:0.75rem; letter-spacing:0.5px; @(isCritical ? "color:#ef4444;" : (isWarning ? "color:#f59e0b;" : "color:#10b981;"))">
+                            @Html.Raw(statusIcon)
+                        </span>
+                        <span class="fw-bold" style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; @(isCritical ? "color:#ef4444;" : (isWarning ? "color:#f59e0b;" : "color:#10b981;"))">@percent%</span>
+                    </div>
+                    
+                    <div class="progress" style="height: 12px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); overflow:visible;">
+                        <div class="progress-bar rounded-pill" role="progressbar" 
+                             style="width: 0%; @Html.Raw(barColor) --burn-width: @percent%;
+                                    animation: fillBurnout 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; animation-delay: @(0.3 + burnIdx * 0.1)s;" 
+                             data-burn-width="@percent%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        burnIdx++;
+    }
+
+    @if (((List<Tuple<GoldBranchAI.Models.AppUser, int>>)ViewBag.BurnoutData).Count == 0)
+    {
+        <div class="col-12 mt-4">
+            <div class="text-center text-muted py-5 rounded-4" style="background: rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1);">
+                <i class="fa-solid fa-mug-hot fa-3x mb-3 opacity-75" style="color: var(--gb-accent-emerald); animation: float 3s ease-in-out infinite;"></i><br />
+                <span class="text-light fw-bold" style="letter-spacing:0.5px;">@L.Get("NoBurnoutData")</span>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    /* Burnout Specific Hover and Pulse Effects */
+    .burnout-critical { border-color: rgba(239, 68, 68, 0.3) !important; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1); }
+    .burnout-critical:hover { transform: translateY(-3px); border-color: rgba(239, 68, 68, 0.6) !important; box-shadow: 0 8px 30px rgba(239, 68, 68, 0.25); }
+    
+    .burnout-warning:hover { transform: translateY(-3px); border-color: rgba(245, 158, 11, 0.4) !important; box-shadow: 0 5px 20px rgba(245, 158, 11, 0.15); }
+    .burnout-safe:hover { transform: translateY(-3px); border-color: rgba(16, 185, 129, 0.3) !important; box-shadow: 0 5px 20px rgba(16, 185, 129, 0.1); }
+    
+    @@keyframes fillBurnout {
+        from { width: 0%; }
+        to { width: var(--burn-width); }
+    }
+    
+    @@keyframes pulseBg {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; border-color: rgba(239, 68, 68, 0.8) !important; }
+        100% { opacity: 0.5; }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            let target = bar.getAttribute('data-burn-width');
+            bar.style.setProperty('--burn-width', target);
+        });
+    });
+</script>

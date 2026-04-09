@@ -1,0 +1,331 @@
+@using GoldBranchAI.Services
+@{
+    ViewData["Title"] = "Abonelik Yönetimi";
+    var plans = ViewBag.Plans as IReadOnlyList<BillingService.Plan> ?? new List<BillingService.Plan>();
+    var state = ViewBag.State as BillingService.UserState;
+    var effectivePlan = ViewBag.EffectivePlan as BillingService.Plan;
+    var planBadge = ViewBag.PlanBadge as string ?? "FREE";
+    int trialDays = ViewBag.TrialDaysLeft ?? 0;
+}
+
+<div class="gb-page" style="max-width: 1100px; margin: 0 auto;">
+    <!-- HEADER -->
+    <div class="mb-5 fade-in-up">
+        <div class="system-title mb-2" style="letter-spacing: 4px;">SUBSCRIPTION MANAGEMENT</div>
+        <h2 class="gb-hero-title" style="font-size: clamp(1.8rem, 3vw, 2.8rem);">Abonelik & Ödeme</h2>
+        <p class="gb-hero-subtitle">Planını yönet, AI limitlerini takip et, ödemelerini gör.</p>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-3 fade-in-up" style="background: rgba(16,185,129,0.15); color: #34d399;">
+            <i class="fa-solid fa-check-circle me-2"></i>@TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["UpgradeRequired"] != null)
+    {
+        <div class="alert border-0 rounded-3 fade-in-up mb-4" style="background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,146,60,0.1)); border: 1px solid rgba(251,191,36,0.3) !important; color: var(--gb-gold-light);">
+            <div class="d-flex align-items-center gap-3">
+                <i class="fa-solid fa-lock fa-2x text-warning"></i>
+                <div>
+                    <strong class="d-block mb-1">🔒 Özellik Kilitli</strong>
+                    <span>@TempData["UpgradeRequired"]</span>
+                </div>
+                <a asp-controller="Home" asp-action="Pricing" class="btn btn-warning btn-sm rounded-pill fw-bold ms-auto px-3">
+                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Planları Gör
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (state != null && effectivePlan != null)
+    {
+        <!-- CURRENT PLAN CARD -->
+        <div class="gb-glass-card p-4 mb-4 fade-in-up gb-stagger-1" style="border-left: 4px solid @effectivePlan.Color !important;">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span style="font-size: 2.5rem;">@effectivePlan.Badge</span>
+                        <div>
+                            <h3 class="fw-bold mb-0" style="color: @effectivePlan.Color;">@effectivePlan.Name Plan</h3>
+                            <span class="badge rounded-pill px-3 py-1 fw-bold" style="background: @effectivePlan.Color; color: #000; font-size: 0.7rem;">@planBadge</span>
+                            @if (trialDays > 0)
+                            {
+                                <span class="badge bg-info rounded-pill ms-2 px-3 py-1 fw-bold" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-clock me-1"></i>@trialDays gün kaldı
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    
+                    @if (state.LastCardMasked != null)
+                    {
+                        <p class="text-muted small mb-0">
+                            <i class="fa-solid fa-credit-card me-1"></i>Son kart: @state.LastCardMasked
+                        </p>
+                    }
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="fw-bold" style="font-size: 2.5rem; color: @effectivePlan.Color;">
+                        $@effectivePlan.MonthlyPrice<span class="text-muted" style="font-size: 1rem;">/ay</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USAGE STATS -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4 fade-in-up gb-stagger-2">
+                <div class="gb-glass-card p-4 text-center h-100">
+                    <div class="small text-muted text-uppercase fw-bold mb-2">AI Kullanımı</div>
+                    <div class="d-flex justify-content-center align-items-baseline gap-1">
+                        <span class="fw-900" style="font-size: 2rem; color: var(--gb-accent-cyan);">@state.AiUsedInMonth</span>
+                        <span class="text-muted">/ @effectivePlan.AiMonthlyLimit</span>
+                    </div>
+                    <div class="progress mt-3" style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px;">
+                        @{
+                            var pct = effectivePlan.AiMonthlyLimit > 0 ? Math.Min(100, (int)((double)state.AiUsedInMonth / effectivePlan.AiMonthlyLimit * 100)) : 0;
+                            var barColor = pct > 80 ? "#ef4444" : (pct > 50 ? "#fbbf24" : "#34d399");
+                        }
+                        <div class="progress-bar" style="width: @pct%; background: @barColor; border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 fade-in-up gb-stagger-3">
+                <div class="gb-glass-card p-4 text-center h-100">
+                    <div class="small text-muted text-uppercase fw-bold mb-2">Dönem</div>
+                    <div class="fw-900" style="font-size: 2rem; color: var(--gb-gold);">@state.UsageMonth</div>
+                    <p class="text-muted small mt-2 mb-0">Aylık sayaçlar her ay sıfırlanır</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-in-up gb-stagger-4">
+                <div class="gb-glass-card p-4 text-center h-100">
+                    <div class="small text-muted text-uppercase fw-bold mb-2">Toplam İşlem</div>
+                    <div class="fw-900" style="font-size: 2rem; color: var(--gb-accent-emerald);">@(state.PaymentHistory?.Count ?? 0)</div>
+                    <p class="text-muted small mt-2 mb-0">Başarılı ödeme kaydı</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PLAN SELECTION + PAYMENT -->
+        <div class="row g-4">
+            <!-- PLANS -->
+            <div class="col-lg-7 fade-in-left gb-stagger-3">
+                <div class="gb-glass-card p-4 h-100">
+                    <h5 class="fw-bold mb-4"><i class="fa-solid fa-arrows-rotate text-warning me-2"></i>Plan Değiştir</h5>
+                    <div class="row g-3">
+                        @foreach (var plan in plans)
+                        {
+                            var isActive = state.PlanKey == plan.Key;
+                            <div class="col-md-4">
+                                <div class="gb-glass-card p-3 h-100 text-center @(isActive ? "" : "hover-shine-box")" 
+                                     style="cursor: pointer; @(isActive ? $"border: 2px solid {plan.Color} !important; box-shadow: 0 0 20px rgba(251,191,36,0.1) !important;" : "")"
+                                     onclick="selectPlan('@plan.Key')">
+                                    <span style="font-size: 1.8rem;">@plan.Badge</span>
+                                    <h6 class="fw-bold mt-2 mb-1" style="color: @plan.Color;">@plan.Name</h6>
+                                    <div class="fw-bold mb-2" style="font-size: 1.3rem;">$@plan.MonthlyPrice<span class="text-muted small">/ay</span></div>
+                                    @if (isActive)
+                                    {
+                                        <span class="badge bg-success rounded-pill px-3">Aktif</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill px-3" style="background: rgba(255,255,255,0.1);">Seç</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAYMENT FORM -->
+            <div class="col-lg-5 fade-in-right gb-stagger-4">
+                <div class="gb-glass-card p-4 h-100" id="paymentSection">
+                    <h5 class="fw-bold mb-4"><i class="fa-solid fa-lock text-info me-2"></i>Ödeme Bilgileri</h5>
+                    <div class="mb-3 p-3 rounded-3" style="background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2);">
+                        <small class="text-warning"><i class="fa-solid fa-shield-halved me-1"></i> <strong>Demo Modu:</strong> Gerçek ödeme alınmaz. Test kartı kullanabilirsiniz.</small>
+                    </div>
+
+                    <form id="paymentForm" onsubmit="return false;">
+                        <input type="hidden" id="selectedPlan" value="">
+                        
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold">Seçilen Plan</label>
+                            <div id="selectedPlanDisplay" class="form-control" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary);">
+                                Plan seçin...
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold">Kart Numarası</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-secondary);">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                </span>
+                                <input type="text" id="cardNumber" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19"
+                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary);">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold">Kart Sahibi</label>
+                            <input type="text" id="cardHolder" class="form-control" placeholder="Ad Soyad"
+                                   style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary);">
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label small text-muted fw-bold">Son Kullanma</label>
+                                <input type="text" id="cardExpiry" class="form-control" placeholder="MM/YY" maxlength="5"
+                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary);">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted fw-bold">CVV</label>
+                                <input type="text" id="cardCvv" class="form-control" placeholder="123" maxlength="4"
+                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary);">
+                            </div>
+                        </div>
+
+                        <button type="button" id="payBtn" class="btn btn-warning w-100 py-3 rounded-pill fw-bold shadow-lg" onclick="processPayment()" disabled>
+                            <i class="fa-solid fa-bolt me-2"></i>Ödeme Yap & Plan Aktifleştir
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAYMENT HISTORY -->
+        @if (state.PaymentHistory?.Any() == true)
+        {
+            <div class="mt-4 fade-in-up gb-stagger-5">
+                <div class="gb-glass-card p-4">
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-receipt text-info me-2"></i>Ödeme Geçmişi</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0" style="background: transparent;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th class="text-muted small">İşlem No</th>
+                                    <th class="text-muted small">Plan</th>
+                                    <th class="text-muted small">Tutar</th>
+                                    <th class="text-muted small">Kart</th>
+                                    <th class="text-muted small">Tarih</th>
+                                    <th class="text-muted small">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in state.PaymentHistory.OrderByDescending(x => x.PaidAtUtc))
+                                {
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                        <td><code class="text-info">@p.Id</code></td>
+                                        <td class="fw-bold">@p.PlanKey.ToUpper()</td>
+                                        <td class="text-warning fw-bold">$@p.Amount</td>
+                                        <td class="text-muted">@p.CardMasked</td>
+                                        <td class="text-muted small">@p.PaidAtUtc.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td><span class="badge bg-success rounded-pill">Başarılı</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function selectPlan(key) {
+            document.getElementById('selectedPlan').value = key;
+            const planNames = { free: '🆓 Free — $0/ay', pro: '⭐ Pro — $12/ay', business: '🏢 Business — $39/ay' };
+            document.getElementById('selectedPlanDisplay').textContent = planNames[key] || key;
+            document.getElementById('payBtn').disabled = (key === 'free');
+            
+            if (key === 'free') {
+                // Free plan: just redirect
+                if (confirm('Free plana geçmek istediğinize emin misiniz? AI limitlileriniz düşecek.')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/Billing/ChangePlan';
+                    const input = document.createElement('input');
+                    input.type = 'hidden'; input.name = 'planKey'; input.value = 'free';
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            }
+        }
+
+        // Card number formatting
+        document.getElementById('cardNumber')?.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '').substring(0, 16);
+            e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+        });
+
+        document.getElementById('cardExpiry')?.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '').substring(0, 4);
+            if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2);
+            e.target.value = v;
+        });
+
+        async function processPayment() {
+            const btn = document.getElementById('payBtn');
+            const planKey = document.getElementById('selectedPlan').value;
+            if (!planKey || planKey === 'free') return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>İşleniyor...';
+
+            const payload = {
+                cardNumber: document.getElementById('cardNumber').value,
+                cardHolder: document.getElementById('cardHolder').value,
+                expiry: document.getElementById('cardExpiry').value,
+                cvv: document.getElementById('cardCvv').value,
+                planKey: planKey
+            };
+
+            try {
+                const res = await fetch('/Billing/ProcessPayment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (typeof Swal !== 'undefined') {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '🎉 Ödeme Başarılı!',
+                            html: `<p>${data.message}</p><small class="text-muted">İşlem No: <code>${data.transactionId}</code></small>`,
+                            background: '#0d1117',
+                            color: '#f0f6fc',
+                            confirmButtonColor: '#fbbf24',
+                            confirmButtonText: 'Harika!'
+                        });
+                    }
+                    location.reload();
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Ödeme Başarısız',
+                            text: data.message,
+                            background: '#0d1117',
+                            color: '#f0f6fc',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-bolt me-2"></i>Ödeme Yap & Plan Aktifleştir';
+                }
+            } catch (err) {
+                alert('Bağlantı hatası: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bolt me-2"></i>Ödeme Yap & Plan Aktifleştir';
+            }
+        }
+    </script>
+}

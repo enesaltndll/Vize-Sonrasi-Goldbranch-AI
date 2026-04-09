@@ -1,0 +1,219 @@
+@model IEnumerable<GoldBranchAI.Models.SystemLog>
+@{
+    ViewData["Title"] = "Sistem Terminali";
+}
+
+<style>
+    .terminal-box {
+        background: linear-gradient(180deg, #0a0a0a, #050505);
+        border: 1px solid rgba(34, 211, 238, 0.12);
+        border-radius: 20px;
+        font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+        height: 65vh;
+        overflow-y: auto;
+        padding: 50px 24px 24px;
+        box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(0, 0, 0, 0.8);
+        position: relative;
+    }
+
+    /* macOS-style window controls */
+    .terminal-box::before {
+        content: '';
+        position: absolute;
+        top: 16px; left: 20px;
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        background: #ef4444;
+        box-shadow: 20px 0 0 #fbbf24, 40px 0 0 #22c55e;
+    }
+
+    .terminal-box::after {
+        content: 'goldbranch-ai ~ system terminal';
+        position: absolute;
+        top: 14px; left: 0; right: 0;
+        text-align: center;
+        font-size: 0.7rem;
+        color: #484f58;
+        letter-spacing: 1px;
+    }
+
+    .log-line {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        padding: 8px 0;
+        transition: all 0.2s ease;
+        border-radius: 4px;
+    }
+
+    .log-line:hover {
+        background: rgba(34, 211, 238, 0.04);
+        padding-left: 12px;
+    }
+
+    .log-time {
+        color: #484f58;
+        margin-right: 12px;
+        font-size: 0.8rem;
+    }
+
+    .log-type {
+        color: #22d3ee;
+        font-weight: 700;
+        width: 110px;
+        display: inline-block;
+        text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+        font-size: 0.85rem;
+    }
+
+    .log-msg {
+        color: #34d399;
+        text-shadow: 0 0 8px rgba(52, 211, 153, 0.15);
+        font-size: 0.85rem;
+    }
+
+    .terminal-cursor {
+        display: inline-block;
+        width: 8px;
+        height: 16px;
+        background: #22d3ee;
+        animation: blink 1s step-end infinite;
+        vertical-align: middle;
+        margin-left: 4px;
+        border-radius: 1px;
+    }
+
+    @@keyframes blink {
+        50% { opacity: 0; }
+    }
+
+    /* Radar CSS */
+    .radar-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* 1:1 Aspect Ratio */
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%),
+                    repeating-radial-gradient(transparent 0%, transparent 10%, rgba(16, 185, 129, 0.15) 10%, rgba(16, 185, 129, 0.15) 11%);
+        border: 2px solid rgba(16, 185, 129, 0.4);
+        box-shadow: 0 0 40px rgba(16, 185, 129, 0.2), inset 0 0 40px rgba(16, 185, 129, 0.2);
+        overflow: hidden;
+    }
+
+    .radar-container::after {
+        content: '';
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 200%; height: 200%;
+        background: conic-gradient(transparent 270deg, rgba(16, 185, 129, 0.8) 360deg);
+        transform-origin: 0 0;
+        animation: radar-sweep 4s linear infinite;
+        pointer-events: none;
+    }
+
+    /* Crosshairs */
+    .radar-crosshair-v { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: rgba(16, 185, 129, 0.4); }
+    .radar-crosshair-h { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(16, 185, 129, 0.4); }
+
+    @@keyframes radar-sweep {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .radar-blip {
+        position: absolute;
+        width: 8px; height: 8px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 15px 4px #10b981;
+        opacity: 0;
+        animation: blip-fade 4s ease-out forwards;
+    }
+
+    @@keyframes blip-fade {
+        0% { opacity: 1; transform: scale(1.5); }
+        10% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.5); }
+    }
+</style>
+
+<div class="row mb-4 align-items-center fade-in-up">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,rgba(52,211,153,0.15),rgba(52,211,153,0.05));border:1px solid rgba(52,211,153,0.2);">
+                <i class="fa-solid fa-satellite-dish text-success" style="font-size:1.4rem; animation: pulse 2s infinite;"></i>
+            </span>
+            <div>
+                <h3 class="text-success fw-bold mb-0" style="font-family:'JetBrains Mono',monospace;">
+                    SISTEM RADAR TAKIBI
+                </h3>
+                <p class="text-muted mb-0 small">Sistem olaylari, girisler ve ciktilar canli tespit ediliyor.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-end">
+        <span class="badge px-3 py-2 shadow-sm" style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.4);color:#34d399;font-family:'JetBrains Mono',monospace;font-size:0.85rem;letter-spacing:1px;">
+            <i class="fa-solid fa-crosshairs me-2" style="animation:blink 1s step-end infinite;"></i> GUVENLIK AKTIF
+        </span>
+    </div>
+</div>
+
+<div class="row fade-in-up" style="animation-delay: 0.1s; height: 65vh;">
+    <!-- RADAR SCREEN -->
+    <div class="col-lg-5 mb-4 mb-lg-0 h-100 d-flex flex-column align-items-center justify-content-center bg-dark shadow-lg" style="border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <div style="width: 80%; max-width: 400px; position: relative;">
+            <div class="radar-container" id="radarScreen">
+                <div class="radar-crosshair-v"></div>
+                <div class="radar-crosshair-h"></div>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <h5 class="text-success fw-bold mb-0 font-monospace">GOLDBRANCH_AI_CORE</h5>
+            <small class="text-muted font-monospace">YORUNGESEL TARAMA: %100</small>
+        </div>
+    </div>
+
+    <!-- TERMINAL SCREEN -->
+    <div class="col-lg-7 h-100">
+        <div class="terminal-box h-100 w-100">
+            @foreach (var log in Model)
+            {
+                <div class="log-line">
+                    <span class="log-time">[@log.CreatedAt.ToString("HH:mm:ss")]</span>
+                    <span class="log-type">[@log.ActionType]</span>
+                    <span class="log-msg">@log.Message</span>
+                </div>
+            }
+            <div class="log-line mt-3 border-0">
+                <span class="log-msg" style="color: #f0f6fc;">
+                    <span style="color:#22d3ee;">$</span> Sistem izleme aktif...
+                    <span class="terminal-cursor"></span>
+                    <span class="spinner-grow spinner-grow-sm text-success ms-2" role="status" style="width:8px;height:8px;"></span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Simulate random radar blips for aesthetic wow effect
+        document.addEventListener("DOMContentLoaded", () => {
+            const radar = document.getElementById('radarScreen');
+            if(!radar) return;
+
+            setInterval(() => {
+                const blip = document.createElement('div');
+                blip.className = 'radar-blip';
+                
+                // Random position within circle
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 45; // up to 45% to keep within border
+                
+                blip.style.left = `calc(50% + ${Math.cos(angle) * radius}% - 4px)`;
+                blip.style.top = `calc(50% + ${Math.sin(angle) * radius}% - 4px)`;
+                
+                radar.appendChild(blip);
+                setTimeout(() => blip.remove(), 4000); // Remove after animation ends
+            }, 1200);
+        });
+    </script>
+}

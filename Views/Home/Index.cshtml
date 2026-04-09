@@ -1,0 +1,114 @@
+@using GoldBranchAI.Services
+@{
+    ViewData["Title"] = "AI Destekli Proje Yönetimi";
+    var plans = ViewBag.Plans as IReadOnlyList<BillingService.Plan> ?? new List<BillingService.Plan>();
+}
+
+<!-- HERO SECTION -->
+<div class="text-center py-5 fade-in-up" style="padding-top: 5rem !important;">
+    <div class="mb-4">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:90px;height:90px;border-radius:28px;background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.3);animation: float 3s ease-in-out infinite;">
+            <i class="fa-solid fa-leaf text-warning" style="font-size:2.5rem;filter:drop-shadow(0 0 15px rgba(251,191,36,0.6));"></i>
+        </span>
+    </div>
+
+    <div class="system-title mb-3" style="letter-spacing: 6px;">NEXT-GEN PROJECT MANAGEMENT</div>
+
+    <h1 style="font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,#fff,#fbbf24,#fcd34d);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite;line-height:1.1;margin-bottom:1rem;">
+        GoldBranch AI
+    </h1>
+
+    <p class="mx-auto mb-2" style="max-width:620px;font-size:1.3rem;color:var(--gb-text-secondary);line-height:1.6;">
+        Yapay zeka destekli görev yönetimi, ekip takibi ve <span class="text-warning fw-bold">sağlık koruma</span> sistemi.
+    </p>
+    <p class="mx-auto mb-4" style="max-width:500px;font-size:1rem;color:var(--gb-text-muted);">
+        Ekibinizin verimliliğini artırın, tükenmişliği önleyin, projelerinizi zamanında teslim edin.
+    </p>
+
+    <div class="d-flex justify-content-center gap-3 flex-wrap fade-in-up" style="animation-delay:0.2s;">
+        <a asp-controller="Auth" asp-action="Register" class="btn btn-warning btn-lg fw-bold px-5 py-3 shadow-lg rounded-pill" style="font-size:1.1rem;">
+            <i class="fa-solid fa-rocket me-2"></i>Ücretsiz Dene
+        </a>
+        <a asp-controller="Home" asp-action="Pricing" class="btn btn-outline-light btn-lg fw-bold px-5 py-3 rounded-pill">
+            <i class="fa-solid fa-tags me-2"></i>Fiyatları Gör
+        </a>
+    </div>
+
+    <p class="text-muted small mt-3"><i class="fa-solid fa-shield-check me-1"></i>Kredi kartı gerekmez · 14 gün ücretsiz Pro deneme</p>
+</div>
+
+<!-- FEATURES GRID -->
+<div class="row g-4 mb-5 mt-5">
+    @{
+        var features = new (string Icon, string Color, string Title, string Desc)[]
+        {
+            ("fa-brain", "#a78bfa", "Yapay Zeka Asistanı", "Proje açıklamasını analiz eder, alt görevlere böler, sesli komut alır."),
+            ("fa-chart-pie", "#38bdf8", "Akıllı Dashboard", "Anlık KPI'lar, görev durumu grafikleri ve rol bazlı kontrol panelleri."),
+            ("fa-heart-pulse", "#34d399", "Sağlık Koruma", "20-20-20 göz kuralı, postür hatırlatması ve zorunlu mola sistemi."),
+            ("fa-comments", "#fbbf24", "Gerçek Zamanlı Chat", "SignalR ile anlık mesajlaşma, grup sohbetleri ve AI sohbet özeti."),
+            ("fa-gamepad", "#fb7185", "Oyunlaştırma", "XP kazanma, rozet sistemi, performans ligi ve başarı kartları."),
+            ("fa-shield-halved", "#fb923c", "Güvenlik & Loglama", "Sistem logları, aktivite takibi ve admin kontrol paneli.")
+        };
+    }
+    @for (int i = 0; i < features.Length; i++)
+    {
+        var f = features[i];
+        <div class="col-md-4 fade-in-up" style="animation-delay: @(0.1 * (i + 1))s;">
+            <div class="gb-glass-card p-4 h-100 hover-shine-box">
+                <div class="mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-3" style="width:56px;height:56px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+                        <i class="fa-solid @f.Icon" style="font-size:1.5rem;color:@f.Color;"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold mb-2" style="color:@f.Color;">@f.Title</h5>
+                <p class="text-muted small mb-0">@f.Desc</p>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- PRICING PREVIEW -->
+<div class="text-center mb-4 mt-5 fade-in-up">
+    <div class="system-title mb-2" style="letter-spacing: 4px;">PLANS</div>
+    <h2 style="font-size:2rem;font-weight:800;color:var(--gb-text-primary);">Her Ekip İçin Uygun Plan</h2>
+</div>
+
+<div class="row g-4 justify-content-center mb-5">
+    @foreach (var plan in plans)
+    {
+        var isPro = plan.Key == "pro";
+        <div class="col-lg-4 col-md-6 fade-in-up">
+            <div class="gb-glass-card p-4 h-100 text-center @(isPro ? "" : "")" style="@(isPro ? "border: 2px solid rgba(251,191,36,0.35) !important;" : "")">
+                @if (isPro)
+                {
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1 mb-3 fw-bold" style="font-size: 0.7rem;">EN POPÜLER</span>
+                }
+                <div style="font-size: 2rem;">@plan.Badge</div>
+                <h4 class="fw-bold mt-2" style="color: @plan.Color;">@plan.Name</h4>
+                <div class="fw-900 mb-3" style="font-size: 2.5rem;">
+                    $@plan.MonthlyPrice<span class="text-muted" style="font-size: 1rem;">/ay</span>
+                </div>
+                <ul class="list-unstyled text-start mb-4">
+                    @foreach (var h in plan.Highlights.Take(4))
+                    {
+                        <li class="mb-2 small"><i class="fa-solid fa-check me-2" style="color: @plan.Color;"></i>@h</li>
+                    }
+                </ul>
+                <a asp-controller="Home" asp-action="Pricing" class="btn @(isPro ? "btn-warning" : "btn-outline-light") w-100 rounded-pill py-2 fw-bold">
+                    @(plan.MonthlyPrice == 0 ? "Ücretsiz Başla" : "Detayları Gör")
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- FINAL CTA -->
+<div class="text-center py-5 fade-in-up">
+    <div class="gb-glass-card p-5 hover-shine-box" style="border: 1px solid rgba(251,191,36,0.2) !important;">
+        <h2 class="fw-bold mb-3">Ekibinizi Güçlendirmeye Hazır mısınız?</h2>
+        <p class="text-muted mb-4">14 gün ücretsiz deneyin. Kredi kartı gerekmez.</p>
+        <a asp-controller="Auth" asp-action="Register" class="btn btn-warning btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg">
+            <i class="fa-solid fa-rocket me-2"></i>Hemen Başla — Ücretsiz
+        </a>
+    </div>
+</div>

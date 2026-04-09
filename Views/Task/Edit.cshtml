@@ -1,0 +1,209 @@
+@model GoldBranchAI.Models.TodoTask
+
+@{
+    ViewData["Title"] = L.Get("EditTaskTitle");
+}
+
+<div class="gb-page fade-in-up" style="max-width: 980px; margin: 0 auto;">
+    <div class="gb-page-header">
+        <div>
+            <h2 class="gb-title" style="font-size: 1.75rem;">
+                <i class="fa-solid fa-pen-to-square text-info me-2"></i> @L.Get("EditTaskTitle")
+            </h2>
+            <p class="gb-subtitle mb-0">@L.Get("EditTaskDesc")</p>
+        </div>
+        <div class="gb-actions">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="fa-solid fa-arrow-left me-2"></i> @L.Get("BackToRadar")
+            </a>
+        </div>
+    </div>
+
+    <div class="gb-section">
+        <div class="gb-section-body">
+            <form asp-action="Edit" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="Status" />
+                <input type="hidden" asp-for="AttachedFilePath" />
+
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="AppUserId" class="form-label text-light small fw-bold text-uppercase">
+                            <i class="fa-solid fa-user-astronaut text-info"></i> @L.Get("AssignDev")
+                        </label>
+                        <select asp-for="AppUserId" class="form-select bg-dark text-light shadow-sm" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;" required>
+                            <option value="">-- @L.Get("SelectDevList") --</option>
+                            @if (ViewBag.Developers != null)
+                            {
+                                foreach (var dev in ViewBag.Developers)
+                                {
+                                    <option value="@dev.Id">@dev.FullName (@dev.Email)</option>
+                                }
+                            }
+                        </select>
+                        <div class="form-text text-muted small mt-2">@L.Get("EditAssigneeNotified")</div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="Title" class="form-label text-light small fw-bold text-uppercase">
+                            <i class="fa-solid fa-heading text-warning"></i> @L.Get("TaskTitleField")
+                        </label>
+                        <input asp-for="Title" class="form-control bg-dark text-light shadow-sm" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;" required />
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label text-light small fw-bold text-uppercase">
+                            <i class="fa-solid fa-align-left text-success"></i> @L.Get("TaskDetailsField")
+                        </label>
+                        <textarea asp-for="Description" class="form-control bg-dark text-light shadow-sm" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;" rows="5"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label text-light small fw-bold text-uppercase">
+                            <i class="fa-solid fa-paperclip text-secondary"></i> @L.Get("TaskFile")
+                        </label>
+                        
+                        @if (!string.IsNullOrEmpty(Model.AttachedFilePath))
+                        {
+                            <div class="alert bg-dark border border-info mb-3 d-flex align-items-center justify-content-between p-3" style="border-radius:12px;">
+                                <div>
+                                    <i class="fa-solid fa-file-circle-check text-info me-2 fs-5"></i>
+                                    <span class="text-light small">@L.Get("ExistingFileOk")</span>
+                                </div>
+                                <a href="@Model.AttachedFilePath" target="_blank" class="btn btn-sm btn-outline-info rounded-pill">@L.Get("DownloadView")</a>
+                            </div>
+                        }
+
+                        <div id="dropZone" class="border rounded p-4 text-center cursor-pointer" style="border: 2px dashed rgba(255,255,255,0.20) !important; background: rgba(0,0,0,0.18); border-radius: 14px !important; transition: all 0.25s ease;">
+                            <i class="fa-solid fa-cloud-arrow-up fa-3x text-info mb-3"></i>
+                            <h6 class="text-light fw-bold">@L.Get("DragDropFileNew")</h6>
+                            <p class="text-muted small mb-0">@L.Get("DragDropFileKeep")</p>
+                            <input type="file" id="uploadedFile" name="uploadedFile" class="d-none" />
+                        </div>
+                        <div id="filePreviewContainer" class="mt-3 d-none">
+                            <div class="card bg-dark border border-secondary" style="border-radius: 12px;">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <div id="previewIcon" class="me-3 fs-1"></div>
+                                    <div class="flex-grow-1">
+                                        <h6 id="previewFileName" class="text-light fw-bold mb-1">dosya.jpg</h6>
+                                        <small id="previewFileSize" class="text-muted">1.2 MB</small>
+                                    </div>
+                                    <button type="button" id="removeFileBtn" class="btn btn-sm btn-outline-danger rounded-circle"><i class="fa-solid fa-times"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                            <label asp-for="DueDate" class="form-label text-light small fw-bold text-uppercase">
+                                <i class="fa-regular fa-calendar-check text-danger"></i> @L.Get("Deadline")
+                            </label>
+                            <input asp-for="DueDate" type="datetime-local" class="form-control bg-dark text-light shadow-sm" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;" required />
+                    </div>
+                    <div class="col-12 col-lg-6">
+                            <label asp-for="EstimatedTimeHours" class="form-label text-light small fw-bold text-uppercase">
+                                <i class="fa-solid fa-hourglass-start text-info"></i> @L.Get("EstTime")
+                            </label>
+                            <input asp-for="EstimatedTimeHours" type="number" class="form-control bg-dark text-light shadow-sm" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;" required />
+                    </div>
+
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap gap-2 justify-content-end pt-2">
+                            <button type="submit" class="btn btn-info fw-bold rounded-pill px-4 py-2 shadow text-dark">
+                                <i class="fa-solid fa-save me-2"></i> @L.Get("SaveChanges")
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                                <i class="fa-solid fa-xmark me-2"></i> @L.Get("CancelOp")
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const dropZone = document.getElementById("dropZone");
+            const fileInput = document.getElementById("uploadedFile");
+            const previewContainer = document.getElementById("filePreviewContainer");
+            const previewIcon = document.getElementById("previewIcon");
+            const previewFileName = document.getElementById("previewFileName");
+            const previewFileSize = document.getElementById("previewFileSize");
+            const removeFileBtn = document.getElementById("removeFileBtn");
+
+            dropZone.addEventListener("click", () => fileInput.click());
+
+            dropZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = "var(--gb-accent-cyan)";
+                dropZone.style.background = "rgba(34, 211, 238, 0.05)";
+            });
+
+            dropZone.addEventListener("dragleave", () => {
+                dropZone.style.borderColor = "rgba(255,255,255,0.2)";
+                dropZone.style.background = "rgba(0,0,0,0.2)";
+            });
+
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = "rgba(255,255,255,0.2)";
+                dropZone.style.background = "rgba(0,0,0,0.2)";
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) handleFileSelection(e.target.files[0]);
+            });
+
+            removeFileBtn.addEventListener("click", () => {
+                fileInput.value = "";
+                previewContainer.classList.add("d-none");
+                dropZone.classList.remove("d-none");
+            });
+
+            function handleFileSelection(file) {
+                if (file.size > 10 * 1024 * 1024) {
+                    alert("@L.Get("FileSizeError")");
+                    fileInput.value = ""; return;
+                }
+
+                previewFileName.textContent = file.name;
+                previewFileSize.textContent = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewIcon.textContent = "";
+                        const img = document.createElement("img");
+                        img.src = e.target.result;
+                        img.style.width = "50px";
+                        img.style.height = "50px";
+                        img.style.objectFit = "cover";
+                        img.style.borderRadius = "8px";
+                        previewIcon.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type === "application/pdf") {
+                    previewIcon.textContent = "";
+                    const icon = document.createElement("i");
+                    icon.className = "fa-solid fa-file-pdf text-danger";
+                    previewIcon.appendChild(icon);
+                } else {
+                    previewIcon.textContent = "";
+                    const icon = document.createElement("i");
+                    icon.className = "fa-solid fa-file-lines text-info";
+                    previewIcon.appendChild(icon);
+                }
+
+                dropZone.classList.add("d-none");
+                previewContainer.classList.remove("d-none");
+            }
+        });
+    </script>
+}

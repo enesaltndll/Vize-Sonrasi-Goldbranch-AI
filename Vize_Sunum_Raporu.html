@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldBranch AI - Vize Sunum Raporu</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: rgba(22, 27, 34, 0.7);
+            --gold: #fbbf24;
+            --cyan: #22d3ee;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Particle Canvas */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header Frame */
+        .university-header {
+            text-align: center;
+            padding: 40px;
+            background: var(--card-bg);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(251, 191, 36, 0.05);
+            backdrop-filter: blur(10px);
+            margin-bottom: 50px;
+            animation: slideDown 1s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .university-header h2 {
+            color: var(--gold);
+            font-weight: 800;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .university-header h4 {
+            color: var(--text-main);
+            font-weight: 400;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            text-align: left;
+        }
+
+        .info-card {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--cyan);
+        }
+
+        .info-card label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .info-card strong {
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        /* Section Titles */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.8rem;
+            color: var(--cyan);
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+            padding-bottom: 15px;
+        }
+
+        /* Chart Section */
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 50px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .chart-box {
+            flex: 1;
+            min-width: 300px;
+            height: 350px;
+        }
+
+        .chart-text {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .chart-text h3 {
+            color: var(--gold);
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .chart-text p {
+            line-height: 1.7;
+            color: var(--text-muted);
+        }
+
+        .stat-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(34, 211, 238, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 30px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        /* Gallery Section */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .gallery-item {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5), 0 0 20px rgba(251, 191, 36, 0.2);
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .gallery-img-wrapper {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .gallery-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-item:hover .gallery-img-wrapper img {
+            transform: scale(1.1);
+        }
+
+        .gallery-content {
+            padding: 20px;
+        }
+
+        .gallery-content h4 {
+            margin: 0 0 10px 0;
+            color: #fff;
+        }
+
+        .gallery-content p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Lightbox (Modal) */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .lightbox.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(34, 211, 238, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .lightbox-close:hover {
+            color: var(--gold);
+        }
+
+        .lightbox-caption {
+            margin-top: 20px;
+            color: var(--cyan);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        /* Abstract Section */
+        .abstract-box {
+            background: linear-gradient(135deg, rgba(22, 27, 34, 0.8), rgba(0,0,0,0.9));
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .abstract-box::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
+            animation: pulseBg 10s infinite alternate linear;
+        }
+
+        @keyframes pulseBg {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.5); }
+        }
+
+        .abstract-box p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .abstract-box .highlight {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="container">
+        
+        <!-- HEADER -->
+        <header class="university-header">
+            <h2 style="font-size: 1.5rem;"><i class="fa-solid fa-building-columns me-2"></i>SİNOP ÜNİVERSİTESİ</h2>
+            <h4>AYANCIK MESLEK YÜKSEKOKULU</h4>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <label>Proje Konusu</label>
+                    <strong>GoldBranch AI - Akıllı Yönetim Sistemi</strong>
+                </div>
+                <div class="info-card" style="border-left-color: var(--gold);">
+                    <label>Öğretim Görevlisi</label>
+                    <strong>Öğr. Gör. Ekrem Saydam</strong>
+                </div>
+                <div class="info-card" style="border-left-color: #c084fc;">
+                    <label>Öğrenci</label>
+                    <strong>Enes Altındal (247017024)</strong>
+                </div>
+            </div>
+        </header>
+
+        <!-- ABSTRACT -->
+        <section class="abstract-box">
+            <h3 style="color: #fff; margin-top: 0; margin-bottom: 20px; position:relative; z-index:1;">
+                <i class="fa-solid fa-leaf text-success me-2"></i> Proje Özeti & Vizyon
+            </h3>
+            <p>
+                GoldBranch AI, basit bir CRUD otomasyonunun ötesine geçerek, yazılım süreçlerini <span class="highlight">Google Gemini AI</span> desteği ile otonomlaştıran bir mimaridir. Proje planındaki standart isterler yerine getirilmiş; üzerine <span class="highlight">WhatsApp tarzı entegre haberleşme</span>, <span class="highlight">5 Temalı Premium UI</span>, <span class="highlight">Admin Liderlik Tablosu</span> ve <span class="highlight">Gerçek Zamanlı Mesai Radarı</span> gibi devrimsel bonuslar eklenerek kurumsal bir SaaS ürünü seviyesine çıkartılmıştır.
+            </p>
+        </section>
+
+        <!-- CHART SECTION -->
+        <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> Efor Parabolü (Planlanan vs Gerçekleşen)</h2>
+        <div class="chart-container">
+            <div class="chart-text">
+                <h3>Beklenenden Çok Daha Hızlı</h3>
+                <p>Proje başlangıcında haftalık 20 saatten <strong>toplam 100 Adam-Saat</strong> planlanan Efor, modern mimari yaklaşımları (Entity Framework Core) ve Yapay Zeka (Gemini 2.0 Flash) yardımı ile kod üretiminin hızlandırılması sayesinde <strong>sadece 62 Saatte</strong> tamamlanmıştır.</p>
+                <p>Aşağıdaki grafik, vize teslimine kadarki 5 haftalık süreçte gerçekleşen bu 62 saatin dağılımını göstermektedir.</p>
+                <div class="stat-badge"><i class="fa-solid fa-stopwatch"></i> Tasarruf Edilen Zaman: %38 (38 Saat)</div>
+            </div>
+            <div class="chart-box">
+                <canvas id="eforChart"></canvas>
+            </div>
+        </div>
+
+        <!-- GALLERY SECTION -->
+        <h2 class="section-title"><i class="fa-solid fa-camera-retro"></i> Sistem Ekran Görüntüleri Galerisi</h2>
+        <div class="gallery-grid">
+            
+            <div class="gallery-item" onclick="openLightbox('docs/images/login.jpg', 'Modern Login & Auth Mimari')">
+                <div class="gallery-img-wrapper">
+                    <img src="docs/images/login.jpg" alt="Login">
+                </div>
+                <div class="gallery-content">
+                    <h4>Modern Login</h4>
+                    <p>Google OAuth destekli Glassmorphism authentication ekranı.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" onclick="openLightbox('docs/images/dashboard.jpg', 'Geliştirici Çalışma Masası (Aura Kanban)')">
+                <div class="gallery-img-wrapper">
+                    <img src="docs/images/dashboard.jpg" alt="Dashboard">
+                </div>
+                <div class="gallery-content">
+                    <h4>Geliştirici Çalışma Masası</h4>
+                    <p>Zamana göre görev aciliyetini vurgulayan Aura Matrix algoritması.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" onclick="openLightbox('docs/images/ai_breakdown.jpg', 'Google Gemini 2.0 - Görev Parçalayıcı (Beyin)')">
+                <div class="gallery-img-wrapper">
+                    <img src="docs/images/ai_breakdown.jpg" alt="AI">
+                </div>
+                <div class="gallery-content">
+                    <h4>Yapay Zeka Beyni</h4>
+                    <p>Görevleri saniyeler içinde analiz eden ve strateji üreten modül.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" onclick="openLightbox('docs/images/system_radar.jpg', 'Admin İstihbarat Radarı')">
+                <div class="gallery-img-wrapper">
+                    <img src="docs/images/system_radar.jpg" alt="Radar">
+                </div>
+                <div class="gallery-content">
+                    <h4>Sistem Radarı</h4>
+                    <p>Yöneticilerin alt süreç loglarını izleyebildiği güvenli terminal.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" onclick="openLightbox('docs/images/themes.jpg', 'Adaptif UI: Çoklu Tema Desteği')">
+                <div class="gallery-img-wrapper">
+                    <img src="docs/images/themes.jpg" alt="Themes">
+                </div>
+                <div class="gallery-content">
+                    <h4>Arayüz Uyarlanabilirliği</h4>
+                    <p>5 Farklı Kurumsal Renk Paleti (Altın, Neon, Matrix vb.)</p>
+                </div>
+            </div>
+
+        </div>
+
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 50px;">
+            <i class="fa-solid fa-code"></i> GoldBranch AI - Enes Altındal &copy; 2026
+        </p>
+
+    </div>
+
+    <!-- LIGHTBOX HTML -->
+    <div class="lightbox" id="lightbox">
+        <i class="fa-solid fa-xmark lightbox-close" onclick="closeLightbox()"></i>
+        <img id="lightboxImg" src="" alt="Fullscreen Image">
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+
+
+    <!-- JAVASCRIPT & LOGIC -->
+    <script>
+        // --- 1. LIGHTBOX LOGIC ---
+        function openLightbox(src, caption) {
+            document.getElementById('lightboxImg').src = src;
+            document.getElementById('lightboxCaption').innerText = caption;
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden'; // arkaplan scroll iptal
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // ESC tuşuyla kapat
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        // --- 2. CHART.JS PIE CHART LOGIC ---
+        const ctx = document.getElementById('eforChart').getContext('2d');
+        const eforChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    '1. Hafta (Altyapı)', 
+                    '2. Hafta (Kanban)', 
+                    '3. Hafta (AI Entegre)', 
+                    '4. Hafta (Mesajlaşma)', 
+                    '5. Hafta (UI/Test)'
+                ],
+                datasets: [{
+                    label: 'Harcanan Efor (Saat)',
+                    data: [15, 12, 8, 10, 17],
+                    backgroundColor: [
+                        'rgba(251, 191, 36, 0.8)',   // Gold
+                        'rgba(34, 211, 238, 0.8)',   // Cyan
+                        'rgba(192, 132, 252, 0.8)',  // Purple
+                        'rgba(52, 211, 153, 0.8)',   // Emerald
+                        'rgba(248, 113, 113, 0.8)'   // Red
+                    ],
+                    borderColor: 'rgba(22, 27, 34, 1)',
+                    borderWidth: 3,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#c9d1d9',
+                            font: { family: 'Inter', size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { size: 14, family: 'Inter' },
+                        bodyFont: { size: 14, family: 'Inter', weight: 'bold' },
+                        callbacks: {
+                            label: function(context) {
+                                return ' ' + context.label + ': ' + context.raw + ' Saat';
+                            }
+                        }
+                    }
+                },
+                cutout: '65%',
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        });
+
+        // --- 3. PARTICLE CANVAS LOGIC ---
+        const canvas = document.getElementById('particleCanvas');
+        const pCtx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                
+                // Tema Renkleri
+                const colors = ['rgba(251, 191, 36, {op})', 'rgba(34, 211, 238, {op})', 'rgba(255,255,255, {op})'];
+                this.colorBase = colors[Math.floor(Math.random() * colors.length)];
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+
+            draw() {
+                pCtx.beginPath();
+                pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                pCtx.fillStyle = this.colorBase.replace('{op}', this.opacity);
+                pCtx.fill();
+            }
+        }
+
+        for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+        function animate() {
+            pCtx.clearRect(0, 0, width, height);
+            
+            // Draw lines between nearby particles
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                
+                for (let j = i; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 120) {
+                        pCtx.beginPath();
+                        pCtx.strokeStyle = `rgba(34, 211, 238, ${0.1 - dist/1200})`; // Fade out lines
+                        pCtx.lineWidth = 0.5;
+                        pCtx.moveTo(particles[i].x, particles[i].y);
+                        pCtx.lineTo(particles[j].x, particles[j].y);
+                        pCtx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+    </script>
+</body>
+</html>

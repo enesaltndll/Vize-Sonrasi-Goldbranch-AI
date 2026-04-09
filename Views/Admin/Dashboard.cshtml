@@ -1,0 +1,334 @@
+
+@{
+    ViewData["Title"] = "SaaS Command Center";
+    // Real Stats from controller
+    decimal mrr = ViewBag.Mrr ?? 0m;
+    int totalUsers = ViewBag.UserCount ?? 0;
+    int freeUsers = ViewBag.FreeUsers ?? 0;
+    int proUsers = ViewBag.ProUsers ?? 0;
+    int businessUsers = ViewBag.BusinessUsers ?? 0;
+    
+    int totalTasks = ViewBag.TaskCount ?? 0;
+    int completedTasks = ViewBag.CompletedTasks ?? 0;
+    int systemLogsCount = ViewBag.SystemLogsCount ?? 0;
+
+    var chartMonthsObj = ViewBag.ChartMonths as string[];
+    var chartRevenueObj = ViewBag.ChartRevenue as decimal[];
+    
+    // JS conversion
+    var chartMonthsJson = System.Text.Json.JsonSerializer.Serialize(chartMonthsObj ?? new string[0]);
+    var chartRevenueJson = System.Text.Json.JsonSerializer.Serialize(chartRevenueObj ?? new decimal[0]);
+}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="gb-page pb-5">
+    <!-- Hero / Header -->
+    <div class="gb-page-header pb-4 mb-4" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <div>
+            <h1 class="gb-title text-gradient mb-0 animate__animated animate__fadeInLeft">
+                <i class="fa-solid fa-satellite-dish text-warning me-2"></i> @L.Get("SaasCenter")
+            </h1>
+            <p class="gb-subtitle mb-0 mt-1">@L.Get("SaasCenterDesc")</p>
+        </div>
+        <div class="gb-actions animate__animated animate__fadeInRight">
+            <button class="btn btn-outline-secondary rounded-pill px-4 me-2 hover-shadow" onclick="location.reload();">
+                <i class="fa-solid fa-rotate me-2"></i> @L.Get("Refresh")
+            </button>
+            <a asp-action="SystemLogs" class="btn btn-warning rounded-pill px-4 fw-bold shadow-lg hover-lift" style="background: linear-gradient(135deg, #fbbf24, #d97706); border: none; color: #000;">
+                <i class="fa-solid fa-server me-2"></i> @L.Get("SystemRadar")
+            </a>
+        </div>
+    </div>
+
+    <!-- Top Key Metrics (SaaS focus) -->
+    <div class="row g-4 mb-4 animate__animated animate__fadeInUp">
+        <div class="col-md-3">
+            <div class="card h-100 bg-dark border-0 rounded-4 shadow hover-lift p-4 text-center" style="background: linear-gradient(180deg, rgba(16,185,129,0.1) 0%, rgba(13,17,23,1) 100%) !important; border: 1px solid rgba(16,185,129,0.2) !important;">
+                <div class="mb-3">
+                    <span class="badge bg-success bg-opacity-20 text-success rounded-pill px-3 py-2"><i class="fa-solid fa-wallet me-1"></i> MRR</span>
+                </div>
+                <h2 class="fw-bold text-white mb-1">$@mrr.ToString("N0")</h2>
+                <p class="text-muted small fw-bold mb-0">@L.Get("MonthlyRecurringRev")</p>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 bg-dark border-0 rounded-4 shadow hover-lift p-4 text-center" style="background: linear-gradient(180deg, rgba(251,191,36,0.1) 0%, rgba(13,17,23,1) 100%) !important; border: 1px solid rgba(251,191,36,0.2) !important;">
+                <div class="mb-3">
+                    <span class="badge bg-warning bg-opacity-20 text-warning rounded-pill px-3 py-2"><i class="fa-solid fa-users me-1"></i> @L.Get("UsersLabel")</span>
+                </div>
+                <h2 class="fw-bold text-white mb-1">@totalUsers.ToString("N0")</h2>
+                <p class="text-muted small fw-bold mb-0">@L.Get("ActiveSubs")</p>
+                <div class="d-flex justify-content-center gap-2 mt-2" style="font-size:0.75rem;">
+                    <span class="text-secondary">@L.Get("FreeTier"): @freeUsers</span>
+                    <span class="text-warning">@L.Get("ProTier"): @proUsers</span>
+                    <span class="text-info">@L.Get("BusinessTier"): @businessUsers</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 bg-dark border-0 rounded-4 shadow hover-lift p-4 text-center" style="background: linear-gradient(180deg, rgba(56,189,248,0.1) 0%, rgba(13,17,23,1) 100%) !important; border: 1px solid rgba(56,189,248,0.2) !important;">
+                <div class="mb-3">
+                    <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill px-3 py-2"><i class="fa-solid fa-bolt me-1"></i> @L.Get("TotalCompletedTasksDashboard")</span>
+                </div>
+                <h2 class="fw-bold text-white mb-1">@completedTasks.ToString("N0") <span class="fs-6 text-muted">/ @totalTasks</span></h2>
+                <p class="text-muted small fw-bold mb-0">@L.Get("AllTimeCompleted")</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 bg-dark border-0 rounded-4 shadow hover-lift p-4 text-center" style="background: linear-gradient(180deg, rgba(167,139,250,0.1) 0%, rgba(13,17,23,1) 100%) !important; border: 1px solid rgba(167,139,250,0.2) !important;">
+                <div class="mb-3">
+                    <span class="badge bg-primary bg-opacity-20 text-light rounded-pill px-3 py-2" style="background-color:rgba(167,139,250,0.2)!important;"><i class="fa-solid fa-check-double me-1"></i> @L.Get("Efficiency")</span>
+                </div>
+                @{
+                    var pRate = totalTasks > 0 ? (completedTasks * 100 / totalTasks) : 0;
+                }
+                <h2 class="fw-bold text-white mb-1">%@pRate</h2>
+                <p class="text-muted small fw-bold mb-0">@L.Get("TaskCompletionRate")</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4 animate__animated animate__fadeInUp animate__delay-1s">
+        <!-- Revenue Line Chart -->
+        <div class="col-md-8">
+            <div class="card bg-dark border-0 rounded-4 shadow h-100 p-4" style="background: rgba(13,17,23,0.7) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-light mb-0"><i class="fa-solid fa-chart-area me-2 text-warning"></i> @L.Get("MrrGrowthChart")</h5>
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1"><i class="fa-solid fa-arrow-trend-up"></i> +12%</span>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan Distribution Doughnut -->
+        <div class="col-md-4">
+            <div class="card bg-dark border-0 rounded-4 shadow h-100 p-4" style="background: rgba(13,17,23,0.7) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                <h5 class="fw-bold text-white mb-4"><i class="fa-solid fa-chart-pie text-warning me-2"></i> @L.Get("PlanDistribution")</h5>
+                <div style="height: 250px; display:flex; justify-content:center; align-items:center;">
+                    <canvas id="planChart"></canvas>
+                </div>
+                <div class="ms-3 flex-grow-1">
+                    <h6 class="mb-1 text-light fw-bold">@L.Get("ResourceUsage")</h6>
+                    <p class="text-muted small mb-0">@L.Get("ResourceUsageDesc")</p>
+                    <div class="mt-2 row text-center gx-1" style="font-size: 0.7rem;">
+                        <div class="col"><div class="p-1 rounded bg-dark border border-secondary text-light">@L.Get("ServerLoad")<br/><span class="text-success fw-bold">14%</span></div></div>
+                        <div class="col"><div class="p-1 rounded bg-dark border border-secondary text-light">@L.Get("Bandwidth")<br/><span class="text-info fw-bold">1.2 TB</span></div></div>
+                        <div class="col"><div class="p-1 rounded bg-dark border border-secondary text-light">@L.Get("DbOps")<br/><span class="text-warning fw-bold">240/s</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Risk Overview -->
+    <div class="row g-4 animate__animated animate__fadeInUp animate__delay-2s">
+        <!-- Quick Actions Grid -->
+        <div class="col-md-8">
+            <div class="card bg-dark border-0 rounded-4 shadow p-4 h-100" style="background: rgba(13,17,23,0.7) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-bolt text-warning me-2"></i> @L.Get("OperationsCenter")</h5>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a asp-action="Users" class="btn w-100 py-4 rounded-4 hover-lift text-decoration-none d-flex flex-column align-items-center gap-2" style="background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.2); color:#38bdf8;">
+                            <i class="fa-solid fa-users-gear fa-2xl mb-2"></i>
+                            <span class="fw-bold small text-uppercase">@L.Get("TeamRoles")</span>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a asp-action="WorkReports" class="btn w-100 py-4 rounded-4 hover-lift text-decoration-none d-flex flex-column align-items-center gap-2" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); color:#10b981;">
+                            <i class="fa-solid fa-file-invoice fa-2xl mb-2"></i>
+                            <span class="fw-bold small text-uppercase">@L.Get("WorkReports")</span>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a asp-action="Leaderboard" class="btn w-100 py-4 rounded-4 hover-lift text-decoration-none d-flex flex-column align-items-center gap-2" style="background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); color:#fbbf24;">
+                            <i class="fa-solid fa-medal fa-2xl mb-2"></i>
+                            <span class="fw-bold small text-uppercase">@L.Get("Leaderboard")</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Alerts -->
+        <div class="col-md-4">
+            <div class="card bg-dark border-0 rounded-4 shadow p-4 h-100" style="background: rgba(13,17,23,0.7) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                <h5 class="fw-bold text-white mb-4"><i class="fa-solid fa-shield-halved text-danger me-2"></i> @L.Get("AlertsAnalysis")</h5>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-4 hover-shadow" style="background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); transition: 0.3s;">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-fire text-danger fa-lg me-3"></i>
+                            <div>
+                                <h6 class="mb-0 text-light fw-bold" style="font-size:0.85rem;">@L.Get("BurnoutRadar")</h6>
+                                <small class="text-danger" style="font-size:0.65rem;">@L.Get("DevRisks")</small>
+                            </div>
+                        </div>
+                        <a asp-action="BurnoutMap" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1">@L.Get("Open")</a>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-4 hover-shadow" style="background: rgba(167,139,250,0.05); border: 1px solid rgba(167,139,250,0.2); transition: 0.3s;">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-map-location-dot text-primary fa-lg me-3" style="color:#a78bfa!important;"></i>
+                            <div>
+                                <h6 class="mb-0 text-light fw-bold" style="font-size:0.85rem;">@L.Get("Roadmap")</h6>
+                                <small class="text-primary" style="font-size:0.65rem; color:#a78bfa!important;">@L.Get("FutureReleases")</small>
+                            </div>
+                        </div>
+                        <a asp-action="Roadmap" class="btn btn-sm rounded-pill px-3 py-1" style="background:rgba(167,139,250,0.2); color:#a78bfa;">@L.Get("Open")</a>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-4 hover-shadow" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: 0.3s;">
+                       <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-bug text-muted fa-lg me-3"></i>
+                            <div>
+                                <h6 class="mb-0 text-light fw-bold" style="font-size:0.85rem;">@L.Get("ErrorLogs")</h6>
+                                <small class="text-muted" style="font-size:0.65rem;">@L.Get("SystemHas") @systemLogsCount @L.Get("LogsRecorded")</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-gradient {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.4) !important;
+    }
+    .hover-shadow {
+        transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .hover-shadow:hover {
+        box-shadow: 0 0 15px rgba(251,191,36,0.1) !important;
+        border-color: rgba(251,191,36,0.4) !important;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Chart Defaults
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        
+        // 1. Plan Distribution Chart
+        const planCtx = document.getElementById('planChart').getContext('2d');
+        new Chart(planCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Free', 'Pro', 'Business'],
+                datasets: [{
+                    data: [@freeUsers, @proUsers, @businessUsers],
+                    backgroundColor: [
+                        'rgba(139, 148, 158, 0.8)', // Free: Gray
+                        'rgba(251, 191, 36, 0.8)',  // Pro: Gold
+                        'rgba(167, 139, 250, 0.8)'  // Business: Purple
+                    ],
+                    borderColor: [
+                        '#8b949e',
+                        '#fbbf24',
+                        '#a78bfa'
+                    ],
+                    borderWidth: 1,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // 2. Revenue Line Chart (Data from server limits 6 months)
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const months = @Html.Raw(chartMonthsJson);
+        const revenue = @Html.Raw(chartRevenueJson);
+        
+        // Gradient for line chart
+        const gradient = revenueCtx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); // Green top
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)'); // Transparent bottom
+
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Aylık Gelir ($)',
+                    data: revenue,
+                    borderColor: '#10b981',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4 // Smooth curves
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 13 },
+                        bodyFont: { size: 14, weight: 'bold' },
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'transparent',
+                            drawBorder: false
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>

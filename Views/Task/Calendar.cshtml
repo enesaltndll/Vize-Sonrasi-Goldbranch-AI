@@ -1,0 +1,67 @@
+@inject GoldBranchAI.Services.LocalizationService L
+@{
+    ViewData["Title"] = L.Get("CalendarTitle");
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-center fade-in-up">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-regular fa-calendar-check text-warning"></i> @L.Get("ProjCalendar")</h2>
+        <p class="text-muted mb-0">@L.Get("CalendarDesc")</p>
+    </div>
+    <a asp-controller="Task" asp-action="Index" class="btn btn-outline-secondary rounded-pill fw-bold">
+        <i class="fa-solid fa-list-ul me-2"></i> @L.Get("BackToListView")
+    </a>
+</div>
+
+<div class="card bg-dark border-0 shadow-lg fade-in-up" style="border-radius: var(--gb-radius-xl); overflow: hidden;">
+    <div class="card-body p-4 bg-dark">
+        <div id="calendar" style="min-height: 800px;"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var eventsData = @Html.Raw(ViewBag.EventsJson);
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: '@(Context.Request.Cookies["lang_pref"] ?? "tr")',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                },
+                themeSystem: 'standard',
+                events: eventsData,
+                eventClick: function(info) {
+                    if (info.event.url) {
+                        window.location.href = info.event.url;
+                        info.jsEvent.preventDefault();
+                    }
+                }
+            });
+
+            calendar.render();
+        });
+    </script>
+
+    <style>
+        /* FullCalendar Koyu Tema Override */
+        .fc-theme-standard .fc-scrollgrid { border-color: rgba(255,255,255,0.1); }
+        .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(255,255,255,0.1); }
+        .fc-day-today { background-color: rgba(34, 211, 238, 0.05) !important; }
+        .fc-col-header-cell a { color: var(--gb-text-primary); text-decoration: none; font-weight: bold; }
+        .fc-daygrid-day-number { color: var(--gb-text-primary); text-decoration: none; }
+        .fc-button-primary { 
+            background-color: var(--gb-dark-surface) !important;
+            border-color: rgba(255,255,255,0.2) !important;
+            color: var(--gb-text-primary) !important;
+        }
+        .fc-button-primary:hover { background-color: var(--gb-dark-border) !important; }
+        .fc-button-active { background-color: var(--gb-accent-cyan) !important; color: #000 !important; border-color: transparent !important; }
+        .fc-event { cursor: pointer; border-radius: 4px; border: none; padding: 2px 4px; font-size: 0.85em; }
+    </style>
+}

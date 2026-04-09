@@ -1,0 +1,1294 @@
+@inject GoldBranchAI.Services.BillingService Billing
+@using Microsoft.Extensions.DependencyInjection
+@{
+    string currentLang = Context.Request.Cookies["lang_pref"] ?? "tr";
+    // Get billing state for navbar badge
+    string navPlanBadge = "FREE";
+    string navPlanColor = "#8b949e";
+    if (User?.Identity?.IsAuthenticated == true)
+    {
+        var navEmail = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (!string.IsNullOrEmpty(navEmail))
+        {
+            var navDbContext = Context.RequestServices.GetService<GoldBranchAI.Data.AppDbContext>();
+            var navUser = navDbContext?.Users.FirstOrDefault(u => u.Email == navEmail);
+            if (navUser != null)
+            {
+                var navState = Billing.GetUserState(navUser.Id, navUser.Email);
+                navPlanBadge = Billing.GetPlanBadge(navState);
+                navPlanColor = Billing.GetEffectivePlan(navState).Color;
+            }
+        }
+    }
+}
+<!DOCTYPE html>
+<html lang="@currentLang" data-bs-theme="dark" data-theme="gold-dark">
+<head>
+    <script>
+        // Init theme before render to avoid flash
+        const savedTheme = localStorage.getItem('gb-theme') || 'gold-dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GoldBranch AI</title>
+    <meta name="description" content="GoldBranch AI - Akilli Gorev ve Saglik Yonetim Sistemi" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/9334/9334400.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body class="bg-dark text-light">
+
+    <!-- PAGE LOADER BAR -->
+    <div id="pageLoader" class="page-loader active"></div>
+
+    <!-- Animated Particle Canvas -->
+    <canvas id="particleCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0.4;"></canvas>
+
+    <!-- Futuristic Custom Cursor Kaldırıldı -->
+
+    <header>
+        <div id="gbScrollProgressBar" style="position:fixed; top:0; left:0; width:0%; height:3px; background:linear-gradient(90deg, #fbbf24, #22d3ee); z-index:2000; transition: width 0.1s; box-shadow: 0 0 10px rgba(34,211,238,0.5);"></div>
+        <nav class="navbar navbar-expand-sm navbar-dark border-bottom border-secondary mb-4 py-3 sticky-top shadow" style="background: rgba(13, 17, 23, 0.75) !important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 1030;">
+            <div class="container-fluid px-3 px-xl-5">
+                <div class="d-flex align-items-center">
+                    @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
+                    {
+                        <button class="btn btn-outline-warning rounded-pill px-3 py-1 btn-sm shadow-sm me-3 d-none d-md-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas" style="border: 1px solid rgba(251,191,36,0.3); background: rgba(251,191,36,0.05); letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-bars-staggered me-1"></i> @L.Get("AdminPanel")
+                        </button>
+                        <!-- Mobil icon -->
+                        <button class="btn btn-link text-warning p-0 me-3 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas">
+                            <i class="fa-solid fa-bars-staggered fs-4"></i>
+                        </button>
+                    }
+                    <a class="navbar-brand fw-bold mb-0" asp-controller="Task" asp-action="Index" style="font-size: 1.4rem; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        <i class="fa-solid fa-leaf text-warning gb-heartbeat" style="-webkit-text-fill-color: #fbbf24;"></i> GoldBranch AI
+                    </a>
+                    <div class="ms-3 d-none d-lg-block border-start border-secondary ps-3">
+                        <div id="gbBreadcrumb" class="text-secondary small fw-bold" style="letter-spacing:1px; font-family:'JetBrains Mono',monospace; min-width:180px; opacity:0.7;">
+                            <span class="text-warning opacity-50 me-2"><i class="fa-solid fa-terminal"></i></span> SYSTEM / CORE
+                        </div>
+                    </div>
+                </div>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 ms-4">
+                        <li class="nav-item"><a class="nav-link text-light px-3" asp-controller="Task" asp-action="Dashboard"><i class="fa-solid fa-rocket me-1 text-warning"></i> @L.Get("Dashboard")</a></li>
+                        <li class="nav-item"><a class="nav-link text-light px-3" asp-controller="Task" asp-action="Index"><i class="fa-solid fa-columns me-1"></i> @L.Get("Tasks")</a></li>
+                        <li class="nav-item"><a class="nav-link text-info px-3 fw-bold" asp-controller="Chat" asp-action="Index"><i class="fa-solid fa-comments"></i> @L.Get("ChatRoom")</a></li>
+                        <li class="nav-item"><a class="nav-link text-warning px-3 fw-bold" asp-controller="Profile" asp-action="Index" style="text-shadow: 0 0 5px rgba(251,191,36,0.5);"><i class="fa-solid fa-id-badge me-1"></i> Gamer Profili (XP)</a></li>
+                        <li class="nav-item"><a class="nav-link px-3" asp-controller="Billing" asp-action="Index"><i class="fa-solid fa-gem me-1" style="color: @navPlanColor;"></i> <span class="badge rounded-pill px-2 py-1" style="background: @navPlanColor; color: #000; font-size: 0.65rem; letter-spacing: 1px;">@navPlanBadge</span></a></li>
+                        @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Proje Sefi" ||
+                             User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
+                        {
+                            <li class="nav-item"><a class="nav-link px-3 fw-bold" asp-controller="Ai" asp-action="Breakdown" style="color:#a78bfa;"><i class="fa-solid fa-brain me-1"></i> @L.Get("AIAgent")</a></li>
+                        }
+                        else if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Gelistirici")
+                        {
+                            <li class="nav-item"><a class="nav-link px-3 fw-bold text-info" asp-controller="Ai" asp-action="Research"><i class="fa-solid fa-code me-1"></i> @L.Get("AIChat")</a></li>
+                        }
+                    </ul>
+                    <ul class="navbar-nav align-items-center">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+
+
+                            <!-- Notification Bell -->
+                            <li class="nav-item dropdown me-3" id="notificationDropdownContainer">
+                                <a class="nav-link text-light position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-bell text-warning" style="font-size: 1.1rem;"></i>
+                                    <span class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger border border-dark" id="notificationBadge" style="display:none; font-size: 0.65rem;">
+                                        0
+                                    </span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-secondary bg-dark text-light" aria-labelledby="notificationDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notificationList">
+                                    <li><h6 class="dropdown-header text-warning fw-bold border-bottom border-secondary pb-2 mb-2"><i class="fa-solid fa-bolt me-1"></i> @L.Get("NotificationCenter")</h6></li>
+                                    <!-- Notifications will be injected here via JS -->
+                                    <li class="text-center py-3 text-muted small" id="noNotificationText">@L.Get("NoNotifications")</li>
+                                </ul>
+                            </li>
+                            <!-- Theme Dropdown Removed - Replaced with Floating Action Button -->
+                            <li class="nav-item me-3 d-none d-md-block" title="Günlük Aktif Mesai Suresi">
+                                <div id="globalTimerWidget" class="d-flex align-items-center px-3 py-1 rounded-pill shadow-sm" style="background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.2); transition: all 0.3s ease; box-shadow: 0 0 10px rgba(34,211,238,0.1);">
+                                    <i class="fa-solid fa-stopwatch text-info me-2" style="animation: timerPulse 2s infinite;"></i>
+                                    <span id="screenTimer" class="fw-bold text-info" style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; letter-spacing: 1px;">00:00:00</span>
+                                </div>
+                            </li>
+                            <!-- User Profile -->
+                            <li class="nav-item d-flex align-items-center px-2 py-1 rounded-pill border border-secondary" style="background: rgba(251, 191, 36, 0.05); border-color: rgba(251,191,36,0.3) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                                <span class="text-light mx-2 small fw-bold d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-user-astronaut text-warning"></i> @(User?.Identity?.Name ?? "User")
+                                </span>
+                                
+                                <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 8px;"></div>
+
+                                <!-- Logout -->
+                                <a class="btn btn-outline-danger border-0 btn-sm rounded-circle d-flex align-items-center justify-content-center" asp-controller="Auth" asp-action="Logout" style="width:28px;height:28px; transition: 0.3s;" title="@L.Get("Logout")">
+                                    <i class="fa-solid fa-power-off" style="font-size: 0.75rem;"></i>
+                                </a>
+                            </li>
+
+                            <!-- Fail-proof Language Buttons with SVG Flags -->
+                            <li class="nav-item ms-2 mt-1 d-flex gap-2 align-items-center">
+                                <a class="btn btn-sm rounded-pill d-flex align-items-center gap-1 @(currentLang == "tr" ? "btn-warning text-dark fw-bold shadow-sm" : "btn-outline-secondary text-light")" href="/Lang/Switch?lang=tr&returnUrl=@Context.Request.Path@Context.Request.QueryString" title="Türkçe" style="padding: 4px 10px; font-size: 0.85rem; border: 1px solid @(currentLang=="tr"?"rgba(251,191,36,1)":"rgba(255,255,255,0.2)"); transition: 0.3s;">
+                                    <img src="https://flagcdn.com/tr.svg" width="16" alt="Türk Bayrağı" style="border-radius: 2px;"> TR
+                                </a>
+                                <a class="btn btn-sm rounded-pill d-flex align-items-center gap-1 @(currentLang == "en" ? "btn-info text-dark fw-bold shadow-sm" : "btn-outline-secondary text-light")" href="/Lang/Switch?lang=en&returnUrl=@Context.Request.Path@Context.Request.QueryString" title="English" style="padding: 4px 10px; font-size: 0.85rem; border: 1px solid @(currentLang=="en"?"rgba(56,189,248,1)":"rgba(255,255,255,0.2)"); transition: 0.3s;">
+                                    <img src="https://flagcdn.com/gb.svg" width="16" alt="UK Flag" style="border-radius: 2px;"> EN
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container-fluid px-3 px-xl-5 gb-page">
+        <main role="main" class="pb-5 mb-5">@RenderBody()</main>
+    </div>
+
+    <!-- GLOBAL FOOTER -->
+    <footer class="text-center pb-4 text-muted" style="font-size: 0.8rem; margin-bottom: 60px;">
+        <span style="letter-spacing: 1px;">Tüm hakları <span class="text-warning fw-bold">GOLDBRANCH AI</span> tarafından saklıdır © 2026</span>
+    </footer>
+
+    <!-- 📱 MOBİL BOTTOM NAVIGATION (Sadece küçük ekranda) -->
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        <nav class="navbar fixed-bottom d-md-none bg-dark border-top border-secondary" style="background: rgba(13, 17, 23, 0.95) !important; padding: 10px 0; z-index: 1040; backdrop-filter: blur(10px);">
+            <div class="container-fluid d-flex justify-content-around">
+                <a asp-controller="Task" asp-action="Dashboard" class="text-center text-light text-decoration-none" style="flex:1;">
+                    <i class="fa-solid fa-rocket fs-5 mb-1 d-block" style="color: #cbd5e1;"></i>
+                    <small style="font-size: 0.65rem;">@L.Get("Radar")</small>
+                </a>
+                <a asp-controller="Task" asp-action="Index" class="text-center text-light text-decoration-none" style="flex:1;">
+                    <i class="fa-solid fa-columns fs-5 mb-1 d-block" style="color: #cbd5e1;"></i>
+                    <small style="font-size: 0.65rem;">@L.Get("Kanban")</small>
+                </a>
+                <a asp-controller="Profile" asp-action="Index" class="text-center text-light text-decoration-none position-relative" style="flex:1;">
+                    <div style="background: linear-gradient(135deg, #a855f7, #6366f1); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-top: -20px; box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);">
+                        <i class="fa-solid fa-user-astronaut fs-5 text-white"></i>
+                    </div>
+                </a>
+                <a asp-controller="Chat" asp-action="Index" class="text-center text-light text-decoration-none" style="flex:1;">
+                    <i class="fa-solid fa-comments fs-5 mb-1 d-block" style="color: #cbd5e1;"></i>
+                    <small style="font-size: 0.65rem;">@L.Get("BotNavChat")</small>
+                </a>
+                <a asp-controller="Notification" asp-action="Index" class="text-center text-light text-decoration-none" style="flex:1;">
+                    <i class="fa-solid fa-bell fs-5 mb-1 d-block text-warning" style="color: #cbd5e1;"></i>
+                    <small style="font-size: 0.65rem;">@L.Get("BotNavNotif")</small>
+                </a>
+            </div>
+        </nav>
+    }
+
+    <!-- Admin Offcanvas Sidebar -->
+    @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
+    {
+        <div class="offcanvas offcanvas-start bg-dark text-light shadow-lg" tabindex="-1" id="adminSidebarOffcanvas" style="border-right: 1px solid rgba(251,191,36,0.2); width: 340px; background: rgba(13, 17, 23, 0.98) !important;">
+            <div class="offcanvas-header pb-2" style="border-bottom: 1px solid rgba(255,255,255,0.05); background: linear-gradient(135deg, rgba(251,191,36,0.05) 0%, transparent 100%);">
+                <h5 class="offcanvas-title fw-bold text-warning font-monospace d-flex align-items-center">
+                    <i class="fa-solid fa-crown me-2"></i> @L.Get("CommandPanel")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column" style="background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; overflow: hidden;">
+                
+                <div class="p-4" style="border-bottom:1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+                    <a asp-controller="Admin" asp-action="SystemLogs" class="btn w-100 fw-bold rounded-pill p-3 shadow-lg d-flex justify-content-center align-items-center position-relative overflow-hidden gb-btn-shine" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981;">
+                        <span style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#10b981,transparent);animation:dashboardShimmer 3s infinite;"></span>
+                        <i class="fa-solid fa-satellite-dish me-2" style="animation: pulse 2s infinite;"></i> @L.Get("SystemRadar")
+                    </a>
+                </div>
+
+                <div class="list-group list-group-flush mt-2 flex-grow-1" style="background: transparent; overflow-y: auto;">
+                    <a asp-controller="Admin" asp-action="Roadmap" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
+                        <span class="bg-success bg-opacity-10 text-success rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-map-location-dot fa-lg"></i></span>
+                        <div>
+                            <span class="fw-bold d-block" style="letter-spacing:1px;font-family:'JetBrains Mono',monospace;">@L.Get("Roadmap")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("RoadmapDesc")</small>
+                        </div>
+                    </a>
+                    
+                    <a asp-controller="Admin" asp-action="Users" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
+                        <span class="bg-info bg-opacity-10 text-info rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-users-viewfinder fa-lg"></i></span>
+                        <div>
+                            <span class="fw-bold d-block">@L.Get("TeamMgmt")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("TeamMgmtDesc")</small>
+                        </div>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="WorkReports" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
+                        <span class="bg-warning bg-opacity-10 text-warning rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-file-invoice fa-lg"></i></span>
+                        <div>
+                            <span class="fw-bold d-block">@L.Get("ZReport")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("ZReportDesc")</small>
+                        </div>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="Leaderboard" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
+                        <span class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-trophy fa-lg"></i></span>
+                        <div>
+                            <span class="fw-bold d-block">@L.Get("PerformanceLeague")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("LeaderboardDesc")</small>
+                        </div>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="BurnoutMap" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
+                        <span class="bg-danger bg-opacity-10 text-danger rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-fire-flame-curved fa-lg"></i></span>
+                        <div>
+                            <span class="fw-bold d-block">@L.Get("HeatMapSidebar")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("HeatMapSidebarDesc")</small>
+                        </div>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="Index" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
+                        <span class="bg-secondary bg-opacity-10 text-secondary rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-gauge fa-lg"></i></span>
+                        <div>
+                            <span class="fw-bold d-block">Admin Dashboard</span>
+                            <small class="text-muted" style="font-size:0.75rem;">Sistem Geneli Özet</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        <script>
+            const timerElement = document.getElementById("screenTimer");
+            const todayStr = new Date().toISOString().split('T')[0];
+            const rawUserName = "@(User?.Identity?.Name ?? "User")";
+            const safeUserName = rawUserName.replace(/\s+/g, '_');
+            const storageKey = "gb_time_" + safeUserName + "_" + todayStr;
+
+            let totalSeconds = parseInt(localStorage.getItem(storageKey)) || 0;
+
+            fetch('/TimeTracker/GetTodayTime')
+                .then(response => response.json())
+                .then(data => {
+                    totalSeconds = Math.max(totalSeconds, data.minutes * 60);
+                    setInterval(() => {
+                        totalSeconds++;
+                        localStorage.setItem(storageKey, totalSeconds);
+                        if (timerElement) {
+                            let h = Math.floor(totalSeconds / 3600), m = Math.floor((totalSeconds % 3600) / 60), s = totalSeconds % 60;
+                            let timeStr = (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+                            timerElement.textContent = timeStr;
+                            
+                            const timerWidget = document.getElementById('globalTimerWidget');
+                            if (timerWidget) {
+                                if (h >= 8) {
+                                    timerWidget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                                    timerWidget.style.background = "rgba(239, 68, 68, 0.1)";
+                                    timerElement.className = "fw-bold text-danger";
+                                    timerWidget.querySelector('i').className = "fa-solid fa-fire text-danger me-2";
+                                } else if (h >= 6) {
+                                    timerWidget.style.borderColor = "rgba(251, 146, 60, 0.5)";
+                                    timerWidget.style.background = "rgba(251, 146, 60, 0.1)";
+                                    timerElement.className = "fw-bold text-warning";
+                                }
+                            }
+                        }
+                    }, 1000);
+                });
+
+            setInterval(() => { fetch('/TimeTracker/PingTime', { method: 'POST' }); }, 60000);
+        </script>
+        
+        <!-- SignalR and Global Notification Logic -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const badge = document.getElementById("notificationBadge");
+                const list = document.getElementById("notificationList");
+                const noText = document.getElementById("noNotificationText");
+                
+                let unreadCount = 0;
+                
+                // SignalR Connection for Global Notifications
+                const notificationConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub")
+                    .withAutomaticReconnect()
+                    .build();
+                
+                notificationConnection.on("ReceiveNotification", function(message, link) {
+                    // Update Badge
+                    unreadCount++;
+                    badge.innerText = unreadCount;
+                    badge.style.display = "block";
+                    
+                    if(noText) noText.style.display = "none";
+                    
+                    // Add to dropdown list
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.className = "dropdown-item text-light border-bottom border-secondary py-2 hover-glass";
+                    a.href = link || "#";
+                    a.innerHTML = `<small class="d-block text-wrap">${message}</small><small class="text-muted" style="font-size:0.7rem;"><i class="fa-regular fa-clock"></i> Simdi</small>`;
+                    
+                    // Insert after header (index 1)
+                    list.insertBefore(li, list.children[1]);
+                    li.appendChild(a);
+                    
+                    // Play sound (optional) or flash title
+                    document.title = "(1) " + document.title;
+                });
+                
+                notificationConnection.start().catch(err => console.error("Notification Hub Error:", err));
+                
+                // Fetch existing unread notifications on load
+                fetch('/Notification/GetMyNotifications')
+                    .then(response => response.json())
+                    .then(res => {
+                        if(res.success && res.count > 0) {
+                            unreadCount = res.count;
+                            badge.innerText = unreadCount;
+                            badge.style.display = "block";
+                            if(noText) noText.style.display = "none";
+                            
+                            res.data.reverse().forEach(n => {
+                                const li = document.createElement("li");
+                                const a = document.createElement("a");
+                                a.className = "dropdown-item text-light border-bottom border-secondary py-2 hover-glass";
+                                a.href = n.link || "#";
+                                a.innerHTML = `<small class="d-block text-wrap">${n.message}</small><small class="text-muted" style="font-size:0.7rem;"><i class="fa-regular fa-clock"></i> ${n.time}</small>`;
+                                list.insertBefore(li, list.children[1]);
+                                li.appendChild(a);
+                            });
+                        }
+                    });
+                    
+                // Mark as read when clicking the bell
+                document.getElementById('notificationDropdown').addEventListener('click', function() {
+                    if (unreadCount > 0) {
+                        fetch('/Notification/MarkAsRead', { method: 'POST' }).then(() => {
+                            badge.style.display = "none";
+                            unreadCount = 0;
+                        });
+                    }
+                });
+            });
+        </script>
+    }
+
+    <!-- Floating Action Dock (Theme + Voice) -->
+    <div id="gbFabDock" class="gb-fab-dock" aria-label="Hızlı Eylemler">
+        <button id="gbThemeFab" class="btn rounded-circle shadow-lg gb-fab-btn gb-fab-theme" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#themeOffcanvas" aria-controls="themeOffcanvas"
+                title="Tema Merkezi">
+            <i class="fa-solid fa-palette fa-xl gb-fab-icon-spin"></i>
+        </button>
+
+        <!-- 🎙️ GOLDIE AI SESLİ ASİSTAN BUTONU -->
+        <a href="/Ai/VoiceChat" id="voiceAssistantBtn" class="btn btn-warning rounded-circle shadow-lg gb-fab-btn gb-fab-voice d-flex align-items-center justify-content-center" title="Sesli Asistan" style="text-decoration:none;">
+            <i class="fa-solid fa-microphone text-dark" style="font-size: 1.5rem;"></i>
+        </a>
+    </div>
+
+
+
+    <!-- Theme Switcher Offcanvas -->
+    <div class="offcanvas offcanvas-end bg-dark text-light border-0 shadow-lg" tabindex="-1" id="themeOffcanvas" style="width: 320px; background: rgba(5, 7, 10, 0.98) !important; border-left: 1px solid rgba(255,255,255,0.05) !important;">
+        <div class="offcanvas-header pb-2" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <h5 class="offcanvas-title fw-bold font-monospace d-flex align-items-center" style="color: var(--gb-gold);">
+                <i class="fa-solid fa-wand-magic-sparkles me-2"></i> @L.Get("ThemeCenter")
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <p class="text-muted small mb-4">@L.Get("ThemeDesc")</p>
+            
+            <div class="d-flex flex-column gap-3">
+                <button class="btn theme-btn text-start p-3 border-0 rounded-4 shadow-sm" data-theme="gold-dark" style="background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(217,119,6,0.1)); border: 1px solid rgba(251,191,36,0.3) !important; transition: 0.3s; position:relative; overflow:hidden;">
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-3 shadow" style="width:20px;height:20px;background:#fbbf24;box-shadow:0 0 10px #fbbf24;"></span>
+                        <div>
+                            <span class="fw-bold d-block text-warning" style="letter-spacing:1px;">@L.Get("GoldDark")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("GoldDarkDesc")</small>
+                        </div>
+                    </div>
+                </button>
+
+                <button class="btn theme-btn text-start p-3 border-0 rounded-4 shadow-sm" data-theme="space-blue" style="background: linear-gradient(135deg, rgba(56,189,248,0.1), rgba(2,132,199,0.1)); border: 1px solid rgba(56,189,248,0.3) !important; transition: 0.3s;">
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-3 shadow" style="width:20px;height:20px;background:#38bdf8;box-shadow:0 0 10px #38bdf8;"></span>
+                        <div>
+                            <span class="fw-bold d-block text-info" style="letter-spacing:1px;">@L.Get("SpaceBlue")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("SpaceBlueDesc")</small>
+                        </div>
+                    </div>
+                </button>
+
+                <button class="btn theme-btn text-start p-3 border-0 rounded-4 shadow-sm" data-theme="neon-purple" style="background: linear-gradient(135deg, rgba(192,132,252,0.1), rgba(147,51,234,0.1)); border: 1px solid rgba(192,132,252,0.3) !important; transition: 0.3s;">
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-3 shadow" style="width:20px;height:20px;background:#c084fc;box-shadow:0 0 10px #c084fc;"></span>
+                        <div>
+                            <span class="fw-bold d-block" style="color:#c084fc;letter-spacing:1px;">@L.Get("NeonPurple")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("NeonPurpleDesc")</small>
+                        </div>
+                    </div>
+                </button>
+                
+                <button class="btn theme-btn text-start p-3 border-0 rounded-4 shadow-sm" data-theme="matrix-green" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border: 1px solid rgba(16,185,129,0.3) !important; transition: 0.3s;">
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-3 shadow" style="width:20px;height:20px;background:#10b981;box-shadow:0 0 10px #10b981;"></span>
+                        <div>
+                            <span class="fw-bold d-block text-success" style="letter-spacing:1px;">@L.Get("MatrixGreen")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("MatrixGreenDesc")</small>
+                        </div>
+                    </div>
+                </button>
+                
+                <button class="btn theme-btn text-start p-3 border-0 rounded-4 shadow-sm" data-theme="fire-red" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1)); border: 1px solid rgba(239,68,68,0.3) !important; transition: 0.3s;">
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-3 shadow" style="width:20px;height:20px;background:#ef4444;box-shadow:0 0 10px #ef4444;"></span>
+                        <div>
+                            <span class="fw-bold d-block text-danger" style="letter-spacing:1px;">@L.Get("FireRed")</span>
+                            <small class="text-muted" style="font-size:0.75rem;">@L.Get("FireRedDesc")</small>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="voiceAssistantTooltip" class="bg-dark text-white p-3 rounded-4 shadow-lg border border-warning" style="position: fixed; bottom: 105px; right: 30px; z-index: 1049; display:none; max-width: 300px;">
+        <div class="d-flex align-items-center mb-2">
+            <i class="fa-solid fa-robot text-warning me-2"></i> <strong class="text-warning">Goldie Asistan</strong>
+        </div>
+        <p id="voiceSpeechText" class="mb-0 small text-light">Dinliyorum...</p>
+    </div>
+
+    <!-- 🌌 ZEN (HYPER-FOCUS) MODU BUTONU VE OVERLAY -->
+    <button id="zenModeBtn" class="btn btn-dark rounded-circle shadow-lg" title="Zen Modunu Aç" style="position: fixed; bottom: 30px; left: 30px; width: 65px; height: 65px; z-index: 1050; border: 2px solid rgba(167, 139, 250, 0.4); transition: all 0.5s; background: #0d1117;">
+        <i class="fa-solid fa-yin-yang text-purple" style="font-size: 1.5rem; color:#a855f7;"></i>
+    </button>
+
+    <div id="zenModeOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background: radial-gradient(circle at center, #1e1b4b 0%, #000000 100%); z-index: 1045; display:none; flex-direction:column; align-items:center; justify-content:center; opacity:0; transition: opacity 1s ease; overflow:hidden;">
+        
+        <!-- Animated Stars Background -->
+        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+            <div id="zenStars" style="position:absolute;inset:0;"></div>
+        </div>
+
+        <!-- Close Button -->
+        <button id="zenCloseBtn" class="btn btn-outline-light rounded-circle" style="position:absolute;top:20px;right:20px;width:48px;height:48px;z-index:1050;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.03);" title="Zen Modunu Kapat">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Session Counter (top-left) -->
+        <div id="zenSessionInfo" style="position:absolute;top:24px;left:24px;display:flex;align-items:center;gap:10px;">
+            <div style="background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.25);border-radius:12px;padding:8px 16px;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-fire" style="color:#fb923c;"></i>
+                <span id="zenSessionCount" style="font-family:'JetBrains Mono',monospace;color:#c084fc;font-weight:700;font-size:0.85rem;">0 seans</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div style="display:flex;flex-direction:column;align-items:center;z-index:2;max-width:700px;width:100%;padding:0 20px;">
+
+            <!-- Breathing Circle + Timer (merged) -->
+            <div style="position:relative;width:260px;height:260px;margin-bottom:2rem;">
+                <!-- Orbit Ring -->
+                <svg viewBox="0 0 260 260" style="position:absolute;inset:0;width:100%;height:100%;animation:zenOrbitSpin 30s linear infinite;">
+                    <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(192,132,252,0.08)" stroke-width="2"/>
+                    <circle cx="130" cy="10" r="5" fill="#c084fc" style="filter:drop-shadow(0 0 6px #c084fc);">
+                        <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                </svg>
+                <!-- Breathing Ring -->
+                <div id="zenBreathCircle" style="position:absolute;inset:20px;border-radius:50%;border:3px solid rgba(192,132,252,0.25);display:flex;align-items:center;justify-content:center;flex-direction:column;animation: zenBreathe 8s ease-in-out infinite;box-shadow:inset 0 0 40px rgba(192,132,252,0.05),0 0 30px rgba(192,132,252,0.05);">
+                    <div id="pomodoroTimer" class="fw-bold text-white" style="font-size: 4rem; font-variant-numeric: tabular-nums; line-height:1; text-shadow:0 0 30px rgba(255,255,255,0.1);">25:00</div>
+                    <div id="zenBreathText" class="text-muted mt-1" style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;">Nefes Al</div>
+                </div>
+            </div>
+
+            <h2 class="fw-bold mb-1" style="color:#c084fc; letter-spacing: 4px; font-size:1.5rem; text-shadow: 0 0 15px rgba(192,132,252,0.4);">ODAK & DİNLENME</h2>
+
+            <!-- Motivational Quote -->
+            <div id="zenQuote" class="text-center mb-4" style="max-width:500px;min-height:50px;">
+                <p class="mb-0" style="color:rgba(255,255,255,0.5);font-style:italic;font-size:0.9rem;line-height:1.6;transition:opacity 0.5s;">"Odaklanma enerjinin yoğunlaşmasıdır."</p>
+            </div>
+
+            <!-- Controls Row -->
+            <div class="d-flex gap-2 justify-content-center flex-wrap mb-4">
+                <button id="startPomodoro" class="btn rounded-pill px-4 py-2 fw-bold" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:0;color:#fff;box-shadow:0 4px 20px rgba(124,58,237,0.4);transition:all 0.3s;">
+                    <i class="fa-solid fa-play me-1"></i> Başlat
+                </button>
+                <button id="pausePomodoro" class="btn btn-outline-light rounded-pill px-4 py-2" style="border-color:rgba(255,255,255,0.15);">
+                    <i class="fa-solid fa-pause me-1"></i> Duraklat
+                </button>
+                <button id="resetPomodoro" class="btn rounded-pill px-4 py-2" style="border:1px solid rgba(239,68,68,0.3);color:#ef4444;background:rgba(239,68,68,0.05);">
+                    <i class="fa-solid fa-rotate-right me-1"></i> Sıfırla
+                </button>
+            </div>
+            <p id="pomodoroMessage" class="text-info" style="font-size:1rem; display:none;"><i class="fa-solid fa-bell"></i> Uyku Kalkanı Aktif! Esneme zamanı geldi.</p>
+
+            <!-- Bottom Panel: Ambient Sounds + Music -->
+            <div class="d-flex gap-3 flex-wrap justify-content-center" style="max-width:700px;width:100%;">
+                <!-- Ambient Sounds with Volume -->
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 20px;flex:1;min-width:280px;">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fa-solid fa-headphones" style="color:#38bdf8;"></i>
+                        <span class="fw-bold small" style="color:rgba(255,255,255,0.7);">Ortam Sesleri</span>
+                        <button id="zenStopAllSounds" class="btn btn-sm ms-auto" style="font-size:0.7rem;color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:2px 10px;background:rgba(239,68,68,0.05);">
+                            <i class="fa-solid fa-stop me-1"></i>Tümünü Durdur
+                        </button>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="rain" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:#38bdf8;font-size:0.8rem;padding:6px 14px;width:100px;">
+                                🌧️ Yağmur
+                            </button>
+                            <input type="range" class="form-range zen-volume" data-sound="rain" min="0" max="100" value="50" style="flex:1;accent-color:#38bdf8;">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="forest" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#22c55e;font-size:0.8rem;padding:6px 14px;width:100px;">
+                                🌲 Orman
+                            </button>
+                            <input type="range" class="form-range zen-volume" data-sound="forest" min="0" max="100" value="50" style="flex:1;accent-color:#22c55e;">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="cafe" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:#fbbf24;font-size:0.8rem;padding:6px 14px;width:100px;">
+                                ☕ Kafe
+                            </button>
+                            <input type="range" class="form-range zen-volume" data-sound="cafe" min="0" max="100" value="50" style="flex:1;accent-color:#fbbf24;">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="waves" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);color:#818cf8;font-size:0.8rem;padding:6px 14px;width:100px;">
+                                🌊 Dalga
+                            </button>
+                            <input type="range" class="form-range zen-volume" data-sound="waves" min="0" max="100" value="50" style="flex:1;accent-color:#818cf8;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spotify - Custom Link -->
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;min-width:280px;flex:1;">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fa-brands fa-spotify" style="color:#1DB954;"></i>
+                        <span class="fw-bold small" style="color:rgba(255,255,255,0.7);">Müziğini Seç</span>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm">
+                            <input id="zenSpotifyUrl" type="text" class="form-control" placeholder="Spotify linki yapıştır..." 
+                                   style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:10px 0 0 10px;font-size:0.8rem;padding:8px 12px;">
+                            <button id="zenSpotifyLoad" class="btn btn-sm fw-bold" style="background:#1DB954;color:#000;border-radius:0 10px 10px 0;padding:0 14px;">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:0.65rem;">Şarkı, playlist veya albüm linki yapıştır</div>
+                    </div>
+                    <div id="zenSpotifyEmbed" style="border-radius: 12px; overflow:hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.5); min-height:80px;">
+                        <iframe id="zenSpotifyIframe" style="border-radius:12px" src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Goal (bottom) -->
+            <div class="mt-4 text-center w-100" style="max-width:500px;">
+                <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 20px;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold">🎯 Günlük Odak Hedefi</span>
+                        <span id="zenDailyProgress" style="font-family:'JetBrains Mono',monospace;color:#34d399;font-size:0.8rem;">0 / 4 seans</span>
+                    </div>
+                    <div class="progress" style="height:5px;background:rgba(255,255,255,0.05);border-radius:3px;">
+                        <div id="zenDailyBar" class="progress-bar" style="width:0%;background:linear-gradient(90deg,#a855f7,#34d399);border-radius:3px;transition:width 0.5s;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💚 SAĞLIK KORUMA SİSTEMİ (Wellness Guardian) -->
+    <div id="wellnessWidget" style="position:fixed; top:80px; right:20px; z-index:1048; display:none;">
+        <div class="bg-dark text-white p-3 rounded-4 shadow-lg border" style="border-color: rgba(52,211,153,0.3) !important; max-width:280px; animation: slideInRight 0.5s ease;">
+            <div class="d-flex align-items-center mb-2">
+                <span id="wellnessIcon" style="font-size:2rem; margin-right:10px;"></span>
+                <div>
+                    <strong id="wellnessTitle" class="d-block" style="color:#34d399;"></strong>
+                    <small class="text-muted">Sağlık Koruma Sistemi</small>
+                </div>
+                <button id="wellnessDismiss" class="btn btn-sm btn-outline-secondary ms-auto rounded-circle" style="width:28px;height:28px;padding:0;">✕</button>
+            </div>
+            <p id="wellnessMessage" class="mb-2 small text-light" style="line-height:1.5;"></p>
+            <div class="progress" style="height:4px; background:rgba(255,255,255,0.1); border-radius:4px;">
+                <div id="wellnessProgress" class="progress-bar" style="background:linear-gradient(90deg,#34d399,#22d3ee); width:100%; transition: width 15s linear;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🛑 WELLNESS LOCK OVERLAY (Son aşama: mola zorunluluğu) -->
+    <div id="wellnessLockOverlay" class="wellness-lock-overlay" style="display:none;">
+        <div class="wellness-lock-panel">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span style="font-size:1.8rem;">🛡️</span>
+                    <div>
+                        <div class="fw-bold" style="color: var(--gb-gold); letter-spacing: 0.5px;">Zorunlu Mola</div>
+                        <div class="small text-muted">Sağlık Koruma Sistemi</div>
+                    </div>
+                </div>
+                <span class="badge rounded-pill bg-danger">LOCK</span>
+            </div>
+
+            <h3 class="text-light fw-bold mb-2" style="line-height:1.2;">Ekranı kilitledim çünkü mola vermedin.</h3>
+            <p class="text-secondary mb-4" style="line-height:1.6;">
+                30 dk göz molası + 60 dk postür uyarısını erteledin. Şimdi <b>kısa bir mola</b> verip geri gel.
+            </p>
+
+            <div class="d-flex flex-column gap-2 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Kalan zorunlu mola</span>
+                    <span id="wellnessLockCountdown" class="fw-bold text-warning" style="font-family:'JetBrains Mono', monospace;">00:00</span>
+                </div>
+                <div class="progress" style="height:8px;background:rgba(255,255,255,0.06);border-radius:999px;">
+                    <div id="wellnessLockBar" class="progress-bar" style="width:0%;background:linear-gradient(90deg,var(--gb-accent-emerald),var(--gb-accent-cyan));"></div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button id="wellnessLockDoneBtn" class="btn btn-success fw-bold rounded-pill px-4" disabled>
+                    <i class="fa-solid fa-check me-2"></i>Mola Bitti, Devam
+                </button>
+                <button id="wellnessLockSnoozeBtn" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fa-regular fa-clock me-2"></i>+2 dk uzat
+                </button>
+            </div>
+
+            <div class="text-muted small mt-3" style="opacity:0.8;">
+                İpucu: 20-20-20 kuralı, omuzları gevşetme, su içme.
+            </div>
+        </div>
+    </div>
+
+    <!-- styles moved to site.css -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // 💚 SAĞLIK KORUMA SİSTEMİ (WELLNESS GUARDIAN)
+        document.addEventListener("DOMContentLoaded", () => {
+            // Bildirim izni iste (1 kez)
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            const W = {
+                EYE_INTERVAL_MS: 45 * 1000,        // 45 saniye (Göz Molası)
+                POSTURE_INTERVAL_MS: 90 * 1000,    // 1.5 dk (Kalk & Esne)
+                LOCK_AFTER_MS: 150 * 1000,         // 2.5 dk (Zorunlu Mola)
+                MIN_BREAK_MS: 30 * 1000,           // 30 saniye kilit süresi
+
+                STORAGE: {
+                    lastBreakAt: 'gb_wellness_last_break_at',
+                    lastEyeAt: 'gb_wellness_last_eye_at',
+                    lastPostureAt: 'gb_wellness_last_posture_at',
+                    lockUntil: 'gb_wellness_lock_until',
+                    lockActiveSince: 'gb_wellness_lock_active_since',
+                    welcomeKey: 'gb_wellness_welcome_'
+                }
+            };
+
+            const lockOverlay = document.getElementById('wellnessLockOverlay');
+            const lockCountdown = document.getElementById('wellnessLockCountdown');
+            const lockBar = document.getElementById('wellnessLockBar');
+            const lockDoneBtn = document.getElementById('wellnessLockDoneBtn');
+            const lockSnoozeBtn = document.getElementById('wellnessLockSnoozeBtn');
+
+            function now() { return Date.now(); }
+            function getNum(key, fallback = 0) {
+                const n = parseInt(localStorage.getItem(key) || '');
+                return Number.isFinite(n) ? n : fallback;
+            }
+            function setNum(key, value) { localStorage.setItem(key, String(value)); }
+
+            async function sendSystemNotification(tip) {
+                if (!('Notification' in window)) return;
+                if (!('serviceWorker' in navigator)) return;
+                if (Notification.permission !== 'granted') return;
+
+                const title = 'GoldBranch AI - ' + tip.title;
+                const body = (tip.message || '').replace(/<[^>]*>/g, '');
+                const payload = {
+                    type: 'WELLNESS_NOTIFICATION',
+                    title,
+                    body,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/9334/9334400.png',
+                    tag: 'wellness-' + Date.now()
+                };
+
+                // Prefer SW controller messaging (shows up in OS notification center)
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage(payload);
+                    return;
+                }
+
+                // Fallback: showNotification via ready registration
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification(title, { body, icon: payload.icon, tag: payload.tag });
+            }
+
+            function markBreakTaken() {
+                const t = now();
+                setNum(W.STORAGE.lastBreakAt, t);
+                setNum(W.STORAGE.lastEyeAt, t);
+                setNum(W.STORAGE.lastPostureAt, t);
+            }
+
+            function isLocked() {
+                const until = getNum(W.STORAGE.lockUntil, 0);
+                return until > now();
+            }
+
+            function showLockOverlay() {
+                if (!lockOverlay) return;
+                lockOverlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideLockOverlay() {
+                if (!lockOverlay) return;
+                lockOverlay.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            function startLock(minMs) {
+                const startAt = now();
+                const until = startAt + Math.max(W.MIN_BREAK_MS, minMs);
+                setNum(W.STORAGE.lockActiveSince, startAt);
+                setNum(W.STORAGE.lockUntil, until);
+                showLockOverlay();
+            }
+
+            function updateLockUI() {
+                if (!lockOverlay || lockOverlay.style.display === 'none') return;
+                const startAt = getNum(W.STORAGE.lockActiveSince, now());
+                const until = getNum(W.STORAGE.lockUntil, now());
+                const total = Math.max(1, until - startAt);
+                const remaining = Math.max(0, until - now());
+                const done = remaining === 0;
+
+                const m = Math.floor(remaining / 60000).toString().padStart(2, '0');
+                const s = Math.floor((remaining % 60000) / 1000).toString().padStart(2, '0');
+                if (lockCountdown) lockCountdown.textContent = `${m}:${s}`;
+
+                const pct = Math.min(100, Math.max(0, ((total - remaining) / total) * 100));
+                if (lockBar) lockBar.style.width = pct + '%';
+
+                if (lockDoneBtn) lockDoneBtn.disabled = !done;
+            }
+
+            // Hierarchical wellness engine (tek döngü)
+            async function tick() {
+                // Lock devam ediyorsa sadece UI güncelle
+                if (isLocked()) {
+                    showLockOverlay();
+                    updateLockUI();
+                    return;
+                } else {
+                    hideLockOverlay();
+                }
+
+                const t = now();
+                const lastBreakAt = getNum(W.STORAGE.lastBreakAt, t);
+                const lastEyeAt = getNum(W.STORAGE.lastEyeAt, lastBreakAt);
+                const lastPostureAt = getNum(W.STORAGE.lastPostureAt, lastBreakAt);
+                const sinceBreak = t - lastBreakAt;
+
+                // En son aşama: 90 dk molasız → kilit
+                if (sinceBreak >= W.LOCK_AFTER_MS) {
+                    // Kullanıcı gerçekten mola vermeden devam etmiş demek
+                    startLock(W.MIN_BREAK_MS);
+                    await sendSystemNotification({
+                        title: 'Zorunlu Mola',
+                        message: '90 dakikadır mola vermedin. 3 dakikalık zorunlu mola başlatıldı.'
+                    });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '🛑 Zorunlu Mola',
+                            html: 'Sağlığın için ekranı kilitledim. <b>3 dakika</b> mola ver, sonra devam edebilirsin.',
+                            background: '#0d1117',
+                            color: '#f0f6fc',
+                            confirmButtonText: 'Tamam',
+                            confirmButtonColor: '#fbbf24'
+                        });
+                    }
+                    return;
+                }
+
+                // 60 dk: postür/kalk uyarısı (gösterilmediyse)
+                if (sinceBreak >= W.POSTURE_INTERVAL_MS && (t - lastPostureAt) >= W.POSTURE_INTERVAL_MS) {
+                    setNum(W.STORAGE.lastPostureAt, t);
+                    await sendSystemNotification({
+                        title: 'Kalk & Postür',
+                        message: '1 saattir ekrandasın. Ayağa kalk, omuzlarını gevşet, 45 sn esne.'
+                    });
+
+                    if (!document.hidden && typeof Swal !== 'undefined') {
+                        const res = await Swal.fire({
+                            icon: 'info',
+                            title: '🧍 1 Saat Oldu',
+                            html: 'Ayağa kalk ve <b>45 saniye</b> esne. Duruşunu düzelt, omuzlarını gevşet.',
+                            background: '#0d1117',
+                            color: '#f0f6fc',
+                            showCancelButton: true,
+                            confirmButtonText: 'Mola verdim',
+                            cancelButtonText: 'Sonra',
+                            confirmButtonColor: '#34d399',
+                            cancelButtonColor: '#64748b',
+                            timer: 15000,
+                            timerProgressBar: true
+                        });
+                        if (res.isConfirmed) {
+                            markBreakTaken();
+                        }
+                    }
+                    return;
+                }
+
+                // 30 dk: göz uyarısı (gösterilmediyse)
+                if (sinceBreak >= W.EYE_INTERVAL_MS && (t - lastEyeAt) >= W.EYE_INTERVAL_MS) {
+                    setNum(W.STORAGE.lastEyeAt, t);
+                    await sendSystemNotification({
+                        title: 'Göz Molası',
+                        message: '20-20-20: 20 sn boyunca uzağa bak.'
+                    });
+
+                    if (!document.hidden && typeof Swal !== 'undefined') {
+                        const res = await Swal.fire({
+                            icon: 'warning',
+                            title: '👁️ 30 Dakika Oldu',
+                            html: '<b>20-20-20</b> kuralı: 20 saniye boyunca uzağa bak.',
+                            background: '#0d1117',
+                            color: '#f0f6fc',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yaptım',
+                            cancelButtonText: 'Sonra',
+                            confirmButtonColor: '#38bdf8',
+                            cancelButtonColor: '#64748b',
+                            timer: 12000,
+                            timerProgressBar: true
+                        });
+                        if (res.isConfirmed) {
+                            // göz molası sayalım ama break'i resetlemeyelim (mikro mola)
+                            // kullanıcı isterse 60dk zinciri bozulmasın; sadece göz uyarısını ertele.
+                            setNum(W.STORAGE.lastEyeAt, now());
+                        }
+                    }
+                }
+            }
+
+            // Lock overlay butonları
+            if (lockDoneBtn) {
+                lockDoneBtn.addEventListener('click', () => {
+                    if (isLocked()) return;
+                    markBreakTaken();
+                    localStorage.removeItem(W.STORAGE.lockUntil);
+                    localStorage.removeItem(W.STORAGE.lockActiveSince);
+                    hideLockOverlay();
+                });
+            }
+            if (lockSnoozeBtn) {
+                lockSnoozeBtn.addEventListener('click', () => {
+                    const until = getNum(W.STORAGE.lockUntil, now());
+                    setNum(W.STORAGE.lockUntil, until + (2 * 60 * 1000));
+                    updateLockUI();
+                });
+            }
+
+            // İlk kurulum veya eski session (4 saati geçmişse) sıfırla ki girişte hemen uyarmasın
+            const lastBrk = getNum(W.STORAGE.lastBreakAt, 0);
+            if (!lastBrk || (now() - lastBrk > 4 * 60 * 60 * 1000)) {
+                markBreakTaken();
+                // Kilitli kalmışsa kilidi de kaldır
+                if (isLocked()) {
+                    localStorage.removeItem(W.STORAGE.lockUntil);
+                    localStorage.removeItem(W.STORAGE.lockActiveSince);
+                }
+            }
+
+            // Sayfa yenilense bile kilit sürsün
+            if (isLocked()) showLockOverlay();
+            updateLockUI();
+
+            // Tek interval: Her saniye kontrol et
+            setInterval(updateLockUI, 1000);
+            setInterval(tick, 1000);
+            tick();
+
+            // İlk kurulum veya session sıfırlamasından sonra hoşgeldin bildirimi
+            const todayKey = "gb_wellness_welcome_v2_" + new Date().toISOString().slice(0, 10);
+            if (!localStorage.getItem(todayKey)) {
+                localStorage.setItem(todayKey, "1");
+                setTimeout(() => {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            toast: true,
+                            position: 'bottom-start',
+                            icon: 'success',
+                            title: '🛡️ Wellness Guardian Aktif',
+                            text: 'Gözlerinizi ve duruşunuzu korumak için mola sistemi devrede.',
+                            showConfirmButton: false,
+                            timer: 5000,
+                            background: '#0d1117',
+                            color: '#10b981'
+                        });
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+
+    <script>
+        // ZEN MODU VE POMODORO MANTIĞI (ENHANCED)
+        document.addEventListener("DOMContentLoaded", () => {
+            const zenBtn = document.getElementById('zenModeBtn');
+            const zenOverlay = document.getElementById('zenModeOverlay');
+            const zenCloseBtn = document.getElementById('zenCloseBtn');
+            
+            let isZen = false;
+
+            // Motivational Quotes
+            const zenQuotes = [
+                '"Odaklanma enerjinin yoğunlaşmasıdır." — Tony Robbins',
+                '"Büyük işler, küçük adımların toplamıdır."',
+                '"Flow halinde zaman durur, verimlilik patlar."',
+                '"Dikkat dağınıklığı değil, odağını seç."',
+                '"Her pomodoro bir zafer, her mola bir ödül."',
+                '"Derinlere dal, yüzeyde kalanlar sıradan kalır."',
+                '"Sessizlikte üretilen, gürültüde asla yapılamaz."',
+                '"Şu an, hayatının en verimli anı olabilir."',
+                '"Bir seferde bir görev. Basit ama güçlü."',
+                '"Odaklan, uygula, tekrarla. Başarı formülü bu."'
+            ];
+
+            // Breathing text cycle
+            const breathTexts = ['Nefes Al', 'Tut...', 'Nefes Ver', 'Bekle...'];
+            let breathIdx = 0;
+            setInterval(() => {
+                const el = document.getElementById('zenBreathText');
+                if (el && isZen) {
+                    breathIdx = (breathIdx + 1) % breathTexts.length;
+                    el.textContent = breathTexts[breathIdx];
+                }
+            }, 2000);
+
+            // Session tracking
+            const todayKey = 'gb_zen_sessions_' + new Date().toISOString().slice(0, 10);
+            function getSessions() { return parseInt(localStorage.getItem(todayKey)) || 0; }
+            function addSession() {
+                const s = getSessions() + 1;
+                localStorage.setItem(todayKey, s);
+                updateSessionUI(s);
+            }
+            function updateSessionUI(s) {
+                const el = document.getElementById('zenSessionCount');
+                if (el) el.textContent = s + ' seans';
+                const prog = document.getElementById('zenDailyProgress');
+                if (prog) prog.textContent = s + ' / 4 seans';
+                const bar = document.getElementById('zenDailyBar');
+                if (bar) bar.style.width = Math.min(100, (s / 4) * 100) + '%';
+            }
+            updateSessionUI(getSessions());
+
+            // Quote rotation
+            function showRandomQuote() {
+                const el = document.getElementById('zenQuote');
+                if (!el) return;
+                const q = zenQuotes[Math.floor(Math.random() * zenQuotes.length)];
+                const p = el.querySelector('p');
+                if (p) { p.style.opacity = '0'; setTimeout(() => { p.textContent = q; p.style.opacity = '1'; }, 300); }
+            }
+
+            // Generate stars
+            function generateStars() {
+                const container = document.getElementById('zenStars');
+                if (!container || container.children.length > 0) return;
+                for (let i = 0; i < 60; i++) {
+                    const star = document.createElement('div');
+                    star.style.cssText = `position:absolute;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;background:white;border-radius:50%;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${Math.random()*0.5+0.1};animation:zenStarTwinkle ${Math.random()*4+2}s ${Math.random()*3}s ease-in-out infinite;`;
+                    container.appendChild(star);
+                }
+            }
+
+            function openZen() {
+                generateStars();
+                showRandomQuote();
+                zenOverlay.style.display = 'flex';
+                setTimeout(() => { zenOverlay.style.opacity = '1'; }, 10);
+                isZen = true;
+                document.addEventListener('keydown', handleEscape);
+            }
+
+            function closeZen() {
+                zenOverlay.style.opacity = '0';
+                setTimeout(() => { zenOverlay.style.display = 'none'; }, 1000);
+                isZen = false;
+                document.removeEventListener('keydown', handleEscape);
+                // Stop all ambient sounds when closing
+                if (typeof stopAllSounds === 'function') stopAllSounds();
+            }
+
+            zenBtn.addEventListener('click', () => { if (!isZen) openZen(); });
+            if (zenCloseBtn) zenCloseBtn.addEventListener('click', closeZen);
+
+            function handleEscape(e) {
+                if (e.key === "Escape") closeZen();
+            }
+
+            // Quote rotation interval
+            setInterval(() => { if (isZen) showRandomQuote(); }, 15000);
+
+            // ========== WEB AUDIO API — PROCEDURAL AMBIENT SOUNDS ==========
+            let audioCtx = null;
+            const activeSounds = {};
+
+            function getAudioCtx() {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                return audioCtx;
+            }
+
+            function createNoiseBuffer(ctx, duration) {
+                const sr = ctx.sampleRate;
+                const buf = ctx.createBuffer(2, sr * duration, sr);
+                for (let ch = 0; ch < 2; ch++) {
+                    const d = buf.getChannelData(ch);
+                    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+                }
+                return buf;
+            }
+
+            function startSound(type, volume) {
+                if (activeSounds[type]) return;
+                const ctx = getAudioCtx();
+                const gain = ctx.createGain();
+                gain.gain.value = volume;
+                gain.connect(ctx.destination);
+                const nodes = { gain };
+
+                if (type === 'rain') {
+                    // Rain: filtered white noise (highpass + lowpass combo)
+                    const src = ctx.createBufferSource();
+                    src.buffer = createNoiseBuffer(ctx, 4);
+                    src.loop = true;
+                    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 400;
+                    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 8000;
+                    src.connect(hp); hp.connect(lp); lp.connect(gain);
+                    src.start(); nodes.src = src;
+                }
+                else if (type === 'forest') {
+                    // Forest: very soft filtered noise + periodic chirps
+                    const src = ctx.createBufferSource();
+                    src.buffer = createNoiseBuffer(ctx, 4);
+                    src.loop = true;
+                    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2000; bp.Q.value = 0.5;
+                    const subGain = ctx.createGain(); subGain.gain.value = 0.3;
+                    src.connect(bp); bp.connect(subGain); subGain.connect(gain);
+                    src.start(); nodes.src = src;
+                    // Bird chirps
+                    nodes.chirpInterval = setInterval(() => {
+                        if (!activeSounds[type]) return;
+                        const osc = ctx.createOscillator();
+                        const cGain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = 2000 + Math.random() * 3000;
+                        cGain.gain.setValueAtTime(0, ctx.currentTime);
+                        cGain.gain.linearRampToValueAtTime(volume * 0.15, ctx.currentTime + 0.05);
+                        cGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+                        osc.connect(cGain); cGain.connect(ctx.destination);
+                        osc.start(); osc.stop(ctx.currentTime + 0.2);
+                    }, 2000 + Math.random() * 4000);
+                }
+                else if (type === 'cafe') {
+                    // Cafe: brown noise (integrated white noise)
+                    const bufLen = ctx.sampleRate * 4;
+                    const buf = ctx.createBuffer(2, bufLen, ctx.sampleRate);
+                    for (let ch = 0; ch < 2; ch++) {
+                        const d = buf.getChannelData(ch);
+                        let last = 0;
+                        for (let i = 0; i < bufLen; i++) {
+                            const white = Math.random() * 2 - 1;
+                            d[i] = (last + (0.02 * white)) / 1.02;
+                            last = d[i]; d[i] *= 3.5;
+                        }
+                    }
+                    const src = ctx.createBufferSource();
+                    src.buffer = buf; src.loop = true;
+                    src.connect(gain); src.start(); nodes.src = src;
+                }
+                else if (type === 'waves') {
+                    // Waves: modulated filtered noise
+                    const src = ctx.createBufferSource();
+                    src.buffer = createNoiseBuffer(ctx, 6);
+                    src.loop = true;
+                    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
+                    const modGain = ctx.createGain();
+                    // LFO for wave movement
+                    const lfo = ctx.createOscillator();
+                    const lfoGain = ctx.createGain();
+                    lfo.type = 'sine'; lfo.frequency.value = 0.1;
+                    lfoGain.gain.value = volume * 0.4;
+                    lfo.connect(lfoGain); lfoGain.connect(modGain.gain);
+                    modGain.gain.value = volume * 0.6;
+                    src.connect(lp); lp.connect(modGain); modGain.connect(ctx.destination);
+                    src.start(); lfo.start();
+                    nodes.src = src; nodes.lfo = lfo; nodes.modGain = modGain;
+                }
+
+                activeSounds[type] = nodes;
+            }
+
+            function stopSound(type) {
+                const nodes = activeSounds[type];
+                if (!nodes) return;
+                try { nodes.src?.stop(); } catch(e) {}
+                try { nodes.lfo?.stop(); } catch(e) {}
+                if (nodes.chirpInterval) clearInterval(nodes.chirpInterval);
+                delete activeSounds[type];
+            }
+
+            function stopAllSounds() {
+                Object.keys(activeSounds).forEach(stopSound);
+                document.querySelectorAll('.zen-sound-btn').forEach(b => b.classList.remove('active'));
+            }
+
+            // Sound button click handlers
+            document.querySelectorAll('.zen-sound-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.dataset.sound;
+                    if (activeSounds[type]) {
+                        stopSound(type);
+                        btn.classList.remove('active');
+                    } else {
+                        const slider = document.querySelector(`.zen-volume[data-sound="${type}"]`);
+                        const vol = slider ? slider.value / 100 : 0.5;
+                        startSound(type, vol);
+                        btn.classList.add('active');
+                    }
+                });
+            });
+
+            // Volume sliders
+            document.querySelectorAll('.zen-volume').forEach(slider => {
+                slider.addEventListener('input', () => {
+                    const type = slider.dataset.sound;
+                    const nodes = activeSounds[type];
+                    if (nodes?.gain) {
+                        nodes.gain.gain.value = slider.value / 100;
+                    }
+                    if (nodes?.modGain) {
+                        nodes.modGain.gain.value = (slider.value / 100) * 0.6;
+                    }
+                });
+            });
+
+            // Stop all button
+            const stopAllBtn = document.getElementById('zenStopAllSounds');
+            if (stopAllBtn) stopAllBtn.addEventListener('click', stopAllSounds);
+
+            // ========== SPOTIFY CUSTOM URL ==========
+            const spotifyUrlInput = document.getElementById('zenSpotifyUrl');
+            const spotifyLoadBtn = document.getElementById('zenSpotifyLoad');
+            const spotifyIframe = document.getElementById('zenSpotifyIframe');
+
+            function loadSpotifyUrl() {
+                const url = (spotifyUrlInput?.value || '').trim();
+                if (!url) return;
+                // Parse Spotify URL: https://open.spotify.com/track/xxx or /playlist/xxx etc
+                const match = url.match(/open\.spotify\.com\/(track|playlist|album|episode|show)\/([a-zA-Z0-9]+)/);
+                if (match) {
+                    const type = match[1], id = match[2];
+                    spotifyIframe.src = `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
+                    // Save to localStorage
+                    localStorage.setItem('gb_zen_spotify', url);
+                } else {
+                    // Try direct paste of URI like spotify:track:xxx
+                    const uriMatch = url.match(/spotify:(track|playlist|album):([a-zA-Z0-9]+)/);
+                    if (uriMatch) {
+                        spotifyIframe.src = `https://open.spotify.com/embed/${uriMatch[1]}/${uriMatch[2]}?utm_source=generator&theme=0`;
+                        localStorage.setItem('gb_zen_spotify', url);
+                    }
+                }
+            }
+
+            if (spotifyLoadBtn) spotifyLoadBtn.addEventListener('click', loadSpotifyUrl);
+            if (spotifyUrlInput) spotifyUrlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadSpotifyUrl(); });
+
+            // Restore saved Spotify
+            const savedSpotify = localStorage.getItem('gb_zen_spotify');
+            if (savedSpotify && spotifyUrlInput) {
+                spotifyUrlInput.value = savedSpotify;
+                // Auto-load on zen open (only parse, don't auto-play)
+                const match = savedSpotify.match(/open\.spotify\.com\/(track|playlist|album|episode|show)\/([a-zA-Z0-9]+)/);
+                if (match && spotifyIframe) {
+                    spotifyIframe.src = `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
+                }
+            }
+
+            // Pomodoro Counter
+            let pTimer;
+            let pTime = 25 * 60;
+            const pDisplay = document.getElementById('pomodoroTimer');
+            let isRunning = false;
+
+            function updateDisplay() {
+                const m = Math.floor(pTime / 60).toString().padStart(2, '0');
+                const s = (pTime % 60).toString().padStart(2, '0');
+                pDisplay.innerText = `${m}:${s}`;
+            }
+
+            document.getElementById('startPomodoro').addEventListener('click', () => {
+                if(isRunning) return;
+                isRunning = true;
+                pTimer = setInterval(() => {
+                    if(pTime > 0) { pTime--; updateDisplay(); }
+                    else { 
+                        clearInterval(pTimer); 
+                        isRunning = false; 
+                        document.getElementById('pomodoroMessage').style.display = 'block';
+                        addSession();
+                    }
+                }, 1000);
+            });
+
+            document.getElementById('pausePomodoro').addEventListener('click', () => {
+                clearInterval(pTimer);
+                isRunning = false;
+            });
+
+            document.getElementById('resetPomodoro').addEventListener('click', () => {
+                clearInterval(pTimer);
+                isRunning = false;
+                pTime = 25 * 60;
+                updateDisplay();
+                document.getElementById('pomodoroMessage').style.display = 'none';
+            });
+        });
+    </script>
+
+
+
+
+    <!-- Theme & Particle logic moved to site.js -->
+
+    <!-- SW, Page Loader, Error Handler & Elegant Touches logic moved to site.js -->
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

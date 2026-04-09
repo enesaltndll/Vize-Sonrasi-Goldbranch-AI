@@ -1,0 +1,154 @@
+@using GoldBranchAI.Services
+@{
+    ViewData["Title"] = "Fiyatlandırma";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var plans = ViewBag.Plans as IReadOnlyList<BillingService.Plan> ?? new List<BillingService.Plan>();
+}
+
+<div class="gb-page" style="max-width: 1200px; margin: 0 auto;">
+    <!-- HERO -->
+    <div class="text-center mb-5 fade-in-up">
+        <div class="system-title mb-3" style="letter-spacing: 6px;">PRICING</div>
+        <h1 class="gb-hero-title" style="font-size: clamp(2rem, 4vw, 3.5rem);">
+            Ekibiniz İçin Doğru Planı Seçin
+        </h1>
+        <p class="gb-hero-subtitle mx-auto text-center" style="max-width: 600px;">
+            Her ölçekteki ekip için tasarlandı. Ücretsiz başlayın, büyüdükçe yükseltin.
+        </p>
+    </div>
+
+    <!-- PRICING GRID -->
+    <div class="row g-4 justify-content-center mb-5">
+        @foreach (var plan in plans)
+        {
+            var isPro = plan.Key == "pro";
+            var isBusiness = plan.Key == "business";
+            <div class="col-lg-4 col-md-6 fade-in-up @(isPro ? "gb-stagger-2" : (isBusiness ? "gb-stagger-3" : "gb-stagger-1"))">
+                <div class="gb-glass-card p-0 h-100 d-flex flex-column position-relative @(isPro ? "gb-pricing-featured" : "")" 
+                     style="@(isPro ? "border: 2px solid rgba(251,191,36,0.4) !important; box-shadow: 0 0 40px rgba(251,191,36,0.1) !important;" : "")">
+                    
+                    @if (isPro)
+                    {
+                        <div class="text-center py-2" style="background: linear-gradient(90deg, var(--gb-gold-dark), var(--gb-gold), var(--gb-gold-dark)); color: #000; font-weight: 800; font-size: 0.75rem; letter-spacing: 2px;">
+                            ⭐ EN POPÜLER
+                        </div>
+                    }
+
+                    <div class="p-4 flex-grow-1 d-flex flex-column">
+                        <!-- Plan Header -->
+                        <div class="text-center mb-4">
+                            <span style="font-size: 2.5rem;">@plan.Badge</span>
+                            <h3 class="fw-bold mt-2 mb-1" style="color: @plan.Color;">@plan.Name</h3>
+                            <p class="text-muted small mb-3">@plan.NameTr</p>
+                            <div class="d-flex align-items-baseline justify-content-center gap-1">
+                                @if (plan.MonthlyPrice == 0)
+                                {
+                                    <span class="fw-900" style="font-size: 3rem; color: var(--gb-text-primary);">$0</span>
+                                }
+                                else
+                                {
+                                    <span class="fw-900" style="font-size: 3rem; color: @plan.Color;">$@plan.MonthlyPrice</span>
+                                    <span class="text-muted">/ay</span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Divider -->
+                        <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); margin: 0 -1rem 1.5rem;"></div>
+
+                        <!-- Features List -->
+                        <ul class="list-unstyled flex-grow-1 mb-4">
+                            @foreach (var h in plan.Highlights)
+                            {
+                                <li class="d-flex align-items-start gap-2 mb-3">
+                                    <i class="fa-solid fa-check-circle mt-1" style="color: @plan.Color; font-size: 0.85rem;"></i>
+                                    <span class="small">@h</span>
+                                </li>
+                            }
+                        </ul>
+
+                        <!-- CTA -->
+                        <div class="mt-auto">
+                            @if (plan.Key == "free")
+                            {
+                                <a asp-controller="Auth" asp-action="Register" class="btn btn-outline-light w-100 py-3 rounded-pill fw-bold">
+                                    <i class="fa-solid fa-rocket me-2"></i>Ücretsiz Başla
+                                </a>
+                            }
+                            else if (isPro)
+                            {
+                                <a asp-controller="Auth" asp-action="Register" class="btn btn-warning w-100 py-3 rounded-pill fw-bold shadow-lg" style="font-size: 1.05rem;">
+                                    <i class="fa-solid fa-bolt me-2"></i>14 Gün Ücretsiz Dene
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Auth" asp-action="Register" class="btn w-100 py-3 rounded-pill fw-bold" style="background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.4); color: #a78bfa;">
+                                    <i class="fa-solid fa-building me-2"></i>Bize Ulaşın
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- FEATURE COMPARISON TABLE -->
+    <div class="fade-in-up gb-stagger-4">
+        <div class="gb-glass-card p-4">
+            <h4 class="fw-bold text-center mb-4"><i class="fa-solid fa-table-columns text-warning me-2"></i>Detaylı Karşılaştırma</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0" style="background: transparent;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+                            <th class="text-muted" style="width: 40%;">Özellik</th>
+                            @foreach (var p in plans)
+                            {
+                                <th class="text-center" style="color: @p.Color;">@p.Badge @p.Name</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var rows = new (string Label, Func<BillingService.Plan, string> Render)[]
+                            {
+                                ("Kullanıcı Limiti", p => p.MaxUsers >= 9999 ? "Sınırsız" : p.MaxUsers.ToString()),
+                                ("Aktif Görev", p => p.MaxActiveTasks >= 9999 ? "Sınırsız" : p.MaxActiveTasks.ToString()),
+                                ("AI Kredi / Ay", p => p.AiMonthlyLimit.ToString()),
+                                ("AI Görev Bölme", p => p.HasAiBreakdown ? "✅" : "❌"),
+                                ("AI Sesli Komut", p => p.HasAiVoice ? "✅" : "❌"),
+                                ("AI Sohbet Özeti", p => p.HasAiSummarize ? "✅" : "❌"),
+                                ("AI Sprint Raporu", p => p.HasAiSprintReport ? "✅" : "❌"),
+                                ("Excel Export", p => p.HasExcelExport ? "✅" : "❌"),
+                                ("Burnout Haritası", p => p.HasBurnoutMap ? "✅" : "❌"),
+                                ("Focus Timer", p => p.HasFocusTimer ? "✅" : "❌"),
+                                ("Tüm Temalar", p => p.HasAllThemes ? "✅" : "❌"),
+                                ("Dosya Limiti", p => p.MaxFileSizeMB + " MB"),
+                                ("Sohbet Grubu", p => p.MaxChatGroups >= 9999 ? "Sınırsız" : p.MaxChatGroups.ToString()),
+                            };
+                        }
+                        @foreach (var row in rows)
+                        {
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                <td class="text-muted small">@row.Label</td>
+                                @foreach (var p in plans)
+                                {
+                                    <td class="text-center small">@row.Render(p)</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ / CTA -->
+    <div class="text-center mt-5 fade-in-up gb-stagger-5">
+        <p class="text-muted mb-3">Tüm planlar 14 gün ücretsiz Pro deneme ile başlar.</p>
+        <a asp-controller="Auth" asp-action="Register" class="btn btn-warning btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg">
+            <i class="fa-solid fa-rocket me-2"></i>Hemen Başla
+        </a>
+    </div>
+</div>

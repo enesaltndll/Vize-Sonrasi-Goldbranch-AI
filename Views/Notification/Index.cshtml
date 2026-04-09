@@ -1,0 +1,72 @@
+@model IEnumerable<GoldBranchAI.Models.SystemNotification>
+
+@{
+    ViewData["Title"] = L.Get("NotificationCenter");
+}
+
+<div class="gb-page fade-in-up" style="max-width: 980px; margin: 0 auto;">
+    <div class="gb-page-header">
+        <div>
+            <h2 class="gb-title" style="font-size: 1.75rem;">
+                <i class="fa-solid fa-bell text-warning me-2"></i> @L.Get("NotificationCenter")
+            </h2>
+            <p class="gb-subtitle mb-0">Sistemden gelen görev, rozet ve ekip bildirimleri.</p>
+        </div>
+        <div class="gb-actions">
+            @if (Model.Any(n => !n.IsRead))
+            {
+                <form asp-action="MarkAllAsRead" method="post">
+                    <button type="submit" class="btn btn-outline-info rounded-pill px-4">
+                        <i class="fa-solid fa-check-double me-2"></i> @L.Get("MarkAllReady")
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="gb-section">
+        <div class="gb-section-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-bell-slash fa-4x mb-3 opacity-50"></i>
+                    <h5>@L.Get("NoNotifications")</h5>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush bg-transparent">
+                    @foreach (var notif in Model.OrderByDescending(n => n.CreatedAt))
+                    {
+                        var bgClass = notif.IsRead ? "bg-transparent" : "bg-dark shadow-sm border-start border-4 border-warning";
+                        var textClass = notif.IsRead ? "text-muted" : "text-light fw-bold";
+                        var iconClass = notif.Message.Contains("🏅") ? "fa-medal text-warning" 
+                                      : notif.Message.Contains("💬") ? "fa-comment text-info" 
+                                      : notif.Message.Contains("⚡") ? "fa-bolt text-warning" 
+                                      : "fa-circle-dot text-success";
+                                      
+                        <a href="@(string.IsNullOrEmpty(notif.Link) ? "#" : notif.Link)" class="list-group-item list-group-item-action @bgClass py-4 border-bottom border-secondary hover-glass position-relative">
+                            <div class="d-flex align-items-center">
+                                <div class="me-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05);">
+                                    <i class="fa-solid @iconClass fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-1 @textClass" style="font-size: 1.1rem;">@notif.Message</p>
+                                    <small class="text-secondary"><i class="fa-regular fa-clock me-1"></i> @notif.CreatedAt.ToString("g")</small>
+                                </div>
+                                
+                                <div class="ms-3">
+                                    <form asp-action="DeleteNotification" asp-route-id="@notif.Id" method="post" class="d-inline" onclick="event.preventDefault(); this.submit();">
+                                        <button class="btn btn-sm btn-outline-danger rounded-circle" style="width:35px;height:35px;">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

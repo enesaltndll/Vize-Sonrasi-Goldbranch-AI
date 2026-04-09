@@ -1,0 +1,358 @@
+
+@{
+    ViewData["Title"] = L.Get("AIAgent");
+}
+
+<div class="gb-page fade-in-up">
+    <div class="gb-page-header">
+        <div class="d-flex align-items-center gap-3">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(59,130,246,0.1));border:1px solid rgba(139,92,246,0.3);">
+                <i class="fa-solid fa-brain" style="font-size:1.5rem;color:#a78bfa;"></i>
+            </span>
+            <div>
+                <h2 class="text-light fw-bold mb-0">AI Brain <span style="color:#a78bfa;">Engine</span></h2>
+                <p class="text-muted mb-0 small">@L.Get("AiBreakdownDesc")</p>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4">
+            <!-- SOL PANEL: Proje Açıklaması -->
+            <div class="col-lg-5">
+                <div class="card bg-dark border-0 shadow-lg h-100" style="border-radius:20px;border-top:3px solid #8b5cf6 !important;">
+                    <div class="card-body p-4">
+                        <h5 class="text-light fw-bold mb-3">
+                            <i class="fa-solid fa-rocket text-info me-2"></i>@L.Get("ProjectDef")
+                        </h5>
+                        <p class="text-muted small mb-3">@L.Get("AiBreakdownHint")</p>
+                        
+                        <textarea id="projectDescription" class="form-control bg-dark text-light shadow-sm mb-3" 
+                                  style="border:1px solid rgba(139,92,246,0.2);border-radius:14px;min-height:220px;resize:vertical;" 
+                                  placeholder="Örnek: Restoran için online sipariş sistemi. Müşteri menüyü görebilsin, sipariş verebilsin, ödeme yapabilsin. Admin panelinden menü yönetimi ve sipariş takibi olsun..."></textarea>
+
+                        <!-- Geliştirici Seçimi -->
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold text-uppercase">
+                                <i class="fa-solid fa-user-astronaut text-warning me-1"></i> @L.Get("AssignDev")
+                            </label>
+                            <select id="assignToUserId" class="form-select bg-dark text-light py-2" style="border:1px solid rgba(255,255,255,0.08);border-radius:14px;">
+                                <option value="">-- @L.Get("SelectDev") --</option>
+                                @if (ViewBag.Developers != null)
+                                {
+                                    foreach (var dev in ViewBag.Developers)
+                                    {
+                                        <option value="@dev.Id">@dev.FullName (@dev.Email)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <button id="analyzeBtn" class="btn w-100 fw-bold py-3 shadow" 
+                                style="border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:white;border:none;font-size:1rem;transition:all 0.3s ease;"
+                                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(139,92,246,0.4)'"
+                                onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>@L.Get("AnalyzeWithAI")
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAĞ PANEL: Sonuçlar -->
+            <div class="col-lg-7">
+                <div class="card bg-dark border-0 shadow-lg h-100" style="border-radius:20px;border-top:3px solid #22d3ee !important;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-light fw-bold mb-0">
+                                <i class="fa-solid fa-diagram-project text-info me-2"></i>@L.Get("AiResults")
+                            </h5>
+                            <span id="taskCountBadge" class="badge bg-dark border border-secondary px-3 py-2 d-none" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">
+                                <i class="fa-solid fa-cubes me-1"></i><span id="taskCountText">0</span> görev
+                            </span>
+                        </div>
+
+                        <!-- LOADING STATE -->
+                        <div id="loadingState" class="text-center py-5 d-none">
+                            <div class="mb-4">
+                                <div class="spinner-grow text-info" role="status" style="width:3rem;height:3rem;">
+                                    <span class="visually-hidden">Yükleniyor...</span>
+                                </div>
+                            </div>
+                            <h5 class="text-light fw-bold mb-2">@L.Get("AiThinking")</h5>
+                            <p class="text-muted small">@L.Get("AiAnalyzing")</p>
+                            <div class="progress mx-auto" style="width:60%;height:4px;border-radius:2px;background:rgba(255,255,255,0.05);">
+                                <div class="progress-bar bg-info" role="progressbar" style="width:100%;animation:indeterminate 1.5s infinite linear;"></div>
+                            </div>
+                        </div>
+
+                        <!-- EMPTY STATE -->
+                        <div id="emptyState" class="text-center py-5">
+                            <i class="fa-solid fa-satellite-dish fa-4x mb-3" style="color:rgba(139,92,246,0.3);"></i>
+                            <h5 class="text-muted fw-bold mb-2">@L.Get("NoAnalysis")</h5>
+                            <p class="text-muted small">@L.Get("NoAnalysisDesc")</p>
+                        </div>
+
+                        <!-- ERROR STATE -->
+                        <div id="errorState" class="d-none">
+                            <div class="alert border-0 py-3 px-4" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2) !important;border-radius:14px;">
+                                <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>
+                                <span id="errorText" class="text-light"></span>
+                            </div>
+                        </div>
+
+                        <!-- RESULTS -->
+                        <div id="resultsContainer" class="d-none">
+                            <div id="taskList" class="d-flex flex-column gap-3" style="max-height:500px;overflow-y:auto;padding-right:8px;"></div>
+                            
+                            <hr style="border-color:rgba(255,255,255,0.05);" class="my-4">
+                            
+                            <button id="applyBtn" class="btn w-100 fw-bold py-3 shadow"
+                                    style="border-radius:14px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;font-size:1rem;transition:all 0.3s ease;"
+                                    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(16,185,129,0.4)'"
+                                    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+                                <i class="fa-solid fa-paper-plane me-2"></i>@L.Get("TransferAll")
+                            </button>
+                        </div>
+
+                        <!-- SUCCESS STATE -->
+                        <div id="successState" class="text-center py-5 d-none">
+                            <i class="fa-solid fa-circle-check fa-4x mb-3" style="color:#10b981;"></i>
+                            <h5 class="text-light fw-bold mb-2">@L.Get("TransferSuccess")</h5>
+                            <p class="text-muted small mb-3" id="successText"></p>
+                            <a href="/Task/Index" class="btn btn-outline-info fw-bold px-4 py-2" style="border-radius:14px;">
+                                <i class="fa-solid fa-list-check me-1"></i> @L.Get("GoToTasks")
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+
+<style>
+    @@keyframes indeterminate {
+        0% { margin-left: 0; width: 30%; }
+        50% { margin-left: 40%; width: 40%; }
+        100% { margin-left: 100%; width: 10%; }
+    }
+    #taskList::-webkit-scrollbar { width: 6px; }
+    #taskList::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+    #taskList::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
+    #taskList::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.5); }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const analyzeBtn = document.getElementById("analyzeBtn");
+            const applyBtn = document.getElementById("applyBtn");
+            const textarea = document.getElementById("projectDescription");
+            const devSelect = document.getElementById("assignToUserId");
+
+            const emptyState = document.getElementById("emptyState");
+            const loadingState = document.getElementById("loadingState");
+            const errorState = document.getElementById("errorState");
+            const resultsContainer = document.getElementById("resultsContainer");
+            const successState = document.getElementById("successState");
+            const taskList = document.getElementById("taskList");
+            const taskCountBadge = document.getElementById("taskCountBadge");
+            const taskCountText = document.getElementById("taskCountText");
+
+            let currentBreakdownId = null;
+            let currentTasks = [];
+
+            function showState(state) {
+                emptyState.classList.add("d-none");
+                loadingState.classList.add("d-none");
+                errorState.classList.add("d-none");
+                resultsContainer.classList.add("d-none");
+                successState.classList.add("d-none");
+                taskCountBadge.classList.add("d-none");
+
+                if (state === "empty") emptyState.classList.remove("d-none");
+                else if (state === "loading") loadingState.classList.remove("d-none");
+                else if (state === "error") errorState.classList.remove("d-none");
+                else if (state === "results") {
+                    resultsContainer.classList.remove("d-none");
+                    taskCountBadge.classList.remove("d-none");
+                }
+                else if (state === "success") successState.classList.remove("d-none");
+            }
+
+            function getPriorityBadge(priority) {
+                const map = {
+                    "high": { bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.3)", color: "#ef4444", icon: "fa-bolt", text: "Yüksek" },
+                    "medium": { bg: "rgba(251,191,36,0.15)", border: "rgba(251,191,36,0.3)", color: "#fbbf24", icon: "fa-minus", text: "Orta" },
+                    "low": { bg: "rgba(34,211,238,0.15)", border: "rgba(34,211,238,0.3)", color: "#22d3ee", icon: "fa-leaf", text: "Düşük" }
+                };
+                const p = map[priority] || map["medium"];
+                return `<span class="badge px-2 py-1" style="background:${p.bg};border:1px solid ${p.border};color:${p.color};font-size:0.65rem;border-radius:8px;"><i class="fa-solid ${p.icon} me-1"></i>${p.text}</span>`;
+            }
+
+            function renderTasks(tasks) {
+                taskList.textContent = "";
+                tasks.forEach((task, idx) => {
+                    const card = document.createElement("div");
+                    card.className = "p-3 rounded-4 fade-in-up";
+                    card.style.cssText = `background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);animation-delay:${idx * 0.08}s;transition:all 0.3s ease;`;
+                    card.onmouseover = () => { card.style.borderColor = "rgba(139,92,246,0.3)"; card.style.background = "rgba(139,92,246,0.05)"; };
+                    card.onmouseout = () => { card.style.borderColor = "rgba(255,255,255,0.06)"; card.style.background = "rgba(255,255,255,0.03)"; };
+
+                    const header = document.createElement("div");
+                    header.className = "d-flex justify-content-between align-items-start mb-2";
+
+                    const titleDiv = document.createElement("div");
+                    titleDiv.className = "d-flex align-items-center gap-2";
+
+                    const numBadge = document.createElement("span");
+                    numBadge.className = "badge rounded-circle d-flex align-items-center justify-content-center";
+                    numBadge.style.cssText = "width:28px;height:28px;min-width:28px;background:linear-gradient(135deg,#8b5cf6,#6366f1);font-size:0.7rem;";
+                    numBadge.textContent = idx + 1;
+
+                    const titleSpan = document.createElement("span");
+                    titleSpan.className = "text-light fw-bold";
+                    titleSpan.style.fontSize = "0.9rem";
+                    titleSpan.textContent = task.title;
+
+                    titleDiv.appendChild(numBadge);
+                    titleDiv.appendChild(titleSpan);
+
+                    const badgeContainer = document.createElement("span");
+                    badgeContainer.innerHTML = getPriorityBadge(task.priority);
+
+                    header.appendChild(titleDiv);
+                    header.appendChild(badgeContainer);
+
+                    const desc = document.createElement("p");
+                    desc.className = "text-muted small mb-2 ms-4 ps-2";
+                    desc.textContent = task.description;
+
+                    const footer = document.createElement("div");
+                    footer.className = "ms-4 ps-2 d-flex gap-2";
+
+                    const timeBadge = document.createElement("span");
+                    timeBadge.className = "badge bg-dark border border-secondary px-2 py-1";
+                    timeBadge.style.cssText = "font-family:'JetBrains Mono',monospace;font-size:0.65rem;border-radius:8px;";
+                    timeBadge.innerHTML = `<i class="fa-regular fa-clock me-1"></i> ${task.estimatedHours} saat`;
+
+                    const deadlineBadge = document.createElement("span");
+                    deadlineBadge.className = "badge bg-dark border border-info text-info px-2 py-1";
+                    deadlineBadge.style.cssText = "font-family:'JetBrains Mono',monospace;font-size:0.65rem;border-radius:8px;";
+                    // Eğer AI deadlineDays üretmediyse varsayılan 7 gün
+                    let days = task.deadlineDays > 0 ? task.deadlineDays : 7;
+                    deadlineBadge.innerHTML = `<i class="fa-regular fa-calendar-check me-1"></i> ${days} gün sonra`;
+
+                    footer.appendChild(timeBadge);
+                    footer.appendChild(deadlineBadge);
+
+                    card.appendChild(header);
+                    card.appendChild(desc);
+                    card.appendChild(footer);
+                    taskList.appendChild(card);
+                });
+
+                taskCountText.textContent = tasks.length;
+            }
+
+            // ANALİZ BUTONU
+            analyzeBtn.addEventListener("click", async function () {
+                const desc = textarea.value.trim();
+                if (!desc) {
+                    alert("Lütfen bir proje açıklaması yazın.");
+                    textarea.focus();
+                    return;
+                }
+                if (desc.length < 20) {
+                    alert("Proje açıklaması en az 20 karakter olmalı.");
+                    textarea.focus();
+                    return;
+                }
+
+                showState("loading");
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = "Analiz Ediliyor...";
+
+                try {
+                    const response = await fetch("/Ai/Analyze", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ projectDescription: desc })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        currentBreakdownId = data.breakdownId;
+                        currentTasks = data.tasks;
+                        renderTasks(data.tasks);
+                        showState("results");
+                    } else {
+                        document.getElementById("errorText").textContent = data.error || "Bilinmeyen bir hata oluştu.";
+                        showState("error");
+                    }
+                } catch (err) {
+                    document.getElementById("errorText").textContent = "Sunucu ile bağlantı kurulamadı: " + err.message;
+                    showState("error");
+                } finally {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = "";
+                    const icon = document.createElement("i");
+                    icon.className = "fa-solid fa-wand-magic-sparkles me-2";
+                    analyzeBtn.appendChild(icon);
+                    analyzeBtn.appendChild(document.createTextNode("AI ile Analiz Et"));
+                }
+            });
+
+            // SİSTEME AKTAR BUTONU
+            applyBtn.addEventListener("click", async function () {
+                const devId = parseInt(devSelect.value);
+                if (!devId) {
+                    alert("Lütfen görevleri atayacağınız bir geliştirici seçin.");
+                    devSelect.focus();
+                    return;
+                }
+                if (!currentBreakdownId || currentTasks.length === 0) {
+                    alert("Aktarılacak görev bulunamadı. Önce analiz yapın.");
+                    return;
+                }
+
+                applyBtn.disabled = true;
+                applyBtn.textContent = "Aktarılıyor...";
+
+                try {
+                    const response = await fetch("/Ai/ApplyBreakdown", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            breakdownId: currentBreakdownId,
+                            assignToUserId: devId,
+                            tasks: currentTasks.map(t => ({
+                                title: t.title,
+                                description: t.description,
+                                estimatedHours: t.estimatedHours,
+                                deadlineDays: t.deadlineDays
+                            }))
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        document.getElementById("successText").textContent =
+                            `${data.addedCount} görev başarıyla sisteme aktarıldı ve geliştiriciye atandı.`;
+                        showState("success");
+                    } else {
+                        alert("Hata: " + (data.error || "Bilinmeyen hata"));
+                    }
+                } catch (err) {
+                    alert("Sunucu hatası: " + err.message);
+                } finally {
+                    applyBtn.disabled = false;
+                    applyBtn.textContent = "";
+                    const icon = document.createElement("i");
+                    icon.className = "fa-solid fa-paper-plane me-2";
+                    applyBtn.appendChild(icon);
+                    applyBtn.appendChild(document.createTextNode("Tüm Görevleri Sisteme Aktar"));
+                }
+            });
+        });
+    </script>
+}

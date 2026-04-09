@@ -1,0 +1,476 @@
+@model IEnumerable<GoldBranchAI.Models.AppUser>
+
+@{
+    ViewData["Title"] = L.Get("ChatRoom");
+    var currentUserRole = ViewBag.UserRole as string;
+    var currentUserId = (int)ViewBag.CurrentUserId;
+    var groups = ViewBag.Groups as List<GoldBranchAI.Models.ChatGroup>;
+    var monitoringDevs = ViewBag.DevsForMonitoring as List<GoldBranchAI.Models.AppUser>;
+
+    // Predefined group avatars
+    var groupAvatars = new Dictionary<string, string>
+    {
+        {"rocket", "🚀"}, {"code", "💻"}, {"design", "🎨"}, {"marketing", "📊"},
+        {"support", "🛡️"}, {"data", "📈"}, {"fire", "🔥"}, {"star", "⭐"},
+        {"brain", "🧠"}, {"target", "🎯"}, {"lightning", "⚡"}, {"globe", "🌍"}
+    };
+}
+
+<style>
+    .chat-container {
+        height: calc(100vh - 130px);
+        background: var(--gb-bg-card);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        position: relative;
+    }
+
+    .chat-sidebar {
+        width: 360px;
+        background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+        border-right: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+
+    .chat-main {
+        flex-grow: 1;
+        background: #0d1117;
+        position: relative;
+    }
+
+    .sidebar-header {
+        padding: 16px 20px;
+        background: rgba(22, 27, 34, 0.98);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .sidebar-search {
+        padding: 10px 16px;
+        background: rgba(0,0,0,0.15);
+    }
+    .sidebar-search input {
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        color: #fff !important;
+        border-radius: 12px;
+        padding: 8px 14px 8px 36px;
+        font-size: 0.8rem;
+    }
+    .sidebar-search .search-icon {
+        position: absolute;
+        left: 28px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255,255,255,0.3);
+        font-size: 0.75rem;
+    }
+
+    .sidebar-content {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .sidebar-content::-webkit-scrollbar { width: 4px; }
+    .sidebar-content::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 10px; }
+
+    .contact-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.02);
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none !important;
+        position: relative;
+    }
+    .contact-item:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .contact-item.active {
+        background: rgba(56,189,248,0.06);
+        border-left: 3px solid var(--gb-accent-cyan);
+    }
+
+    .avatar-box {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+        position: relative;
+    }
+    .avatar-box .online-dot {
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 10px;
+        height: 10px;
+        background: #22c55e;
+        border-radius: 50%;
+        border: 2px solid #161b22;
+    }
+
+    .category-label {
+        padding: 8px 18px;
+        background: rgba(0,0,0,0.25);
+        color: rgba(255,255,255,0.4);
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Group Create Overlay */
+    .group-create-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 9990;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+    }
+    .group-create-overlay.active { display: flex; }
+    .group-create-panel {
+        background: linear-gradient(145deg, #161b22, #0d1117);
+        border: 1px solid rgba(251,191,36,0.15);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+        animation: panelSlideIn 0.3s ease;
+    }
+    @@keyframes panelSlideIn {
+        from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .avatar-picker {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+    }
+    .avatar-picker-item {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        border: 2px solid transparent;
+        background: rgba(255,255,255,0.03);
+        transition: all 0.2s;
+    }
+    .avatar-picker-item:hover { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); }
+    .avatar-picker-item.selected { background: rgba(251,191,36,0.15); border-color: #fbbf24; box-shadow: 0 0 12px rgba(251,191,36,0.2); }
+
+    /* Empty State */
+    .chat-empty-float { animation: chatFloat 4s ease-in-out infinite; }
+    @@keyframes chatFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+</style>
+
+<div class="container-fluid py-3 fade-in-up">
+    <div class="chat-container">
+        <!-- SOL: SİDEBAR -->
+        <div class="chat-sidebar">
+            <div class="sidebar-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-comments text-info"></i>
+                    <h6 class="text-light fw-bold mb-0">@L.Get("Messaging")</h6>
+                </div>
+                @if (currentUserRole == "Admin" || currentUserRole == "Proje Sefi")
+                {
+                    <button class="btn btn-sm rounded-pill px-3 fw-bold" onclick="openGroupPanel()" 
+                            style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:#fbbf24;font-size:0.75rem;">
+                        <i class="fa-solid fa-plus me-1"></i> @L.Get("CreateGroup")
+                    </button>
+                }
+            </div>
+
+            <!-- Search -->
+            <div class="sidebar-search position-relative">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="chatSearch" class="form-control form-control-sm" placeholder="@L.Get("SearchContact")" autocomplete="off" />
+            </div>
+
+            <div class="sidebar-content">
+                <!-- GRUPLAR -->
+                <div class="category-label">
+                    <i class="fa-solid fa-users-viewfinder"></i> @L.Get("GroupChats")
+                </div>
+                @if (groups != null && groups.Any())
+                {
+                    @foreach (var g in groups)
+                    {
+                        var emoji = string.IsNullOrEmpty(g.GroupAvatar) ? "👥" : g.GroupAvatar;
+                        <a href="javascript:void(0)" onclick="loadChat(null, @g.Id, this)" class="contact-item" data-search-name="@g.GroupName.ToLower()">
+                            <div class="avatar-box" style="background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02)); border: 1px solid rgba(251,191,36,0.15);">
+                                <span>@emoji</span>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-light fw-bold text-truncate" style="font-size:0.85rem;">@g.GroupName</h6>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge rounded-pill" style="background:rgba(251,191,36,0.1);color:#fbbf24;font-size:0.6rem;border:1px solid rgba(251,191,36,0.15);">@g.Members.Count</span>
+                                        @if (currentUserRole == "Admin" || currentUserRole == "Proje Sefi")
+                                        {
+                                            <button onclick="deleteGroup(event, @g.Id)" class="btn btn-link text-danger p-0 ms-2 opacity-50 hover-opacity-100 border-0" title="@L.Get("Delete")">
+                                                <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <small class="text-muted text-truncate d-block" style="font-size:0.7rem;">@L.Get("JoinGroupChat")</small>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="p-4 text-center">
+                        <span style="font-size:1.5rem;opacity:0.3;">💬</span>
+                        <p class="text-muted small mb-0 mt-1">@L.Get("NoGroupsYet")</p>
+                    </div>
+                }
+
+                <!-- DİREKT MESAJLAR -->
+                <div class="category-label">
+                    <i class="fa-solid fa-user-shield"></i> @L.Get("DirectMessages")
+                </div>
+                @foreach (var user in Model)
+                {
+                    <a href="javascript:void(0)" onclick="loadChat(@user.Id, null, this)" class="contact-item" data-search-name="@user.FullName.ToLower()">
+                        <div class="avatar-box" style="background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(34,211,238,0.02)); border: 1px solid rgba(34,211,238,0.12);">
+                            <i class="fa-solid fa-user-astronaut text-info" style="font-size:1rem;"></i>
+                            <span class="online-dot"></span>
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 text-light fw-bold text-truncate" style="font-size:0.85rem;">@user.FullName</h6>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="badge rounded-pill" style="background:rgba(56,189,248,0.08);color:#38bdf8;font-size:0.55rem;border:1px solid rgba(56,189,248,0.15);">@user.Role</span>
+                                    @if (currentUserRole == "Admin" || currentUserRole == "Proje Sefi")
+                                    {
+                                        <button onclick="deleteConversation(event, @user.Id)" class="btn btn-link text-danger p-0 ms-1 border-0" style="opacity:1 !important;" title="@L.Get("Delete")">
+                                            <i class="fa-solid fa-trash-can" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <small class="text-muted text-truncate d-block" style="font-size:0.7rem;">@user.Email</small>
+                        </div>
+                    </a>
+                }
+
+                @if (currentUserRole == "Admin")
+                {
+                    <!-- İZLEME MODU -->
+                    <div class="category-label">
+                        <i class="fa-solid fa-tower-broadcast"></i> @L.Get("SystemMonitoring")
+                    </div>
+                    @if (monitoringDevs != null)
+                    {
+                        @foreach (var dev in monitoringDevs)
+                        {
+                            <a href="javascript:void(0)" onclick="loadChat(@dev.Id, null, this)" class="contact-item" data-search-name="@dev.FullName.ToLower()">
+                                <div class="avatar-box" style="background: linear-gradient(135deg, rgba(111,66,193,0.08), rgba(111,66,193,0.02)); border: 1px solid rgba(111,66,193,0.15);">
+                                    <i class="fa-solid fa-user-ninja" style="color: #6f42c1;font-size:1rem;"></i>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <h6 class="mb-0 text-light fw-bold text-truncate" style="font-size:0.85rem;">@dev.FullName</h6>
+                                    <small class="text-muted d-block" style="font-size:0.65rem;">
+                                        <i class="fa-solid fa-eye me-1" style="color:#a855f7;"></i>@L.Get("ViewMonitor")
+                                    </small>
+                                </div>
+                            </a>
+                        }
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- SAĞ: CHAT ALANI -->
+        <div class="chat-main">
+            <div id="chatEmptyState" class="h-100 w-100 d-flex flex-column align-items-center justify-content-center text-muted text-center p-4">
+                <div class="chat-empty-float mb-4">
+                    <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,rgba(56,189,248,0.1),rgba(139,92,246,0.1));border:1px solid rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-comments fa-2x text-info opacity-75"></i>
+                    </div>
+                </div>
+                <h4 class="text-light fw-bold mb-2">@L.Get("ChatSystemTitle")</h4>
+                <p style="max-width: 380px; font-size:0.85rem; line-height:1.7;">@L.Get("ChatStartPrompt")</p>
+                <div class="mt-3 px-4 py-2 rounded-pill border" style="background:rgba(34,197,94,0.04);border-color:rgba(34,197,94,0.15) !important;font-size:0.75rem;">
+                    <i class="fa-solid fa-lock text-success me-2"></i> @L.Get("ShieldActive")
+                </div>
+            </div>
+            <iframe id="chatIframe" src="" class="d-none w-100 h-100 border-0"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- GRUP KUR — OVERLAY -->
+<div class="group-create-overlay" id="groupOverlay">
+    <div class="group-create-panel">
+        <div class="p-4 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="text-light fw-bold mb-0"><i class="fa-solid fa-users-plus me-2 text-warning"></i> @L.Get("CreateGroup")</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" onclick="closeGroupPanel()" style="width:36px;height:36px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <form action="/Chat/CreateGroup" method="post">
+            <div class="p-4">
+                <!-- Avatar Picker -->
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">@L.Get("GroupAvatarLabel")</label>
+                    <input type="hidden" name="groupEmoji" id="selectedGroupEmoji" value="👥" />
+                    <div class="avatar-picker">
+                        @foreach (var av in groupAvatars)
+                        {
+                            <div class="avatar-picker-item @(av.Key == "rocket" ? "selected" : "")" data-emoji="@av.Value" onclick="selectGroupAvatar(this)">
+                                @av.Value
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Group Name -->
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">@L.Get("GroupNameLabel")</label>
+                    <input type="text" name="groupName" class="form-control py-3 px-4" style="background: #0d1117 !important; border: 1px solid rgba(255,255,255,0.08) !important; color: #fff !important; border-radius: 14px;" placeholder="Ör: Teknoloji Ekibi" required />
+                </div>
+
+                <!-- Members -->
+                <div>
+                    <label class="form-label text-muted small text-uppercase fw-bold">@L.Get("SelectMembers")</label>
+                    <div style="max-height: 220px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px;">
+                        @if (Model != null)
+                        {
+                            @foreach (var user in Model)
+                            {
+                                <label class="d-flex align-items-center gap-3 p-3 text-light" style="cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); transition: background 0.2s;">
+                                    <input type="checkbox" name="selectedUserIds" value="@user.Id" class="form-check-input" style="width:18px;height:18px;" />
+                                    <span style="font-size:0.85rem;">@user.FullName <small class="text-muted">(@user.Role)</small></span>
+                                </label>
+                            }
+                        }
+                        @if (monitoringDevs != null)
+                        {
+                            @foreach (var user in monitoringDevs)
+                            {
+                                <label class="d-flex align-items-center gap-3 p-3 text-light" style="cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); transition: background 0.2s;">
+                                    <input type="checkbox" name="selectedUserIds" value="@user.Id" class="form-check-input" style="width:18px;height:18px;" />
+                                    <span style="font-size:0.85rem;">@user.FullName <small class="text-muted">(@user.Role)</small></span>
+                                </label>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 pt-0 d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="closeGroupPanel()">@L.Get("Cancel")</button>
+                <button type="submit" class="btn rounded-pill px-4 fw-bold" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;border:0;">
+                    <i class="fa-solid fa-paper-plane me-1"></i> @L.Get("CreateGroupBtn")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Chat loading
+        function loadChat(userId, groupId, elem) {
+            document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+            elem.classList.add('active');
+            document.getElementById('chatEmptyState').classList.add('d-none');
+            const iframe = document.getElementById('chatIframe');
+            iframe.classList.remove('d-none');
+            let url = '/Chat/Room?iframe=true&_t=' + new Date().getTime();
+            if (userId) url += '&id=' + userId;
+            if (groupId) url += '&groupId=' + groupId;
+            iframe.src = url;
+        }
+
+        // Group panel
+        function openGroupPanel() { document.getElementById('groupOverlay').classList.add('active'); }
+        function closeGroupPanel() { document.getElementById('groupOverlay').classList.remove('active'); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGroupPanel(); });
+        document.getElementById('groupOverlay').addEventListener('click', function(e) { if (e.target === this) closeGroupPanel(); });
+
+        // Avatar picker
+        function selectGroupAvatar(el) {
+            document.querySelectorAll('.avatar-picker-item').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('selectedGroupEmoji').value = el.dataset.emoji;
+        }
+
+        // Sidebar search
+        document.getElementById('chatSearch')?.addEventListener('input', function() {
+            const q = this.value.toLowerCase().trim();
+            document.querySelectorAll('.contact-item').forEach(item => {
+                const name = item.dataset.searchName || '';
+                item.style.display = (!q || name.includes(q)) ? '' : 'none';
+            });
+        });
+
+        // Delete group
+        function deleteGroup(event, groupId) {
+            event.stopPropagation();
+            if (!confirm('@Html.Raw(L.Get("TaskDeleteConfirmation") ?? "Bu grubu kalıcı olarak silmek istediğinizden emin misiniz?")')) return;
+
+            var formData = new FormData();
+            formData.append("groupId", groupId);
+
+            fetch('/Chat/DeleteGroup', {
+                method: 'POST',
+                body: formData
+            }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || "Grup silinemedi.");
+                }
+            }).catch(() => alert("Sistem hatası."));
+        }
+
+        // Delete conversation (DM)
+        function deleteConversation(event, targetUserId) {
+            event.stopPropagation();
+            if (!confirm('@Html.Raw(L.Get("TaskDeleteConfirmation") ?? "Bu sohbet geçmişini kalıcı olarak silmek istediğinizden emin misiniz?")')) return;
+
+            var formData = new FormData();
+            formData.append("targetUserId", targetUserId);
+
+            fetch('/Chat/DeleteConversation', {
+                method: 'POST',
+                body: formData
+            }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Sohbet silindi.");
+                    location.reload();
+                } else {
+                    alert(data.message || "Sohbet silinemedi.");
+                }
+            }).catch(() => alert("Sistem hatası."));
+        }
+    </script>
+}

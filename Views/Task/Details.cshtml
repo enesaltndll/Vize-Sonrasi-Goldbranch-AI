@@ -1,0 +1,276 @@
+@model GoldBranchAI.Models.TodoTask
+
+@{
+    ViewData["Title"] = L.Get("TaskDetailTitle") + ": " + Model.Title;
+    var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+    
+    // Status badges logic
+    string statusBadge = "bg-primary";
+    string statusIcon = "fa-circle-info";
+    if (Model.Status == "Devam Ediyor") { statusBadge = "bg-primary"; statusIcon = "fa-spinner fa-spin"; }
+    else if (Model.Status == "Onay Bekliyor") { statusBadge = "bg-info text-dark"; statusIcon = "fa-check"; }
+    else if (Model.Status == "Revize") { statusBadge = "bg-warning text-dark"; statusIcon = "fa-rotate-left"; }
+    else if (Model.Status == "Tamamlandi") { statusBadge = "bg-success"; statusIcon = "fa-check-double"; }
+}
+
+<div class="gb-page fade-in-up" style="max-width: 980px; margin: 0 auto;">
+    <div class="gb-page-header">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge @statusBadge rounded-pill px-3 py-2" style="font-size:0.82rem; letter-spacing:1px; box-shadow:0 0 15px currentColor;">
+                    <i class="fa-solid @statusIcon me-1"></i> @Model.Status.ToUpper()
+                </span>
+                <span class="text-muted small fw-bold" style="font-family:'JetBrains Mono',monospace;">#TSK-@Model.Id.ToString("0000")</span>
+            </div>
+            <h2 class="gb-title mt-2" style="font-size: 1.85rem;">@Model.Title</h2>
+            <p class="gb-subtitle mb-0">@L.Get("TaskDetailSubtitle")</p>
+        </div>
+
+        <div class="gb-actions">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill pe-4 ps-3">
+                <i class="fa-solid fa-arrow-left me-2"></i> @L.Get("BackToRadar")
+            </a>
+            <button type="button" class="btn btn-outline-info rounded-pill px-3" id="gbCopyTaskLink" title="@L.Get("CopyLinkTitle")">
+                <i class="fa-solid fa-link me-2"></i> @L.Get("Link")
+            </button>
+
+            @if (currentUserRole == "Proje Sefi")
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-info fw-bold rounded-pill text-dark px-3">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> @L.Get("Edit")
+                </a>
+                <button type="button" class="btn btn-danger fw-bold rounded-pill px-3" onclick="document.getElementById('deleteOverlay').classList.add('active')">
+                    <i class="fa-solid fa-trash me-1"></i> @L.Get("CancelDelete")
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="gb-section">
+        <div class="gb-section-body">
+                
+                <div class="row mb-4 g-4 fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                            <span class="text-secondary small fw-bold text-uppercase d-block mb-1"><i class="fa-regular fa-calendar-check text-warning me-1"></i> @L.Get("Deadline")</span>
+                            <span class="text-light fw-bold">@Model.DueDate.ToString("dd MMMM yyyy HH:mm")</span>
+                            @{ var r = Model.DueDate - DateTime.Now; }
+                            @if (r.TotalHours < 0 && Model.Status != "Tamamlandi") { <div class="text-danger small mt-1"><i class="fa-solid fa-triangle-exclamation"></i> @L.Get("Overdue")</div> }
+                            else if (r.TotalHours > 0 && r.TotalHours < 24) { <div class="text-warning small mt-1 pulse-danger"><i class="fa-regular fa-clock"></i> @Math.Round(r.TotalHours) @L.Get("HoursLeft")</div> }
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                            <span class="text-secondary small fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-user-astronaut text-info me-1"></i> @L.Get("AssignedDev")</span>
+                            <span class="text-light fw-bold">@(Model.AppUser?.FullName ?? L.Get("Unknown"))</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                            <span class="text-secondary small fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-hourglass-start text-success me-1"></i> @L.Get("EstTime")</span>
+                            <span class="text-light fw-bold">@Model.EstimatedTimeHours @L.Get("Hours")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-5 fade-in-up" style="animation-delay: 0.2s;">
+                    <h5 class="text-light border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-align-left text-warning me-2"></i> @L.Get("TaskDetailTitle")</h5>
+                    <div class="text-muted" style="line-height: 1.7; font-size: 1.05rem; white-space: pre-wrap;">@Html.DisplayFor(m => m.Description)</div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.AttachedFilePath))
+                {
+                    <div class="mb-4 fade-in-up" style="animation-delay: 0.3s;">
+                        <h5 class="text-light border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-paperclip text-info me-2"></i> @L.Get("AttachedFile")</h5>
+                        
+                        @{
+                            string ext = System.IO.Path.GetExtension(Model.AttachedFilePath).ToLower();
+                            bool isImage = ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp";
+                        }
+
+                        @if (isImage)
+                        {
+                            <div class="mb-3 text-center rounded-4 overflow-hidden" style="border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5);">
+                                <img src="@Model.AttachedFilePath" style="max-height: 400px; max-width: 100%; object-fit: contain;" />
+                            </div>
+                        }
+                        
+                        <a href="@Model.AttachedFilePath" target="_blank" class="btn btn-outline-info rounded-pill px-4">
+                            <i class="fa-solid fa-cloud-arrow-down me-2"></i> @L.Get("DownloadFile")
+                        </a>
+                    </div>
+                }
+
+        </div>
+        <div class="px-4 px-md-5 py-3 border-top border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-color: rgba(255,255,255,0.08) !important;">
+            <span class="text-muted small"><i class="fa-regular fa-clock"></i> @L.Get("RegistrationDate"): @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+
+            <div class="d-flex flex-wrap gap-2">
+                @if (currentUserRole == "Gelistirici" && (Model.Status == "Devam Ediyor" || Model.Status == "Revize"))
+                {
+                    <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Onay Bekliyor" class="btn btn-info fw-bold rounded-pill text-dark px-4">
+                        <i class="fa-solid fa-paper-plane me-2"></i> @L.Get("SendToLead")
+                    </a>
+                }
+                else if (currentUserRole == "Proje Sefi" && Model.Status == "Onay Bekliyor")
+                {
+                    <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Revize" class="btn btn-warning fw-bold rounded-pill text-dark px-4">
+                        <i class="fa-solid fa-rotate-left me-2"></i> @L.Get("RequestRevision")
+                    </a>
+                    <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Tamamlandi" class="btn btn-success fw-bold rounded-pill text-dark px-4">
+                        <i class="fa-solid fa-check-double me-2"></i> @L.Get("AcceptWork")
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- 💬 GÖREV YORUMLARI BÖLÜMÜ -->
+    <div class="gb-section">
+        <div class="gb-section-header">
+            <h4 class="text-info fw-bold mb-0"><i class="fa-solid fa-comments me-2"></i> @L.Get("TaskComms")</h4>
+        </div>
+        <div class="gb-section-body">
+                
+                <!-- Mevcut Yorumlar -->
+                <div class="mb-4" style="max-height: 400px; overflow-y: auto;">
+                    @if (Model.Comments != null && Model.Comments.Any())
+                    {
+                        foreach (var comment in Model.Comments.OrderBy(c => c.CreatedAt))
+                        {
+                            <div class="d-flex mb-3 align-items-start fade-in-up">
+                                <img src="@(string.IsNullOrEmpty(comment.AppUser?.AvatarUrl) ? "https://cdn-icons-png.flaticon.com/512/9334/9334400.png" : comment.AppUser.AvatarUrl)" 
+                                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" class="me-3 border border-secondary" />
+                                <div class="p-3 rounded-4 w-100" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-light fw-bold">@comment.AppUser?.FullName</span>
+                                        <small class="text-muted">@comment.CreatedAt.ToString("HH:mm - dd MMM")</small>
+                                    </div>
+                                    <p class="mb-0 text-secondary" style="font-size: 0.95rem;">@comment.CommentText</p>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted border border-secondary rounded-3 border-dashed" style="border-style: dashed !important;">
+                            <i class="fa-regular fa-comment-dots fa-2x mb-2 opacity-50"></i>
+                            <p class="mb-0">@L.Get("NoComments")</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Yorum Ekleme Formu -->
+                <form asp-action="AddComment" method="post">
+                    <input type="hidden" name="TodoTaskId" value="@Model.Id" />
+                    <div class="input-group">
+                        <input type="text" name="CommentText" class="form-control bg-dark text-light border-secondary p-3" placeholder="@L.Get("CommentPlaceholder")" autocomplete="off" required style="border-radius: 15px 0 0 15px;" />
+                        <button type="submit" class="btn btn-info px-4 fw-bold" style="border-radius: 0 15px 15px 0;"><i class="fa-solid fa-paper-plane me-2"></i> @L.Get("Send")</button>
+                    </div>
+                </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const btn = document.getElementById('gbCopyTaskLink');
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                const url = window.location.href;
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(url);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = url;
+                        ta.style.position = 'fixed';
+                        ta.style.top = '-1000px';
+                        document.body.appendChild(ta);
+                        ta.focus(); ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
+                    if (window.GB && typeof window.GB.toast === 'function') {
+                        window.GB.toast({ icon: 'success', title: '@L.Get("LinkCopied")' });
+                    }
+                } catch {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'info', title: 'Link', text: url, background: '#0d1117', color: '#f0f6fc', confirmButtonColor: '#fbbf24' });
+                    } else {
+                        alert(url);
+                    }
+                }
+            });
+        })();
+    </script>
+}
+
+<!-- Delete Confirmation - Custom Overlay -->
+@if (currentUserRole == "Proje Sefi")
+{
+    <style>
+        .delete-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9990;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .delete-overlay.active {
+            display: flex;
+        }
+        .delete-panel {
+            background: #161b22;
+            border: 1px solid #dc3545;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 0 40px rgba(220,53,69,0.2), 0 25px 60px rgba(0,0,0,0.6);
+            animation: deleteSlideIn 0.3s ease;
+        }
+        @@keyframes deleteSlideIn {
+            from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+    </style>
+    <div class="delete-overlay" id="deleteOverlay">
+        <div class="delete-panel">
+            <div class="p-4 border-bottom text-danger" style="border-color: rgba(220,53,69,0.3) !important;">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i> @L.Get("CriticalActionWarning")</h5>
+            </div>
+            <div class="py-4 text-center px-4">
+                <i class="fa-solid fa-skull-crossbones fa-4x text-danger mb-3 opacity-75"></i>
+                <p class="text-light mb-1 mt-2">@L.Get("TaskDeleteConfirmation")</p>
+                <p class="text-muted small">@L.Get("ActionCannotBeUndone")</p>
+            </div>
+            <div class="d-flex justify-content-center gap-2 pb-4 px-4">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="document.getElementById('deleteOverlay').classList.remove('active')">@L.Get("CancelDeleteModal")</button>
+                <form asp-controller="Task" asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger fw-bold rounded-pill px-4 shadow">
+                        <i class="fa-solid fa-trash me-1"></i> @L.Get("YesDeletePermanently")
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        // ESC ile kapat
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var el = document.getElementById('deleteOverlay');
+                if (el) el.classList.remove('active');
+            }
+        });
+        // Overlay'e tiklanirsa kapat
+        var delOverlay = document.getElementById('deleteOverlay');
+        if (delOverlay) {
+            delOverlay.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('active');
+            });
+        }
+    </script>
+}

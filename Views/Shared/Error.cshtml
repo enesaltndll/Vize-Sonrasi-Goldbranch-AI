@@ -1,0 +1,15 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Hata";
+}
+<div class="gb-page">
+    <div class="gb-empty-state">
+        <i class="fa-solid fa-circle-exclamation text-danger fa-2x mb-3"></i>
+        <h2 class="text-light fw-bold mb-2">Bir hata olustu</h2>
+        <p class="mb-2">Istek islenirken beklenmeyen bir durumla karsilasildi.</p>
+        @if (Model.ShowRequestId)
+        {
+            <p class="mb-0"><strong>Kayit No:</strong> <code>@Model.RequestId</code></p>
+        }
+    </div>
+</div>

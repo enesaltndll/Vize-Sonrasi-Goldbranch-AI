@@ -1,0 +1,68 @@
+[
+  {
+    "UserId": 2003,
+    "Email": "goldtest186@gmail.com",
+    "PlanKey": "business",
+    "UsageMonth": "2026-04",
+    "AiUsedInMonth": 0,
+    "TrialEndsAtUtc": "2026-04-21T19:41:15.9213462Z",
+    "TrialUsed": true,
+    "LastCardMasked": "**** **** **** 2000",
+    "LastPaymentAtUtc": "2026-04-07T19:45:43.1409345Z",
+    "PaymentHistory": [
+      {
+        "Id": "TXN-FE0DC02DFF",
+        "PaidAtUtc": "2026-04-07T19:45:43.1408963Z",
+        "PlanKey": "business",
+        "Amount": 39,
+        "CardMasked": "**** **** **** 2000",
+        "Status": "success"
+      }
+    ]
+  },
+  {
+    "UserId": 1,
+    "Email": "admin@test.com",
+    "PlanKey": "business",
+    "UsageMonth": "2026-04",
+    "AiUsedInMonth": 31,
+    "TrialEndsAtUtc": "2026-04-21T19:46:12.0254925Z",
+    "TrialUsed": true,
+    "LastCardMasked": "**** **** **** 5468",
+    "LastPaymentAtUtc": "2026-04-08T14:20:20.1096152Z",
+    "PaymentHistory": [
+      {
+        "Id": "TXN-C4C70D01DD",
+        "PaidAtUtc": "2026-04-08T14:20:20.109615Z",
+        "PlanKey": "business",
+        "Amount": 39,
+        "CardMasked": "**** **** **** 5468",
+        "Status": "success"
+      }
+    ]
+  },
+  {
+    "UserId": 2,
+    "Email": "besir@test.com",
+    "PlanKey": "free",
+    "UsageMonth": "2026-04",
+    "AiUsedInMonth": 17,
+    "TrialEndsAtUtc": "2026-04-21T19:47:12.6382048Z",
+    "TrialUsed": false,
+    "LastCardMasked": null,
+    "LastPaymentAtUtc": null,
+    "PaymentHistory": []
+  },
+  {
+    "UserId": 1002,
+    "Email": "ediz@test.com",
+    "PlanKey": "free",
+    "UsageMonth": "2026-04",
+    "AiUsedInMonth": 22,
+    "TrialEndsAtUtc": "2026-04-21T19:48:08.2669693Z",
+    "TrialUsed": false,
+    "LastCardMasked": null,
+    "LastPaymentAtUtc": null,
+    "PaymentHistory": []
+  }
+]

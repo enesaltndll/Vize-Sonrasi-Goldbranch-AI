@@ -1,0 +1,372 @@
+
+@{
+    ViewData["Title"] = L.Get("ControlCenter");
+    var userRole = ViewBag.UserRole as string;
+}
+
+<div class="gb-page">
+    <!-- HERO SECTION -->
+    <div class="mb-5 fade-in-up">
+        <div class="system-title gb-stagger-1">System Intelligence v4.0</div>
+        <h1 class="gb-hero-title gb-stagger-2">
+            @(userRole == "Admin" ? L.Get("AdminCommandCenter") : (userRole == "Proje Sefi" ? L.Get("OperationControlPanel") : L.Get("DeveloperWorkspace")))
+        </h1>
+        <p class="gb-hero-subtitle gb-stagger-3">
+            @L.Get("Welcome") <span class="text-warning fw-bold">@(User?.Identity?.Name ?? L.Get("Commander"))</span>. @L.Get("AllSystemDataAtYourCommand")
+        </p>
+    </div>
+
+    <!-- KPI GRID -->
+    <div class="row g-4 mb-5 fade-in-up gb-stagger-2">
+        <div class="col-md-3">
+            <div class="gb-glass-card p-4 h-100">
+                <div class="small text-muted text-uppercase fw-bold mb-2">@L.Get("TotalTasksHeader")</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="mb-0 fw-900 text-info gb-counter" data-target="@(userRole == "Gelistirici" ? ViewBag.MyTotalTasks : ViewBag.TotalTasks)">0</h2>
+                    <i class="fa-solid fa-layer-group fa-2x opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="gb-glass-card p-4 h-100">
+                <div class="small text-muted text-uppercase fw-bold mb-2">@L.Get("CompletedHeader")</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="mb-0 fw-900 text-success gb-counter" data-target="@(userRole == "Gelistirici" ? ViewBag.MyCompletedTasks : ViewBag.CompletedTasks)">0</h2>
+                    <i class="fa-solid fa-check-double fa-2x opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="gb-glass-card p-4 h-100 pulse-danger">
+                <div class="small text-muted text-uppercase fw-bold mb-2">@L.Get("UrgentRisky")</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="mb-0 fw-900 text-danger gb-counter" data-target="@ViewBag.UrgentTasks">0</h2>
+                    <i class="fa-solid fa-triangle-exclamation fa-2x opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="gb-glass-card p-4 h-100">
+                @if (userRole == "Gelistirici")
+                {
+                    <div class="small text-muted text-uppercase fw-bold mb-2">@L.Get("RemainingWork")</div>
+                    <div class="d-flex align-items-end justify-content-between">
+                        <h2 class="mb-0 fw-900 text-warning gb-counter" data-target="@(ViewBag.MyTotalTasks - ViewBag.MyCompletedTasks)">0</h2>
+                        <i class="fa-solid fa-clock fa-2x opacity-25"></i>
+                    </div>
+                }
+                else
+                {
+                    <div class="small text-muted text-uppercase fw-bold mb-2">@L.Get("ActiveTeam")</div>
+                    <div class="d-flex align-items-end justify-content-between">
+                        <h2 class="mb-0 fw-900 text-purple gb-counter" data-target="@ViewBag.TotalDevelopers" style="color:var(--gb-accent-violet);">0</h2>
+                        <i class="fa-solid fa-users fa-2x opacity-25"></i>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="row g-4">
+        <!-- QUICK ACTIONS -->
+        <div class="col-lg-7 fade-in-left gb-stagger-3">
+            <div class="gb-glass-card p-4 h-100">
+                <h5 class="fw-bold mb-4"><i class="fa-solid fa-bolt text-warning me-2"></i>@L.Get("QuickActionsHeader")</h5>
+                <div class="row g-3">
+                    @if (userRole == "Admin")
+                    {
+                        <div class="col-md-6">
+                            <a asp-controller="Admin" asp-action="Users" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-accent-cyan);">
+                                <div class="quick-action-icon" style="background:rgba(34,211,238,0.1);color:var(--gb-accent-cyan);"><i class="fa-solid fa-users-gear"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("TeamMgmt")</h6><small class="text-muted">@L.Get("ManageRoles")</small></div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Admin" asp-action="BurnoutMap" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-accent-rose);">
+                                <div class="quick-action-icon" style="background:rgba(251,113,133,0.1);color:var(--gb-accent-rose);"><i class="fa-solid fa-fire"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("Workload")</h6><small class="text-muted">@L.Get("SeeRisks")</small></div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Admin" asp-action="Leaderboard" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-gold);">
+                                <div class="quick-action-icon" style="background:rgba(251,191,36,0.1);color:var(--gb-gold);"><i class="fa-solid fa-trophy"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("Ranking")</h6><small class="text-muted">@L.Get("TopPerformers")</small></div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Admin" asp-action="SystemLogs" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-accent-emerald);">
+                                <div class="quick-action-icon" style="background:rgba(52,211,153,0.1);color:var(--gb-accent-emerald);"><i class="fa-solid fa-terminal"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("Logs")</h6><small class="text-muted">@L.Get("SystemTracking")</small></div>
+                            </a>
+                        </div>
+                    }
+                    else if (userRole == "Proje Sefi")
+                    {
+                        <div class="col-md-12">
+                            <a asp-controller="Task" asp-action="Create" class="quick-action-card hover-glow-card" style="border-left: 4px solid var(--gb-gold); background: rgba(251,191,36,0.05);">
+                                <div class="quick-action-icon" style="background:var(--gb-gold); color:#000;"><i class="fa-solid fa-plus"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("AssignNewTaskBtn")</h6><small class="text-muted">@L.Get("QuicklyDefineWork")</small></div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Task" asp-action="Index" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-accent-cyan);">
+                                <div class="quick-action-icon" style="background:rgba(34,211,238,0.1);color:var(--gb-accent-cyan);"><i class="fa-solid fa-columns"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("TaskBoard")</h6><small class="text-muted">@L.Get("ManageFlow")</small></div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Chat" asp-action="Index" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-accent-emerald);">
+                                <div class="quick-action-icon" style="background:rgba(52,211,153,0.1);color:var(--gb-accent-emerald);"><i class="fa-solid fa-comments"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("Comms")</h6><small class="text-muted">@L.Get("TalkToTeam")</small></div>
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-12">
+                            <a asp-controller="Task" asp-action="Index" class="quick-action-card hover-glow-card" style="border-left: 4px solid var(--gb-accent-orange); background: rgba(251,146,60,0.05);">
+                                <div class="quick-action-icon" style="background:var(--gb-accent-orange);color:#000;"><i class="fa-solid fa-code"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("StartTaskWorkDesk")</h6><small class="text-muted">@L.Get("FocusOnNextTask")</small></div>
+                            </a>
+                        </div>
+                        <div class="col-md-12">
+                            <a asp-controller="Chat" asp-action="Index" class="quick-action-card gb-btn-shine" style="border-left: 4px solid var(--gb-accent-cyan);">
+                                <div class="quick-action-icon" style="background:rgba(34,211,238,0.1);color:var(--gb-accent-cyan);"><i class="fa-solid fa-comments"></i></div>
+                                <div><h6 class="mb-0 fw-bold">@L.Get("CommsWithLead")</h6><small class="text-muted">@L.Get("AskOrReport")</small></div>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="col-lg-5 fade-in-right gb-stagger-4">
+            <div class="gb-glass-card p-4 h-100">
+                <h5 class="fw-bold mb-4 text-center"><i class="fa-solid fa-chart-pie text-info me-2"></i>@L.Get("TaskDist")</h5>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="taskStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEVELOPMENT SUCCESS SECTION (Only Developer) -->
+    @if (userRole == "Gelistirici")
+    {
+        <div class="mt-5 fade-in-up gb-stagger-5">
+            <div class="gb-glass-card p-5 text-center hover-shine-box">
+                <h3 class="fw-bold mb-3"><i class="fa-solid fa-id-card text-warning me-2"></i>@L.Get("EliteCardReady")</h3>
+                <p class="text-muted mb-4">@L.Get("ShowYourAchievements")</p>
+                <button id="generateCardBtn" class="btn btn-warning py-3 px-5 rounded-pill fw-bold shadow-lg">
+                    <i class="fa-solid fa-wand-magic-sparkles me-2"></i> @L.Get("GenerateAchievementCard")
+                </button>
+                
+                <div id="cardPreviewContainer" class="mt-5" style="display:none;">
+                    <canvas id="achievementCanvas" width="400" height="600" style="border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); max-width: 100%;"></canvas>
+                    <div class="mt-4 d-flex justify-content-center gap-2">
+                        <button id="downloadCardBtn" class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold">
+                            <i class="fa-solid fa-download me-2"></i> @L.Get("DownloadCardPng")
+                        </button>
+                        <button id="shareLinkedinBtn" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold">
+                            <i class="fa-brands fa-linkedin me-2"></i> LinkedIn
+                        </button>
+                        <button id="shareInstagramBtn" class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold" style="border-color: #e1306c; color: #e1306c;">
+                            <i class="fa-brands fa-instagram me-2"></i> Instagram
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const chartEl = document.getElementById('taskStatusChart');
+            if (chartEl) {
+                const ctx = chartEl.getContext('2d');
+                const labels = @Html.Raw(ViewBag.StatusLabels);
+                const dataCounts = @Html.Raw(ViewBag.StatusData);
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataCounts,
+                            backgroundColor: [
+                                'rgba(56, 189, 248, 0.7)', 
+                                'rgba(251, 191, 36, 0.7)', 
+                                'rgba(192, 132, 252, 0.7)', 
+                                'rgba(239, 68, 68, 0.7)', 
+                                'rgba(16, 185, 129, 0.7)'
+                            ],
+                            borderColor: 'rgba(255,255,255,0.05)',
+                            borderWidth: 2,
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#8b949e', font: { family: 'Inter', size: 11 }, padding: 20 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Developer Card Logic
+            const btnGenerate = document.getElementById('generateCardBtn');
+            const previewContainer = document.getElementById('cardPreviewContainer');
+            const downloadBtn = document.getElementById('downloadCardBtn');
+            const canvas = document.getElementById('achievementCanvas');
+
+            if (btnGenerate && canvas) {
+                btnGenerate.addEventListener('click', () => {
+                    btnGenerate.style.display = 'none';
+                    previewContainer.style.display = 'block';
+
+                    const ctx = canvas.getContext('2d');
+                    const w = canvas.width;
+                    const h = canvas.height;
+
+                    // Dark Certificate Background
+                    ctx.fillStyle = '#0f172a'; // Deep Slate
+                    ctx.fillRect(0, 0, w, h);
+
+                    // Inner border (Certificate style)
+                    ctx.strokeStyle = '#fbbf24'; // Gold
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(20, 20, w - 40, h - 40);
+                    
+                    // Thinner inner border
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(26, 26, w - 52, h - 52);
+
+                    // Certificate Header
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 30px "Inter"';
+                    ctx.fillText('CERTIFICATE OF', w/2, 80);
+                    ctx.font = 'bold 22px "Inter"';
+                    ctx.fillText('ACHIEVEMENT', w/2, 110);
+
+                    // Ribbon Icon
+                    ctx.font = '50px "Inter"';
+                    ctx.fillText('🎓', w/2, 180);
+
+                    // Presenter
+                    ctx.font = '16px "Inter"';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText('PROUDLY PRESENTED TO', w/2, 230);
+
+                    // User Name
+                    ctx.font = 'bold 35px "Inter"';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText('@(User?.Identity?.Name ?? "Elite Dev")', w/2, 275);
+                    
+                    ctx.font = '500 13px "Inter"';
+                    ctx.fillStyle = '#fbbf24';
+                    // letterSpacing API is modern, may require simple fallback but let's use it for styling
+                    if(ctx.letterSpacing) ctx.letterSpacing = "2px";
+                    ctx.fillText('FOR REACHING S-CLASS RANK', w/2, 310);
+                    if(ctx.letterSpacing) ctx.letterSpacing = "0px";
+
+                    // Stats Area (Lighter background block)
+                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                    ctx.beginPath();
+                    ctx.roundRect(40, 335, w-80, 155, 10);
+                    ctx.fill();
+                    
+                    const stats = [
+                        { label: 'COMPLETED TASKS', val: '@(ViewBag.MyCompletedTasks ?? "0")' },
+                        { label: 'TOTAL CONTRIBUTION', val: '@(ViewBag.MyTotalTasks ?? "0")' },
+                        { label: 'CERTIFICATE DATE', val: '@DateTime.Now.ToString("dd.MM.yyyy")' }
+                    ];
+
+                    ctx.textAlign = 'center';
+                    stats.forEach((s, i) => {
+                        ctx.font = 'normal 11px "Inter"';
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.fillText(s.label, w/2, 365 + (i * 45));
+                        ctx.font = 'bold 15px "Inter"';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText(s.val, w/2, 385 + (i * 45));
+                    });
+
+                    // Signatures/Footer
+                    ctx.font = 'italic 15px "Inter"';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText('GoldBranch AI Systems', w/2, 530);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(w/2 - 80, 540);
+                    ctx.lineTo(w/2 + 80, 540);
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    ctx.font = 'bold 12px "Inter"';
+                    ctx.fillStyle = '#fbbf24';
+                    if(ctx.letterSpacing) ctx.letterSpacing = "4px";
+                    ctx.fillText('GOLDBRANCH AI', w/2, 555);
+                });
+
+                downloadBtn?.addEventListener('click', () => {
+                    const link = document.createElement('a');
+                    link.download = 'goldbranch_certificate.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+
+                // Social Sharing Logic
+                const shareText = encodeURIComponent("GoldBranch AI sisteminde başarı belgemi (Certificate of Achievement) aldım! Yeni görevlere hazırım. 🚀 #GoldBranchAI #Developer");
+                const shareUrl = encodeURIComponent(window.location.origin);
+
+                document.getElementById('shareLinkedinBtn')?.addEventListener('click', () => {
+                    // Note: LinkedIn usually prefers sharing actual URLs. We share the system link + text. 
+                    const liUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
+                    window.open(liUrl, '_blank');
+                });
+                
+                document.getElementById('shareInstagramBtn')?.addEventListener('click', () => {
+                    // Trigger download for Instagram since they don't support direct URL sharing
+                    const link = document.createElement('a');
+                    link.download = 'goldbranch_certificate.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    
+                    setTimeout(() => {
+                        alert("Sertifikanız cihazınıza indirildi! Şimdi Instagram'a yönlendiriliyorsunuz. İndirdiğiniz fotoğrafı hikayenizde paylaşabilirsiniz.");
+                        window.open('https://www.instagram.com/', '_blank');
+                    }, 500);
+                });
+            }
+        });
+
+        // Path2D polyfill for roundRect if needed
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+    </script>
+}

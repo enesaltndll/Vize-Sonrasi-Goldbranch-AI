@@ -1,0 +1,124 @@
+@model GoldBranchAI.Models.AppUser
+
+@{
+    ViewData["Title"] = L.Get("Profile");
+    var percent = ViewBag.OverallTasks > 0 ? (ViewBag.CompletedTasks * 100) / ViewBag.OverallTasks : 0;
+}
+
+<div class="gb-page fade-in-up" style="max-width: 1100px; margin: 0 auto;">
+    <!-- Header: Gamified Stats -->
+    <div class="gb-section">
+        <div class="gb-section-body">
+            <div class="row align-items-center" style="background: linear-gradient(135deg, rgba(88,28,135,0.35) 0%, rgba(15,23,42,0.65) 100%); border-radius: 18px; border: 1px solid rgba(139, 92, 246, 0.22); padding: 22px;">
+        
+        <div class="col-md-3 text-center position-relative">
+            <!-- Avatar Ring Effect -->
+            <div class="avatar-wrapper mx-auto mb-3" style="width:150px; height:150px; border-radius: 50%; padding: 5px; background: conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6); animation: spinRing 4s linear infinite;">
+                <div class="inner-avatar w-100 h-100 rounded-circle overflow-hidden bg-dark position-relative cursor-pointer" onclick="changeAvatar()" title="@L.Get("ChangeAvatar")">
+                    <img id="userAvatarImg" src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://cdn-icons-png.flaticon.com/512/9334/9334400.png" : Model.AvatarUrl)" class="w-100 h-100" style="object-fit:cover;" />
+                    <div class="overlay-hover position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,0.6); opacity:0; transition:0.3s;"><i class="fa-solid fa-pen text-white fa-2x"></i></div>
+                </div>
+            </div>
+            
+            <h3 class="fw-bold text-white mb-0" style="text-shadow: 0 0 10px rgba(255,255,255,0.3);">@Model.FullName</h3>
+            <span class="badge bg-warning text-dark mt-2 fw-bold px-3 py-1 shadow" style="font-size:0.9rem; letter-spacing:1px;"><i class="fa-solid fa-crown me-1"></i> @Model.Role</span>
+        </div>
+
+        <div class="col-md-9 mt-4 mt-md-0">
+            <h4 class="text-purple mb-4 fw-bold" style="color:#d8b4e2;">🎯 @L.Get("TaskCareerStats")</h4>
+            
+            <div class="row text-center mb-3">
+                <div class="col-4">
+                    <h1 class="display-5 fw-bold text-success mb-0 gb-counter" data-target="@ViewBag.CompletedTasks" style="text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">0</h1>
+                    <p class="text-muted text-uppercase small fw-bold">@L.Get("CompletedTasks")</p>
+                </div>
+                <div class="col-4 border-start border-end border-secondary">
+                    <h1 class="display-5 fw-bold text-info mb-0 gb-counter" data-target="@Model.ExperiencePoints" style="text-shadow: 0 0 15px rgba(6, 182, 212, 0.4);">0</h1>
+                    <p class="text-muted text-uppercase small fw-bold">@L.Get("ExperiencePoints")</p>
+                </div>
+                <div class="col-4">
+                    <h1 class="display-5 fw-bold text-warning mb-0 gb-counter" data-target="@(Model.UserBadges?.Count ?? 0)" style="text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);">0</h1>
+                    <p class="text-muted text-uppercase small fw-bold">@L.Get("BadgesEarned")</p>
+                </div>
+            </div>
+
+            <!-- XP / Level Progress Bar -->
+            <p class="text-secondary small mb-1">@L.Get("SuccessSync") (@percent%)</p>
+            <div class="progress" style="height: 12px; background: rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden;">
+                <div class="progress-bar gb-liquid-progress" role="progressbar" style="width: @percent%; border-radius: 6px;"></div>
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rozet Vitrini (Badge Collection) -->
+    <div class="gb-page-header">
+        <div>
+            <h3 class="gb-title" style="font-size: 1.45rem;"><i class="fa-solid fa-medal text-warning me-2"></i> @L.Get("BadgeRoom")</h3>
+            <p class="gb-subtitle mb-0">Kazandığın rozetler burada birikir.</p>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        @if (Model.UserBadges != null && Model.UserBadges.Any())
+        {
+            foreach (var badge in Model.UserBadges.OrderByDescending(b => b.EarnedAt))
+            {
+                <div class="col-md-3 col-sm-6 text-center">
+                    <div class="card bg-dark border-secondary h-100 badge-card gb-neon-border" style="border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s;">
+                        <div class="card-body py-4">
+                            <img src="@badge.IconUrl" style="width: 80px; height: 80px; filter: drop-shadow(0 0 10px rgba(251,191,36,0.8));" class="mb-3 badge-img" />
+                            <h5 class="fw-bold text-light mb-1">@badge.BadgeName</h5>
+                            <p class="text-muted small mb-3">@badge.Description</p>
+                            <span class="badge bg-secondary opacity-75">@badge.EarnedAt.ToString("dd MMM yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-dark text-center py-5 border-secondary rounded-4 shadow">
+                    <i class="fa-solid fa-ghost fa-4x text-muted mb-3 opacity-50"></i>
+                    <h4 class="text-secondary fw-bold">@L.Get("NoBadgeYet")</h4>
+                    <p class="text-muted">@L.Get("NoBadgeDesc")</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function changeAvatar() {
+            Swal.fire({
+                title: '@L.Get("UpdateAvatar")',
+                input: 'url',
+                inputLabel: '@L.Get("NewAvatarUrl")',
+                inputPlaceholder: 'https://...',
+                background: '#0d1117',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-save"></i> @L.Get("Save")',
+                cancelButtonText: '@L.Get("Close")',
+                confirmButtonColor: '#34d399',
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    // Send to backend
+                    fetch('/Profile/UpdateAvatar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'avatarUrl=' + encodeURIComponent(result.value)
+                    }).then(res => res.json()).then(data => {
+                        if(data.success) {
+                            document.getElementById('userAvatarImg').src = result.value;
+                            Swal.fire({ icon: 'success', title: 'Harika!', text: 'Avatar güncellendi.', background: '#0d1117', color: '#34d399', timer: 2000, showConfirmButton: false });
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}
