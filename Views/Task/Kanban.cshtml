@@ -65,7 +65,7 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => !t.IsCompleted && t.Status != "Devam Ediyor" && t.Status != "Onay Bekliyor"))
             {
-                <div class="kanban-item" draggable="true">
+                <div class="kanban-item" draggable="true" data-id="@t.Id">
                     <div class="fw-bold text-light mb-1">@t.Title</div>
                     <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
                     <span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;">@L.Get("KanbanWaiting")</span>
@@ -83,7 +83,7 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => t.Status == "Devam Ediyor"))
             {
-                <div class="kanban-item border-warning border-opacity-25" draggable="true">
+                <div class="kanban-item border-warning border-opacity-25" draggable="true" data-id="@t.Id">
                     <div class="fw-bold text-light mb-1">@t.Title</div>
                     <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
                     <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;"><i class="fa-solid fa-spinner fa-spin"></i> @L.Get("KanbanProcessing")</span>
@@ -101,7 +101,7 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => t.Status == "Onay Bekliyor" && !t.IsCompleted))
             {
-                <div class="kanban-item" draggable="true" style="border-left: 3px solid #c084fc;">
+                <div class="kanban-item" draggable="true" style="border-left: 3px solid #c084fc;" data-id="@t.Id">
                     <div class="fw-bold text-light mb-1">@t.Title</div>
                     <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
                     <span class="badge" style="background: rgba(192,132,252,0.2); color: #c084fc;">@L.Get("KanbanLeadWait")</span>
@@ -119,7 +119,7 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => t.IsCompleted))
             {
-                <div class="kanban-item" draggable="true" style="opacity: 0.6;">
+                <div class="kanban-item" draggable="true" style="opacity: 0.6;" data-id="@t.Id">
                     <div class="fw-bold text-success mb-1 text-decoration-line-through">@t.Title</div>
                     <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
                     <span class="badge bg-success bg-opacity-25 text-success"><i class="fa-solid fa-check-double"></i> @L.Get("KanbanFinished")</span>
@@ -152,8 +152,27 @@
             column.addEventListener('dragover', e => {
                 e.preventDefault();
                 const dragging = document.querySelector('.dragging');
-                if(dragging) {
+                if (dragging) {
                     column.querySelector('.kanban-items').appendChild(dragging);
+                }
+            });
+            
+            column.addEventListener('drop', e => {
+                e.preventDefault();
+                const dragging = document.querySelector('.dragging');
+                if (dragging) {
+                    const taskId = dragging.getAttribute('data-id');
+                    const newStatus = column.getAttribute('data-status');
+                    
+                    fetch(`/Task/ChangeStatus?id=${taskId}&newStatus=${encodeURIComponent(newStatus)}`, {
+                        method: 'GET'
+                    }).then(() => {
+                        if (window.GB && typeof window.GB.toast === 'function') {
+                            window.GB.toast({ icon: 'success', title: 'Durum güncellendi: ' + newStatus });
+                        }
+                    }).catch(err => {
+                        console.error('Update failed:', err);
+                    });
                 }
             });
         });
