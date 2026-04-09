@@ -793,8 +793,13 @@
                 if (lockDoneBtn) lockDoneBtn.disabled = !done;
             }
 
+            const pageLoadTime = now();
+
             // Hierarchical wellness engine (tek döngü)
             async function tick() {
+                // Sayfa ilk yüklendiğinde ufak bir tolerans (30 saniye) tanıyalım (Hoca sunumda login olunca hemen mola gelmesin)
+                if (now() - pageLoadTime < 30000) return;
+
                 // Lock devam ediyorsa sadece UI güncelle
                 if (isLocked()) {
                     showLockOverlay();
