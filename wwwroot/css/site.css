@@ -102,6 +102,9 @@ body {
     color: var(--gb-text-primary);
     margin: 0;
     padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -1258,6 +1261,7 @@ main { animation: pageEnter 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); }
     display: flex;
     flex-direction: column;
     gap: 18px;
+    flex-grow: 1;
 }
 
 .gb-page-header {
@@ -1911,4 +1915,80 @@ main { animation: pageEnter 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); }
 .gb-empty-lane-sub {
     font-size: 0.75rem;
     color: var(--gb-text-muted);
+}
+
+/* ====================================================
+   MOBILE RESPONSIVENESS & FULLSTACK BOTTOM NAV
+   ==================================================== */
+
+/* Fullstack Bottom Mobile Navigation */
+.gb-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 9999;
+    padding: 8px 10px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 767.98px) {
+    .gb-bottom-nav {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    
+    /* Adding padding to body so content isn't hidden behind bottom nav */
+    body {
+        padding-bottom: 70px; 
+    }
+    
+    .navbar-collapse .nav-item {
+        margin-bottom: 8px; /* Better spacing for hamburger menu */
+    }
+}
+
+.gb-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--gb-text-secondary);
+    text-decoration: none;
+    font-size: 0.7rem;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.gb-bottom-nav-item:hover,
+.gb-bottom-nav-item:active,
+.gb-bottom-nav-item.active {
+    color: var(--gb-gold);
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.gb-bottom-nav-item i {
+    font-size: 1.25rem;
+}
+
+/* Kanban Mobile Scroll Snapping (App-like Feel) */
+@media (max-width: 991.98px) {
+    .kanban-board {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        padding-bottom: 10px; /* Space for scrollbar */
+    }
+    
+    .kanban-column {
+        scroll-snap-align: center;
+        min-width: 85vw !important; /* Full width minus a peek of the next card */
+    }
 }

@@ -98,7 +98,7 @@ namespace GoldBranchAI.Controllers
             // 1. GELİŞTİRİCİ VERİLERİ
             if (currentUser.Role == "Gelistirici")
             {
-                tasks = _context.Tasks.Where(t => t.AppUserId == currentUser.Id && !t.IsCompleted).OrderBy(t => t.DueDate).ToList();
+                tasks = _context.Tasks.Include(t => t.DependsOnTask).Where(t => t.AppUserId == currentUser.Id && !t.IsCompleted).OrderBy(t => t.DueDate).ToList();
                 ViewBag.MyTotal = tasks.Count();
                 ViewBag.MyCompleted = _context.Tasks.Count(t => t.AppUserId == currentUser.Id && t.IsCompleted);
                 ViewBag.MyUrgent = tasks.Count(t => t.DueDate < urgentThreshold);
@@ -106,7 +106,7 @@ namespace GoldBranchAI.Controllers
             // 2. PROJE ŞEFİ VERİLERİ
             else if (currentUser.Role == "Proje Sefi")
             {
-                tasks = _context.Tasks.Where(t => !t.IsCompleted).OrderBy(t => t.DueDate).ToList();
+                tasks = _context.Tasks.Include(t => t.DependsOnTask).Where(t => !t.IsCompleted).OrderBy(t => t.DueDate).ToList();
                 ViewBag.ActiveTeamTasks = tasks.Count();
                 ViewBag.UrgentTeamTasks = tasks.Count(t => t.DueDate < urgentThreshold);
                 ViewBag.TotalDevelopers = _context.Users.Count(u => u.Role == "Gelistirici");
@@ -201,12 +201,33 @@ namespace GoldBranchAI.Controllers
         // YENİ EKLENEN ONAY VE REVİZE ALGORİTMASI (Eski Delete metodunun yerini aldı)
         public async Task<IActionResult> ChangeStatus(int id, string newStatus)
         {
-            var task = _context.Tasks.Include(t => t.AppUser).FirstOrDefault(t => t.Id == id);
+            var task = _context.Tasks.Include(t => t.AppUser).Include(t => t.DependsOnTask).FirstOrDefault(t => t.Id == id);
             var currentUser = GetCurrentUser();
             var currentUserRole = currentUser?.Role ?? "";
 
             if (task != null)
             {
+                // HİYERARŞİ KONTROLÜ
+                if ((newStatus == "Devam Ediyor" || newStatus == "Onay Bekliyor" || newStatus == "Tamamlandı") && task.DependsOnTask != null && !task.DependsOnTask.IsCompleted)
+                {
+                    string errMsg = $"[HİYERARŞİ KİLİDİ] Bu göreve başlamadan önce '{task.DependsOnTask.Title}' görevinin tamamlanması gerekiyor.";
+                    if (Request.Headers["Accept"].ToString().Contains("application/json") || Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Sec-Fetch-Dest"] == "empty")
+                    {
+                        return BadRequest(errMsg);
+                    }
+                    TempData["Error"] = errMsg;
+                    return RedirectToAction("Index");
+                }
+
+                // Geliştirici doğrudan Tamamlandı yapamaz
+                if (newStatus == "Tamamlandı" && currentUserRole == "Gelistirici")
+                {
+                    if (Request.Headers["Accept"].ToString().Contains("application/json") || Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Sec-Fetch-Dest"] == "empty")
+                        return BadRequest("Geliştiriciler görevleri doğrudan tamamlayamaz. Onaya sunmalısınız.");
+                    TempData["Error"] = "Yetki Hatası: Sadece onay bekliyor yapabilirsiniz.";
+                    return RedirectToAction("Index");
+                }
+
                 task.Status = newStatus;
 
                 // Eğer Şef "Tamamlandı" derse ancak o zaman sistemden düşer
@@ -270,6 +291,24 @@ namespace GoldBranchAI.Controllers
                         await _context.SaveChangesAsync();
                         await _notificationHub.Clients.User(task.AppUser.Id.ToString())
                             .SendAsync("ReceiveNotification", approvalNotif.Message, approvalNotif.Link);
+
+                        // 🔗 BİLDİRİM: Bu göreve bağımlı olan Görevlerin kilitleri açıldı!
+                        var dependantTasks = _context.Tasks.Where(t => t.DependsOnTaskId == task.Id && !t.IsCompleted).Include(t => t.AppUser).ToList();
+                        foreach(var depTask in dependantTasks)
+                        {
+                            if(depTask.AppUser != null)
+                            {
+                                var depNotif = new SystemNotification {
+                                    AppUserId = depTask.AppUser.Id,
+                                    Message = $"🔓 KİLİT AÇILDI: '{depTask.Title}' göevinizi engelleyen süreç tamamlandı! İşe başlayabilirsiniz.",
+                                    Link = $"/Task/Details/{depTask.Id}"
+                                };
+                                _context.SystemNotifications.Add(depNotif);
+                                await _notificationHub.Clients.User(depTask.AppUser.Id.ToString())
+                                    .SendAsync("ReceiveNotification", depNotif.Message, depNotif.Link);
+                            }
+                        }
+                        await _context.SaveChangesAsync();
                     }
 
                     _context.SystemLogs.Add(new SystemLog { ActionType = "GÖREV ONAYI", Message = $"Proje Şefi, {task.AppUser?.FullName} adlı kişinin '{task.Title}' görevini ONAYLADI." });
@@ -323,6 +362,7 @@ namespace GoldBranchAI.Controllers
         {
             var task = _context.Tasks
                 .Include(t => t.AppUser)
+                .Include(t => t.DependsOnTask)
                 .Include(t => t.Comments!)
                     .ThenInclude(c => c.AppUser)
                 .FirstOrDefault(t => t.Id == id);
@@ -421,13 +461,35 @@ namespace GoldBranchAI.Controllers
             }
             return RedirectToAction("Index");
         }
+
+        [HttpPost]
+        public IActionResult DeleteAllTasks()
+        {
+            var currentUser = GetCurrentUser();
+            if (currentUser == null) return RedirectToAction("Logout", "Auth");
+            if (currentUser.Role != "Proje Sefi" && currentUser.Role != "Admin") return Forbid();
+
+            // Tüm görevleri, onlara bağlı yorumları ve breakdown'ları sil
+            var tasks = _context.Tasks.ToList();
+            var comments = _context.TaskComments.ToList();
+            var breakdowns = _context.AiTaskBreakdowns.ToList();
+
+            _context.TaskComments.RemoveRange(comments);
+            _context.Tasks.RemoveRange(tasks);
+            _context.AiTaskBreakdowns.RemoveRange(breakdowns);
+
+            _context.SystemLogs.Add(new SystemLog { ActionType = "SİSTEM TEMİZLİĞİ", Message = $"{currentUser.FullName}, sistemdeki tüm görevleri ve AI analizlerini sıfırladı (Demo Modu)." });
+            _context.SaveChanges();
+
+            return RedirectToAction("Index");
+        }
         // --- YENİ EKLENEN ÖZELLİKLER ---
 
         public IActionResult Kanban()
         {
             var currentUser = GetCurrentUser();
             if (currentUser == null) return RedirectToAction("Logout", "Auth");
-            IQueryable<TodoTask> tasksQuery = _context.Tasks.Include(t => t.AppUser);
+            IQueryable<TodoTask> tasksQuery = _context.Tasks.Include(t => t.AppUser).Include(t => t.DependsOnTask);
 
             if (currentUser.Role == "Gelistirici")
                 tasksQuery = tasksQuery.Where(t => t.AppUserId == currentUser.Id);

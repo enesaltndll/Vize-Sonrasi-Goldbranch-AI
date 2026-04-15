@@ -30,6 +30,77 @@ namespace GoldBranchAI.Controllers
         }
 
         /// <summary>
+        /// Kullanıcının AI tercihlerini döndürür
+        /// </summary>
+        private (string Provider, string? ApiKey, string? Model) GetUserAiPreferences(AppUser user)
+        {
+            return (user.PreferredAiProvider ?? "default", user.CustomAiApiKey, user.CustomAiModel);
+        }
+
+        // ==================== AI AYARLARI ====================
+
+        /// <summary>
+        /// Kullanıcının mevcut AI ayarlarını getirir
+        /// </summary>
+        [HttpGet]
+        public IActionResult GetAiSettings()
+        {
+            var currentUser = GetCurrentUser();
+            if (currentUser == null) return Unauthorized();
+
+            return Json(new
+            {
+                success = true,
+                provider = currentUser.PreferredAiProvider ?? "default",
+                hasApiKey = !string.IsNullOrEmpty(currentUser.CustomAiApiKey),
+                maskedApiKey = !string.IsNullOrEmpty(currentUser.CustomAiApiKey)
+                    ? "****" + currentUser.CustomAiApiKey[^4..]
+                    : null,
+                model = currentUser.CustomAiModel
+            });
+        }
+
+        /// <summary>
+        /// Kullanıcının AI sağlayıcısını ve API anahtarını kaydeder
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> SaveAiSettings([FromBody] AiSettingsRequest request)
+        {
+            var currentUser = GetCurrentUser();
+            if (currentUser == null) return Unauthorized();
+
+            currentUser.PreferredAiProvider = request.Provider ?? "default";
+            currentUser.CustomAiApiKey = request.ApiKey;
+            currentUser.CustomAiModel = request.Model;
+
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "AI ayarları kaydedildi." });
+        }
+
+        /// <summary>
+        /// Kullanıcının girdiği API Key'ini test eder
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> TestAiConnection([FromBody] AiSettingsRequest request)
+        {
+            var currentUser = GetCurrentUser();
+            if (currentUser == null) return Unauthorized();
+
+            if (string.IsNullOrEmpty(request.Provider) || request.Provider == "default")
+                return Json(new { success = true, message = "Varsayılan AI sağlayıcı kullanılıyor." });
+
+            if (string.IsNullOrEmpty(request.ApiKey))
+                return Json(new { success = false, message = "API anahtarı girilmedi." });
+
+            var (success, message) = await _geminiService.TestProviderConnection(request.Provider, request.ApiKey, request.Model);
+
+            return Json(new { success, message });
+        }
+
+        // ==================== AI GÖREV BÖLME ====================
+
+        /// <summary>
         /// AI Görev Bölme sayfası (GET)
         /// </summary>
         [HttpGet]
@@ -52,7 +123,7 @@ namespace GoldBranchAI.Controllers
         }
 
         /// <summary>
-        /// Gemini API'ye proje açıklaması gönder, alt görevleri al (POST - AJAX)
+        /// AI'ye proje açıklaması gönder, alt görevleri al (POST - AJAX)
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Analyze([FromBody] AnalyzeRequest request)
@@ -67,9 +138,25 @@ namespace GoldBranchAI.Controllers
             if (!_billingService.TryConsumeAiCredit(currentUser.Id, currentUser.Email, out var aiUsageMsg))
                 return Json(new { success = false, error = aiUsageMsg, billingUrl = Url.Action("Index", "Billing") });
 
+            var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+
+            // Başlangıç tarihi parse
+            DateTime startDate = DateTime.Now;
+            if (!string.IsNullOrEmpty(request.StartDate) && DateTime.TryParse(request.StartDate, out var parsedDate))
+                startDate = parsedDate;
+
             try
             {
-                var (tasks, rawJson) = await _geminiService.BreakdownProjectAsync(request.ProjectDescription);
+                var (tasks, rawJson) = await _geminiService.BreakdownProjectAsync(
+                    request.ProjectDescription,
+                    request.TotalDurationValue > 0 ? request.TotalDurationValue : 7,
+                    request.TotalDurationUnit ?? "days",
+                    request.PeriodType ?? "daily",
+                    request.DailyWorkHours > 0 ? request.DailyWorkHours : 8,
+                    startDate,
+                    request.ProgrammingLanguage,
+                    provider, apiKey, model
+                );
 
                 // Breakdown kaydını veritabanına kaydet
                 var breakdown = new AiTaskBreakdown
@@ -85,7 +172,7 @@ namespace GoldBranchAI.Controllers
                 _context.SystemLogs.Add(new SystemLog
                 {
                     ActionType = "AI ANALİZ",
-                    Message = $"{currentUser.FullName}, AI ile bir projeyi {tasks.Count} alt göreve böldü."
+                    Message = $"{currentUser.FullName}, AI ile bir projeyi {tasks.Count} alt göreve böldü. (Süre: {request.TotalDurationValue} {request.TotalDurationUnit}, Periyot: {request.PeriodType}, Dil: {request.ProgrammingLanguage ?? "Yok"})"
                 });
 
                 await _context.SaveChangesAsync();
@@ -101,7 +188,9 @@ namespace GoldBranchAI.Controllers
                         description = t.Description,
                         estimatedHours = t.EstimatedHours,
                         priority = t.Priority,
-                        deadlineDays = t.DeadlineDays
+                        deadlineDays = t.DeadlineDays,
+                        techBranch = t.TechBranch,
+                        starterCode = t.StarterCode
                     })
                 });
             }
@@ -130,6 +219,8 @@ namespace GoldBranchAI.Controllers
             if (assignedUser == null) return BadRequest(new { error = "Geçersiz geliştirici seçimi." });
 
             int addedCount = 0;
+            var createdTasks = new List<TodoTask>();
+
             foreach (var task in request.Tasks)
             {
                 var newTask = new TodoTask
@@ -143,7 +234,21 @@ namespace GoldBranchAI.Controllers
                     CreatedAt = DateTime.Now
                 };
                 _context.Tasks.Add(newTask);
+                createdTasks.Add(newTask);
                 addedCount++;
+            }
+            
+            // Save once to generate IDs
+            await _context.SaveChangesAsync();
+
+            // Setup hierarchy based on dependsOnIndex
+            for (int i = 0; i < request.Tasks.Count; i++)
+            {
+                var reqTask = request.Tasks[i];
+                if (reqTask.DependsOnIndex.HasValue && reqTask.DependsOnIndex.Value >= 0 && reqTask.DependsOnIndex.Value < createdTasks.Count && reqTask.DependsOnIndex.Value != i)
+                {
+                    createdTasks[i].DependsOnTaskId = createdTasks[reqTask.DependsOnIndex.Value].Id;
+                }
             }
 
             breakdown.IsApplied = true;
@@ -151,13 +256,15 @@ namespace GoldBranchAI.Controllers
             _context.SystemLogs.Add(new SystemLog
             {
                 ActionType = "AI GÖREV AKTARIMI",
-                Message = $"{currentUser.FullName}, AI analizinden {addedCount} görevi {assignedUser.FullName} adlı kişiye toplu atadı."
+                Message = $"{currentUser.FullName}, AI analizinden {addedCount} görevi {assignedUser.FullName} adlı kişiye (Hiyerarşik) toplu atadı."
             });
 
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, addedCount });
         }
+
+        // ==================== AI ARAŞTIRMA ====================
 
         /// <summary>
         /// Geliştiriciler için AI Araştırma/Sohbet sayfası (GET)
@@ -195,7 +302,8 @@ namespace GoldBranchAI.Controllers
             if (!_billingService.TryConsumeAiCredit(currentUser.Id, currentUser.Email, out var aiUsageMsg))
                 return Json(new { success = false, error = aiUsageMsg, billingUrl = Url.Action("Index", "Billing") });
 
-            var answer = await _geminiService.AskDeveloperQuestionAsync(request.Question);
+            var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+            var answer = await _geminiService.AskDeveloperQuestionAsync(request.Question, provider, apiKey, model);
 
             // Veritabanına logla
             var log = new AiResearchLog
@@ -213,7 +321,7 @@ namespace GoldBranchAI.Controllers
         }
 
         /// <summary>
-        /// Seçili Chat Grubu'ndaki son konuşmaları çekip yapay zekaya (Gemini) özetletir 
+        /// Seçili Chat Grubu'ndaki son konuşmaları çekip yapay zekaya özetletir 
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> SummarizeGroup([FromBody] SummarizeRequest request)
@@ -248,7 +356,8 @@ namespace GoldBranchAI.Controllers
 
             try
             {
-                var summaryResponse = await _geminiService.AskDeveloperQuestionAsync(prompt);
+                var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+                var summaryResponse = await _geminiService.AskDeveloperQuestionAsync(prompt, provider, apiKey, model);
                 
                 // Sisteme log atıyoruz (Admin görsün)
                 _context.SystemLogs.Add(new SystemLog { ActionType = "AI ÖZET", Message = $"{currentUser.FullName}, '{group.GroupName}' grubu sohbetlerini yapay zekaya özetletti." });
@@ -262,7 +371,7 @@ namespace GoldBranchAI.Controllers
             }
         }
 
-        // --- YENİ EKLENEN AI ÖNCELİKLENDİRME ---
+        // --- AI ÖNCELİKLENDİRME ---
 
         [HttpGet]
         public async Task<IActionResult> PrioritizeTasks()
@@ -292,14 +401,15 @@ namespace GoldBranchAI.Controllers
             
             try
             {
-                ViewBag.AiResponse = await _geminiService.AskDeveloperQuestionAsync(prompt);
+                var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+                ViewBag.AiResponse = await _geminiService.AskDeveloperQuestionAsync(prompt, provider, apiKey, model);
             }
             catch (Exception ex)
             {
-                ViewBag.AiResponse = "Yapay Zeka Servisi şu an yanıt veremiyor. Lütfen daha sonra tekrar deneyin veya API anahtarınızı kontrol edin. Model: gemini-1.5-flash. Detay: " + ex.Message;
+                ViewBag.AiResponse = "Yapay Zeka Servisi şu an yanıt veremiyor. Lütfen daha sonra tekrar deneyin veya API anahtarınızı kontrol edin. Detay: " + ex.Message;
             }
             
-            return View(); // Ai/PrioritizeTasks.cshtml oluşturuldu.
+            return View();
         }
 
         [HttpPost]
@@ -338,7 +448,8 @@ Kurallar:
 ";
             try
             {
-                var geminiResponse = await _geminiService.AskDeveloperQuestionAsync(prompt);
+                var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+                var geminiResponse = await _geminiService.AskDeveloperQuestionAsync(prompt, provider, apiKey, model);
                 geminiResponse = geminiResponse.Replace("```json", "").Replace("```", "").Trim();
                 
                 var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -417,9 +528,9 @@ LÜTFEN ŞU BAŞLIKLARI KULLAN:
 
 Not: Sadece Markdown formatında, temiz bir çıktı ver.";
 
-            var (reportMarkdown, _) = await _geminiService.BreakdownProjectAsync(prompt); // Metot ismi "BreakdownProjectAsync" olsa da string prompt besliyor
+            var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+            var reportMarkdown = await _geminiService.AskDeveloperQuestionAsync(prompt, provider, apiKey, model);
             
-            // Generate a random ID or simply pass to view using ViewBag or TempData
             ViewBag.ReportText = reportMarkdown;
             return View("SprintReport");
         }
@@ -437,7 +548,8 @@ Not: Sadece Markdown formatında, temiz bir çıktı ver.";
 
             try
             {
-                var content = await _geminiService.GenerateAcademicHomeworkAsync(request.Topic, request.University, request.Department, request.ExtraRequest);
+                var (provider, apiKey, model) = GetUserAiPreferences(currentUser);
+                var content = await _geminiService.GenerateAcademicHomeworkAsync(request.Topic, request.University, request.Department, request.ExtraRequest, provider, apiKey, model);
                 
                 // --- Hafıza (Memory) Kayıt Ekleme ---
                 var log = new AiResearchLog
@@ -545,9 +657,16 @@ Not: Sadece Markdown formatında, temiz bir çıktı ver.";
     {
         public int Id { get; set; }
     }
+
     public class AnalyzeRequest
     {
         public string ProjectDescription { get; set; } = string.Empty;
+        public int TotalDurationValue { get; set; } = 7;
+        public string TotalDurationUnit { get; set; } = "days";
+        public string PeriodType { get; set; } = "daily";
+        public int DailyWorkHours { get; set; } = 8;
+        public string? StartDate { get; set; }
+        public string? ProgrammingLanguage { get; set; }
     }
 
     public class AskRequest
@@ -568,6 +687,7 @@ Not: Sadece Markdown formatında, temiz bir çıktı ver.";
         public string Description { get; set; } = string.Empty;
         public int EstimatedHours { get; set; }
         public int DeadlineDays { get; set; }
+        public int? DependsOnIndex { get; set; }
     }
 
     public class SummarizeRequest
@@ -594,5 +714,12 @@ Not: Sadece Markdown formatında, temiz bir çıktı ver.";
         public string Department { get; set; } = string.Empty;
         public string Topic { get; set; } = string.Empty;
         public string ExtraRequest { get; set; } = string.Empty;
+    }
+
+    public class AiSettingsRequest
+    {
+        public string? Provider { get; set; }
+        public string? ApiKey { get; set; }
+        public string? Model { get; set; }
     }
 }

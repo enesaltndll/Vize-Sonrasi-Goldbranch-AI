@@ -11,9 +11,13 @@
             </h1>
             <p class="gb-subtitle mb-0 mt-1">@L.Get("AiVoiceChatDesc")</p>
         </div>
-        <div class="gb-actions d-flex gap-2">
+        <div class="gb-actions d-flex gap-2 flex-wrap">
             <button class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="offcanvas" data-bs-target="#memoryOffcanvas" onclick="loadMemory()">
                 <i class="fa-solid fa-clock-rotate-left me-1"></i> @L.Get("Proje Hafizası")
+            </button>
+            <button class="btn btn-sm rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#aiProviderCollapseVC"
+                    style="background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.2);color:#c084fc;font-size:0.75rem;">
+                <i class="fa-solid fa-microchip me-1"></i>@L.Get("AiProviderSettings")
             </button>
             <select id="vcMicSelect" class="form-select form-select-sm" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 220px; font-size: 0.75rem;">
                 <option value="">@L.Get("MicLoading")</option>
@@ -21,6 +25,44 @@
             <button class="btn btn-sm btn-outline-light" onclick="loadMics()" title="@L.Get("Refresh")">
                 <i class="fa-solid fa-arrows-rotate"></i>
             </button>
+        </div>
+    </div>
+
+    <!-- AI SAĞLAYICI SEÇİMİ (VoiceChat) -->
+    <div class="collapse mb-3" id="aiProviderCollapseVC">
+        <div class="p-3 rounded-3" style="background:rgba(168,85,247,0.03);border:1px solid rgba(168,85,247,0.1);">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <select id="aiProviderVC" class="form-select form-select-sm bg-dark text-light" 
+                            style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;">
+                        <option value="default">🔄 @L.Get("AiProviderDefault")</option>
+                        <option value="openai">🟢 OpenAI (GPT-4o)</option>
+                        <option value="gemini">🔵 Google Gemini</option>
+                        <option value="anthropic">🟠 Anthropic Claude</option>
+                        <option value="cohere">🟣 Cohere</option>
+                        <option value="sambanova">⚡ SambaNova</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="password" id="aiApiKeyVC" class="form-control form-control-sm bg-dark text-light" 
+                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;"
+                           placeholder="@L.Get("AiApiKeyPlaceholder")">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="aiModelVC" class="form-control form-control-sm bg-dark text-light" 
+                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;"
+                           placeholder="@L.Get("AiModelPlaceholder")">
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button id="testAiBtnVC" class="btn btn-sm flex-fill" style="background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:0.7rem;border-radius:8px;">
+                        <i class="fa-solid fa-plug me-1"></i>Test
+                    </button>
+                    <button id="saveAiBtnVC" class="btn btn-sm flex-fill" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;font-size:0.7rem;border-radius:8px;">
+                        <i class="fa-solid fa-floppy-disk me-1"></i>Kaydet
+                    </button>
+                </div>
+            </div>
+            <div id="aiTestResultVC" class="mt-2 small d-none"></div>
         </div>
     </div>
     
@@ -236,5 +278,45 @@
     }
     .a4-preview-card h1, .a4-preview-card h2, .a4-preview-card h3 { color: #000 !important; }
 </style>
+
+<script>
+    // AI Settings for VoiceChat panel
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch("/Ai/GetAiSettings").then(r => r.json()).then(data => {
+            if (data.success) {
+                const prov = document.getElementById("aiProviderVC");
+                if (prov) prov.value = data.provider || "default";
+                if (data.model) { const m = document.getElementById("aiModelVC"); if (m) m.value = data.model; }
+            }
+        }).catch(() => {});
+
+        const testBtn = document.getElementById("testAiBtnVC");
+        const saveBtn = document.getElementById("saveAiBtnVC");
+        if (testBtn) {
+            testBtn.addEventListener("click", async function () {
+                const rd = document.getElementById("aiTestResultVC");
+                rd.classList.remove("d-none"); rd.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Test...'; rd.className = "mt-2 small text-muted";
+                try {
+                    const res = await fetch("/Ai/TestAiConnection", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ provider: document.getElementById("aiProviderVC").value, apiKey: document.getElementById("aiApiKeyVC").value, model: document.getElementById("aiModelVC").value })
+                    });
+                    const d = await res.json(); rd.innerHTML = d.message; rd.className = d.success ? "mt-2 small text-success" : "mt-2 small text-danger";
+                } catch (e) { rd.innerHTML = "❌ " + e.message; rd.className = "mt-2 small text-danger"; }
+            });
+        }
+        if (saveBtn) {
+            saveBtn.addEventListener("click", async function () {
+                const rd = document.getElementById("aiTestResultVC");
+                try {
+                    const res = await fetch("/Ai/SaveAiSettings", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ provider: document.getElementById("aiProviderVC").value, apiKey: document.getElementById("aiApiKeyVC").value, model: document.getElementById("aiModelVC").value })
+                    });
+                    const d = await res.json(); rd.classList.remove("d-none");
+                    rd.innerHTML = d.success ? "✅ Kaydedildi!" : "❌ " + d.message; rd.className = d.success ? "mt-2 small text-success" : "mt-2 small text-danger";
+                } catch (e) { rd.classList.remove("d-none"); rd.innerHTML = "❌ " + e.message; rd.className = "mt-2 small text-danger"; }
+            });
+        }
+    });
+</script>
 
 <script src="~/js/voicechat.js" asp-append-version="true"></script>

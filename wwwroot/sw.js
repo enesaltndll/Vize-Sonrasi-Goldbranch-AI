@@ -2,6 +2,7 @@ const CACHE_NAME = 'gb-cache-v2';
 const urlsToCache = [
   '/',
   '/css/site.css',
+  '/offline.html',
   '/lib/bootstrap/dist/css/bootstrap.min.css',
   '/lib/font-awesome/css/all.min.css'
 ];
@@ -19,13 +20,21 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) return response;
-        return fetch(event.request).catch(() => {});
-      })
-  );
+  if (event.request.mode === 'navigate') {
+    // Navigate means it's a page request
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/offline.html'))
+    );
+  } else {
+    // For other assets, try cache first, then network
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => {
+          if (response) return response;
+          return fetch(event.request).catch(() => {});
+        })
+    );
+  }
 });
 
 // ====================================================

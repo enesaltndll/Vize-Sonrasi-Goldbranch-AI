@@ -8,6 +8,8 @@ using GoldBranchAI.Hubs;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+builder.Services.AddHttpClient();
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -52,6 +54,20 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<AppDbContext>();
         // context.Database.EnsureDeleted(); // Kritik: Bir kez başarıyla çalıştıktan sonra güvenlik için kapalı tutuyoruz
         context.Database.EnsureCreated(); // Yeni şemayla yeniden oluşturur veya mevcut olanı kontrol eder
+
+        // AI Provider alanlarını mevcut tabloya ekle (EnsureCreated bunu yapmaz)
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Users') AND name = 'PreferredAiProvider')
+                    ALTER TABLE [Users] ADD [PreferredAiProvider] nvarchar(max) NOT NULL DEFAULT 'default';
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Users') AND name = 'CustomAiApiKey')
+                    ALTER TABLE [Users] ADD [CustomAiApiKey] nvarchar(max) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Users') AND name = 'CustomAiModel')
+                    ALTER TABLE [Users] ADD [CustomAiModel] nvarchar(max) NULL;
+            ");
+        }
+        catch { /* Kolonlar zaten varsa hata görmezden gel */ }
     }
     catch (Exception ex)
     {

@@ -4,16 +4,36 @@
 }
 
 <div class="mb-4 fade-in-up">
-    <div class="d-flex align-items-center mb-2">
-        <div class="icon-circle bg-primary bg-opacity-10 text-primary me-3">
-            <i class="fa-solid fa-brain"></i>
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center">
+            <div class="icon-circle bg-primary bg-opacity-10 text-primary me-3">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div>
+                <h2 class="fw-bold mb-0">@L.Get("AiStrategyRadar")</h2>
+                <p class="text-muted mb-0">@L.Get("AiStrategyDesc") <b>@ViewBag.OriginalCount</b></p>
+            </div>
         </div>
-        <div>
-            <h2 class="fw-bold mb-0">@L.Get("AiStrategyRadar")</h2>
-            <p class="text-muted mb-0">@L.Get("AiStrategyDesc") <b>@ViewBag.OriginalCount</b></p>
+        <div class="d-flex align-items-center gap-2">
+            <span id="aiProviderBadge" class="badge rounded-pill px-3 py-2" style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);color:#c084fc;font-size:0.7rem;">
+                <i class="fa-solid fa-microchip me-1"></i><span id="providerName">Varsayılan</span>
+            </span>
+            <a href="/Ai/Research" class="btn btn-sm rounded-pill px-3" style="background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.2);color:#c084fc;font-size:0.7rem;">
+                <i class="fa-solid fa-gear me-1"></i>@L.Get("AiProviderSettings")
+            </a>
         </div>
     </div>
 </div>
+
+<script>
+    fetch("/Ai/GetAiSettings").then(r => r.json()).then(data => {
+        if (data.success && data.provider && data.provider !== "default") {
+            const names = { openai: "OpenAI", gemini: "Gemini", anthropic: "Claude", cohere: "Cohere", sambanova: "SambaNova" };
+            const el = document.getElementById("providerName");
+            if (el) el.textContent = names[data.provider] || data.provider;
+        }
+    }).catch(() => {});
+</script>
 
 <div class="row fade-in-up" style="animation-delay: 0.15s;">
     <div class="col-12">

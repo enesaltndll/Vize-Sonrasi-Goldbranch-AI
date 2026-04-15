@@ -26,8 +26,77 @@
                         <p class="text-muted small mb-3">@L.Get("AiBreakdownHint")</p>
                         
                         <textarea id="projectDescription" class="form-control bg-dark text-light shadow-sm mb-3" 
-                                  style="border:1px solid rgba(139,92,246,0.2);border-radius:14px;min-height:220px;resize:vertical;" 
-                                  placeholder="Örnek: Restoran için online sipariş sistemi. Müşteri menüyü görebilsin, sipariş verebilsin, ödeme yapabilsin. Admin panelinden menü yönetimi ve sipariş takibi olsun..."></textarea>
+                                  style="border:1px solid rgba(139,92,246,0.2);border-radius:14px;min-height:160px;resize:vertical;" 
+                                  placeholder="Örnek: Restoran için online sipariş sistemi..."></textarea>
+
+                        <!-- ⏱️ SÜRE & PERİYOT SEÇİMİ -->
+                        <div class="p-3 rounded-4 mb-3" style="background:rgba(139,92,246,0.05);border:1px solid rgba(139,92,246,0.15);">
+                            <h6 class="text-light fw-bold mb-3" style="font-size:0.85rem;">
+                                <i class="fa-solid fa-clock text-info me-2"></i>@L.Get("TimePlanTitle")
+                            </h6>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label text-muted small mb-1">@L.Get("TotalDuration")</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="number" id="totalDurationValue" class="form-control bg-dark text-light" 
+                                               style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;width:80px;" value="7" min="1" max="365">
+                                        <select id="totalDurationUnit" class="form-select bg-dark text-light" 
+                                                style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+                                            <option value="days" selected>@L.Get("UnitDays")</option>
+                                            <option value="weeks">@L.Get("UnitWeeks")</option>
+                                            <option value="months">@L.Get("UnitMonths")</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-muted small mb-1">@L.Get("PeriodType")</label>
+                                    <select id="periodType" class="form-select bg-dark text-light" 
+                                            style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+                                        <option value="daily" selected>@L.Get("PeriodDaily")</option>
+                                        <option value="weekly">@L.Get("PeriodWeekly")</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label text-muted small mb-1">@L.Get("StartDate")</label>
+                                    <input type="date" id="startDate" class="form-control bg-dark text-light" 
+                                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-muted small mb-1">@L.Get("DailyHours")</label>
+                                    <input type="number" id="dailyWorkHours" class="form-control bg-dark text-light" 
+                                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;" value="8" min="1" max="16">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 💻 PROGRAMLAMA DİLİ SEÇİMİ -->
+                        <div class="p-3 rounded-4 mb-3" style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.15);">
+                            <h6 class="text-light fw-bold mb-2" style="font-size:0.85rem;">
+                                <i class="fa-solid fa-code text-warning me-2"></i>@L.Get("ProgrammingLang")
+                            </h6>
+                            <select id="programmingLanguage" class="form-select bg-dark text-light" 
+                                    style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.85rem;">
+                                <option value="none">@L.Get("NoLangSelected")</option>
+                                <option value="C#">C# (.NET)</option>
+                                <option value="ASP.NET Core MVC">ASP.NET Core MVC</option>
+                                <option value="Java">Java</option>
+                                <option value="Python">Python</option>
+                                <option value="JavaScript">JavaScript</option>
+                                <option value="TypeScript">TypeScript</option>
+                                <option value="HTML/CSS">HTML / CSS</option>
+                                <option value="React">React.js</option>
+                                <option value="Node.js">Node.js</option>
+                                <option value="PHP">PHP</option>
+                                <option value="Go">Go (Golang)</option>
+                                <option value="Kotlin">Kotlin</option>
+                                <option value="Swift">Swift</option>
+                                <option value="SQL">SQL</option>
+                                <option value="Flutter/Dart">Flutter / Dart</option>
+                            </select>
+                            <small class="text-muted d-block mt-1" style="font-size:0.7rem;">@L.Get("LangHint")</small>
+                        </div>
 
                         <!-- Geliştirici Seçimi -->
                         <div class="mb-3">
@@ -44,6 +113,44 @@
                                     }
                                 }
                             </select>
+                        </div>
+
+                        <!-- 🤖 AI SAĞLAYICI SEÇİMİ (Inline) -->
+                        <div class="mb-3">
+                            <button class="btn btn-sm w-100 text-start d-flex align-items-center justify-content-between px-3 py-2 rounded-3" 
+                                    style="background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.2);color:#c084fc;font-size:0.8rem;"
+                                    type="button" data-bs-toggle="collapse" data-bs-target="#aiProviderCollapse">
+                                <span><i class="fa-solid fa-microchip me-2"></i>@L.Get("AiProviderSettings")</span>
+                                <i class="fa-solid fa-chevron-down" style="font-size:0.65rem;transition:transform 0.3s;"></i>
+                            </button>
+                            <div class="collapse mt-2" id="aiProviderCollapse">
+                                <div class="p-3 rounded-3" style="background:rgba(168,85,247,0.03);border:1px solid rgba(168,85,247,0.1);">
+                                    <select id="aiProvider" class="form-select form-select-sm bg-dark text-light mb-2" 
+                                            style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;">
+                                        <option value="default">🔄 @L.Get("AiProviderDefault")</option>
+                                        <option value="openai">🟢 OpenAI (GPT-4o)</option>
+                                        <option value="gemini">🔵 Google Gemini</option>
+                                        <option value="anthropic">🟠 Anthropic Claude</option>
+                                        <option value="cohere">🟣 Cohere</option>
+                                        <option value="sambanova">⚡ SambaNova</option>
+                                    </select>
+                                    <input type="password" id="aiApiKey" class="form-control form-control-sm bg-dark text-light mb-2" 
+                                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;"
+                                           placeholder="@L.Get("AiApiKeyPlaceholder")">
+                                    <input type="text" id="aiModel" class="form-control form-control-sm bg-dark text-light mb-2" 
+                                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;"
+                                           placeholder="@L.Get("AiModelPlaceholder")">
+                                    <div class="d-flex gap-2">
+                                        <button id="testAiBtn" class="btn btn-sm flex-fill" style="background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:0.75rem;border-radius:8px;">
+                                            <i class="fa-solid fa-plug me-1"></i>@L.Get("TestConnection")
+                                        </button>
+                                        <button id="saveAiBtn" class="btn btn-sm flex-fill" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;font-size:0.75rem;border-radius:8px;">
+                                            <i class="fa-solid fa-floppy-disk me-1"></i>@L.Get("SaveSettings")
+                                        </button>
+                                    </div>
+                                    <div id="aiTestResult" class="mt-2 small d-none"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <button id="analyzeBtn" class="btn w-100 fw-bold py-3 shadow" 
@@ -156,8 +263,68 @@
             const taskCountBadge = document.getElementById("taskCountBadge");
             const taskCountText = document.getElementById("taskCountText");
 
+            // Tarih varsayılanı bugün
+            document.getElementById("startDate").valueAsDate = new Date();
+
             let currentBreakdownId = null;
             let currentTasks = [];
+
+            // AI Ayarları yükle
+            fetch("/Ai/GetAiSettings").then(r => r.json()).then(data => {
+                if (data.success) {
+                    document.getElementById("aiProvider").value = data.provider || "default";
+                    if (data.model) document.getElementById("aiModel").value = data.model;
+                }
+            }).catch(() => {});
+
+            // AI Test Bağlantısı
+            document.getElementById("testAiBtn").addEventListener("click", async function () {
+                const resultDiv = document.getElementById("aiTestResult");
+                resultDiv.classList.remove("d-none");
+                resultDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Test ediliyor...';
+                resultDiv.className = "mt-2 small text-muted";
+                try {
+                    const res = await fetch("/Ai/TestAiConnection", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            provider: document.getElementById("aiProvider").value,
+                            apiKey: document.getElementById("aiApiKey").value,
+                            model: document.getElementById("aiModel").value
+                        })
+                    });
+                    const data = await res.json();
+                    resultDiv.innerHTML = data.message;
+                    resultDiv.className = data.success ? "mt-2 small text-success" : "mt-2 small text-danger";
+                } catch (e) {
+                    resultDiv.innerHTML = "❌ Bağlantı hatası: " + e.message;
+                    resultDiv.className = "mt-2 small text-danger";
+                }
+            });
+
+            // AI Ayarları Kaydet
+            document.getElementById("saveAiBtn").addEventListener("click", async function () {
+                const resultDiv = document.getElementById("aiTestResult");
+                try {
+                    const res = await fetch("/Ai/SaveAiSettings", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            provider: document.getElementById("aiProvider").value,
+                            apiKey: document.getElementById("aiApiKey").value,
+                            model: document.getElementById("aiModel").value
+                        })
+                    });
+                    const data = await res.json();
+                    resultDiv.classList.remove("d-none");
+                    resultDiv.innerHTML = data.success ? "✅ Kaydedildi!" : "❌ " + data.message;
+                    resultDiv.className = data.success ? "mt-2 small text-success" : "mt-2 small text-danger";
+                } catch (e) {
+                    resultDiv.classList.remove("d-none");
+                    resultDiv.innerHTML = "❌ Hata: " + e.message;
+                    resultDiv.className = "mt-2 small text-danger";
+                }
+            });
 
             function showState(state) {
                 emptyState.classList.add("d-none");
@@ -189,7 +356,9 @@
 
             function renderTasks(tasks) {
                 taskList.textContent = "";
+                let totalHrs = 0;
                 tasks.forEach((task, idx) => {
+                    totalHrs += task.estimatedHours;
                     const card = document.createElement("div");
                     card.className = "p-3 rounded-4 fade-in-up";
                     card.style.cssText = `background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);animation-delay:${idx * 0.08}s;transition:all 0.3s ease;`;
@@ -215,8 +384,24 @@
                     titleDiv.appendChild(numBadge);
                     titleDiv.appendChild(titleSpan);
 
-                    const badgeContainer = document.createElement("span");
+                    const badgeContainer = document.createElement("div");
+                    badgeContainer.className = "d-flex gap-1 align-items-center";
                     badgeContainer.innerHTML = getPriorityBadge(task.priority);
+
+                    // Tech Branch badge
+                    if (task.techBranch) {
+                        const branchColors = {
+                            'Backend': '#10b981', 'Frontend': '#f59e0b', 'Database': '#6366f1',
+                            'API': '#ec4899', 'UI': '#f97316', 'Config': '#8b5cf6',
+                            'Test': '#22d3ee', 'Model': '#a78bfa'
+                        };
+                        const bColor = branchColors[task.techBranch] || '#8b949e';
+                        const branchBadge = document.createElement("span");
+                        branchBadge.className = "badge px-2 py-1 ms-1";
+                        branchBadge.style.cssText = `background:${bColor}22;border:1px solid ${bColor}55;color:${bColor};font-size:0.6rem;border-radius:8px;`;
+                        branchBadge.innerHTML = `<i class="fa-solid fa-code-branch me-1"></i>${task.techBranch}`;
+                        badgeContainer.appendChild(branchBadge);
+                    }
 
                     header.appendChild(titleDiv);
                     header.appendChild(badgeContainer);
@@ -226,7 +411,7 @@
                     desc.textContent = task.description;
 
                     const footer = document.createElement("div");
-                    footer.className = "ms-4 ps-2 d-flex gap-2";
+                    footer.className = "ms-4 ps-2 d-flex gap-2 flex-wrap";
 
                     const timeBadge = document.createElement("span");
                     timeBadge.className = "badge bg-dark border border-secondary px-2 py-1";
@@ -236,20 +421,78 @@
                     const deadlineBadge = document.createElement("span");
                     deadlineBadge.className = "badge bg-dark border border-info text-info px-2 py-1";
                     deadlineBadge.style.cssText = "font-family:'JetBrains Mono',monospace;font-size:0.65rem;border-radius:8px;";
-                    // Eğer AI deadlineDays üretmediyse varsayılan 7 gün
                     let days = task.deadlineDays > 0 ? task.deadlineDays : 7;
                     deadlineBadge.innerHTML = `<i class="fa-regular fa-calendar-check me-1"></i> ${days} gün sonra`;
 
                     footer.appendChild(timeBadge);
                     footer.appendChild(deadlineBadge);
 
+                    if (task.dependsOnIndex !== null && task.dependsOnIndex !== undefined && task.dependsOnIndex >= 0) {
+                        const depBadge = document.createElement("span");
+                        depBadge.className = "badge bg-dark border border-warning text-warning px-2 py-1";
+                        depBadge.style.cssText = "font-size:0.65rem;border-radius:8px;";
+                        depBadge.innerHTML = `<i class="fa-solid fa-link me-1"></i> Görev ${task.dependsOnIndex + 1} bittikten sonra`;
+                        footer.appendChild(depBadge);
+                    }
+
                     card.appendChild(header);
                     card.appendChild(desc);
                     card.appendChild(footer);
+
+                    // Starter Code bloğu
+                    if (task.starterCode && task.starterCode.trim().length > 0) {
+                        const codeId = `code_${idx}_${Date.now()}`;
+                        const codeToggle = document.createElement("button");
+                        codeToggle.className = "btn btn-sm mt-2 ms-4";
+                        codeToggle.style.cssText = "background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#10b981;font-size:0.7rem;border-radius:8px;";
+                        codeToggle.innerHTML = `<i class="fa-solid fa-code me-1"></i> Başlangıç Kodunu Göster`;
+                        codeToggle.onclick = () => {
+                            const block = document.getElementById(codeId);
+                            if (block.classList.contains("d-none")) {
+                                block.classList.remove("d-none");
+                                codeToggle.innerHTML = `<i class="fa-solid fa-eye-slash me-1"></i> Kodu Gizle`;
+                            } else {
+                                block.classList.add("d-none");
+                                codeToggle.innerHTML = `<i class="fa-solid fa-code me-1"></i> Başlangıç Kodunu Göster`;
+                            }
+                        };
+
+                        const codeBlock = document.createElement("div");
+                        codeBlock.id = codeId;
+                        codeBlock.className = "d-none mt-2 ms-4";
+
+                        const pre = document.createElement("pre");
+                        pre.className = "rounded-3 p-3 mb-0";
+                        pre.style.cssText = "background:rgba(0,0,0,0.4);border:1px solid rgba(16,185,129,0.15);font-size:0.75rem;overflow-x:auto;max-height:300px;";
+
+                        const code = document.createElement("code");
+                        code.style.cssText = "color:#a5f3fc;font-family:'JetBrains Mono',Consolas,monospace;white-space:pre;";
+                        code.textContent = task.starterCode;
+                        pre.appendChild(code);
+
+                        const copyBtn = document.createElement("button");
+                        copyBtn.className = "btn btn-sm mt-1";
+                        copyBtn.style.cssText = "background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;font-size:0.65rem;border-radius:6px;";
+                        copyBtn.innerHTML = `<i class="fa-regular fa-copy me-1"></i> Kopyala`;
+                        copyBtn.onclick = () => { navigator.clipboard.writeText(task.starterCode); copyBtn.innerHTML = `<i class="fa-solid fa-check me-1"></i> Kopyalandı!`; setTimeout(() => { copyBtn.innerHTML = `<i class="fa-regular fa-copy me-1"></i> Kopyala`; }, 2000); };
+
+                        codeBlock.appendChild(pre);
+                        codeBlock.appendChild(copyBtn);
+
+                        card.appendChild(codeToggle);
+                        card.appendChild(codeBlock);
+                    }
+
                     taskList.appendChild(card);
                 });
 
                 taskCountText.textContent = tasks.length;
+                // Toplam saat özeti
+                const summaryDiv = document.createElement("div");
+                summaryDiv.className = "text-center mt-2 py-2 rounded-3";
+                summaryDiv.style.cssText = "background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.15);";
+                summaryDiv.innerHTML = `<small class="text-muted">Toplam: <b class="text-success">${totalHrs} saat</b> · ${tasks.length} görev</small>`;
+                taskList.appendChild(summaryDiv);
             }
 
             // ANALİZ BUTONU
@@ -274,7 +517,15 @@
                     const response = await fetch("/Ai/Analyze", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ projectDescription: desc })
+                        body: JSON.stringify({
+                            projectDescription: desc,
+                            totalDurationValue: parseInt(document.getElementById("totalDurationValue").value) || 7,
+                            totalDurationUnit: document.getElementById("totalDurationUnit").value || "days",
+                            periodType: document.getElementById("periodType").value || "daily",
+                            dailyWorkHours: parseInt(document.getElementById("dailyWorkHours").value) || 8,
+                            startDate: document.getElementById("startDate").value || null,
+                            programmingLanguage: document.getElementById("programmingLanguage").value || "none"
+                        })
                     });
 
                     const data = await response.json();

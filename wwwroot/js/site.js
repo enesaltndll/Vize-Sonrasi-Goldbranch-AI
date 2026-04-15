@@ -212,78 +212,8 @@
     animate();
   };
 
-  // ─── WELLNESS GUARDIAN ─────────────────────────────────────
-  GB.initWellness = function() {
-    const lockOverlay = document.getElementById('wellnessLockOverlay');
-    const lockCountdown = document.getElementById('wellnessLockCountdown');
-    const lockBar = document.getElementById('wellnessLockBar');
-    const lockDoneBtn = document.getElementById('wellnessLockDoneBtn');
-
-    function now() { return Date.now(); }
-    function getNum(key, fallback = 0) {
-      const n = parseInt(localStorage.getItem(key) || '');
-      return Number.isFinite(n) ? n : fallback;
-    }
-    function setNum(key, value) { localStorage.setItem(key, String(value)); }
-
-    function updateLockUI() {
-      if (!lockOverlay || lockOverlay.style.display === 'none') return;
-      const startAt = getNum('gb_wellness_lock_active_since', now());
-      const until = getNum('gb_wellness_lock_until', now());
-      const total = Math.max(1, until - startAt);
-      const remaining = Math.max(0, until - now());
-      const done = remaining === 0;
-      const m = Math.floor(remaining / 60000).toString().padStart(2, '0');
-      const s = Math.floor((remaining % 60000) / 1000).toString().padStart(2, '0');
-      if (lockCountdown) lockCountdown.textContent = `${m}:${s}`;
-      if (lockBar) lockBar.style.width = Math.min(100, ((total - remaining) / total) * 100) + '%';
-      if (lockDoneBtn) lockDoneBtn.disabled = !done;
-    }
-
-    if (lockDoneBtn) {
-      lockDoneBtn.addEventListener('click', () => {
-        localStorage.removeItem('gb_wellness_lock_until');
-        localStorage.removeItem('gb_wellness_lock_active_since');
-        if (lockOverlay) { lockOverlay.style.display = 'none'; document.body.style.overflow = ''; }
-        const t = now();
-        setNum('gb_wellness_last_break_at', t);
-        setNum('gb_wellness_last_eye_at', t);
-        setNum('gb_wellness_last_posture_at', t);
-      });
-    }
-    setInterval(updateLockUI, 1000);
-  };
-
-  // ─── ZEN MODE ──────────────────────────────────────────────
-  GB.initZenMode = function() {
-    const zenBtn = document.getElementById('zenModeBtn');
-    const zenOverlay = document.getElementById('zenModeOverlay');
-    const zenCloseBtn = document.getElementById('zenCloseBtn');
-    if (!zenBtn || !zenOverlay) return;
-
-    let isZen = false;
-    const breathTexts = ['Nefes Al', 'Tut...', 'Nefes Ver', 'Bekle...'];
-    let breathIdx = 0;
-    setInterval(() => {
-      const el = document.getElementById('zenBreathText');
-      if (el && isZen) { breathIdx = (breathIdx + 1) % breathTexts.length; el.textContent = breathTexts[breathIdx]; }
-    }, 2000);
-
-    zenBtn.addEventListener('click', () => {
-      zenOverlay.style.display = 'flex';
-      setTimeout(() => { zenOverlay.style.opacity = '1'; }, 10);
-      isZen = true;
-      document.body.style.overflow = 'hidden';
-    });
-    if (zenCloseBtn) {
-      zenCloseBtn.addEventListener('click', () => {
-        zenOverlay.style.opacity = '0';
-        setTimeout(() => { zenOverlay.style.display = 'none'; }, 1000);
-        isZen = false;
-        document.body.style.overflow = '';
-      });
-    }
-  };
+  // Note: Wellness and Zen logic is heavily integrated into _Layout.cshtml script sections
+  // to support dynamic localization and UI bindings.
 
   // ─── ADVANCED UI EFFECTS ───────────────────────────────────
   GB.initUIEffects = function() {
@@ -532,8 +462,6 @@
     GB.injectDynamicCSS();
     GB.initTheme();
     GB.initParticles();
-    GB.initWellness();
-    GB.initZenMode();
     GB.initUIEffects();
     GB.initElegantTouches();
 
@@ -579,6 +507,50 @@
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+
+    // ==========================================
+    // PWA & OFFLINE RESILIENCE LOGIC
+    // ==========================================
+
+    // 1. Install App Prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      
+      // Update UI notify the user they can install the PWA
+      const installContainer = document.getElementById('gbInstallContainer');
+      const installBtn = document.getElementById('gbInstallAppBtn');
+      if (installContainer && installBtn) {
+        installContainer.classList.remove('d-none');
+        installContainer.classList.add('d-flex'); // show the button
+        
+        installBtn.addEventListener('click', async () => {
+          // Show the install prompt
+          deferredPrompt.prompt();
+          // Wait for the user to respond to the prompt
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          }
+          deferredPrompt = null;
+          installContainer.classList.add('d-none'); // Hide it again
+        });
+      }
+    });
+    
+    // 2. Offline/Online Status Detectors
+    window.addEventListener('offline', () => {
+        GB.toast({ title: 'Bağlantı Koptu', text: 'Çevrimdışı moda geçildi, bazı özellikler kullanılamayabilir.', icon: 'warning', timer: 5000 });
+        document.body.style.filter = "grayscale(20%)"; // Visual indicator
+    });
+
+    window.addEventListener('online', () => {
+        GB.toast({ title: 'Bağlantı Geldi', text: 'Tekrar çevrimiçisiniz, sistem senkronize ediliyor...', icon: 'success' });
+        document.body.style.filter = "none";
+    });
 
     // Global JS Error Handler
     window.onerror = function(msg, source, line, col) {

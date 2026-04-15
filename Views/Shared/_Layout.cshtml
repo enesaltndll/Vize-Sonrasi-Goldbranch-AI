@@ -54,11 +54,9 @@
     <!-- Animated Particle Canvas -->
     <canvas id="particleCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0.4;"></canvas>
 
-    <!-- Futuristic Custom Cursor Kaldırıldı -->
-
     <header>
         <div id="gbScrollProgressBar" style="position:fixed; top:0; left:0; width:0%; height:3px; background:linear-gradient(90deg, #fbbf24, #22d3ee); z-index:2000; transition: width 0.1s; box-shadow: 0 0 10px rgba(34,211,238,0.5);"></div>
-        <nav class="navbar navbar-expand-sm navbar-dark border-bottom border-secondary mb-4 py-3 sticky-top shadow" style="background: rgba(13, 17, 23, 0.75) !important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 1030;">
+        <nav class="navbar navbar-expand-sm navbar-dark border-bottom border-secondary mb-4 py-3 sticky-top shadow">
             <div class="container-fluid px-3 px-xl-5">
                 <div class="d-flex align-items-center">
                     @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
@@ -71,13 +69,13 @@
                             <i class="fa-solid fa-bars-staggered fs-4"></i>
                         </button>
                     }
-                    <a class="navbar-brand fw-bold mb-0" asp-controller="Task" asp-action="Index" style="font-size: 1.4rem; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                        <i class="fa-solid fa-leaf text-warning gb-heartbeat" style="-webkit-text-fill-color: #fbbf24;"></i> GoldBranch AI
+                    <a class="navbar-brand fw-bold mb-0 d-flex align-items-center me-3" asp-controller="Task" asp-action="Index" style="font-size: 1.4rem; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        <i class="fa-solid fa-leaf text-warning me-2 gb-heartbeat" style="-webkit-text-fill-color: #fbbf24;"></i> GoldBranch AI
                     </a>
-                    <div class="ms-3 d-none d-lg-block border-start border-secondary ps-3">
-                        <div id="gbBreadcrumb" class="text-secondary small fw-bold" style="letter-spacing:1px; font-family:'JetBrains Mono',monospace; min-width:180px; opacity:0.7;">
-                            <span class="text-warning opacity-50 me-2"><i class="fa-solid fa-terminal"></i></span> SYSTEM / CORE
-                        </div>
+                    <div class="d-none d-lg-flex align-items-center me-4" title="AI Modülü Aktif">
+                        <span class="badge rounded-pill shadow-sm" style="background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: #22d3ee; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; padding: 5px 12px; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-microchip me-1"></i> AI Active
+                        </span>
                     </div>
                 </div>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
@@ -85,7 +83,6 @@
                         <li class="nav-item"><a class="nav-link text-light px-3" asp-controller="Task" asp-action="Dashboard"><i class="fa-solid fa-rocket me-1 text-warning"></i> @L.Get("Dashboard")</a></li>
                         <li class="nav-item"><a class="nav-link text-light px-3" asp-controller="Task" asp-action="Index"><i class="fa-solid fa-columns me-1"></i> @L.Get("Tasks")</a></li>
                         <li class="nav-item"><a class="nav-link text-info px-3 fw-bold" asp-controller="Chat" asp-action="Index"><i class="fa-solid fa-comments"></i> @L.Get("ChatRoom")</a></li>
-                        <li class="nav-item"><a class="nav-link text-warning px-3 fw-bold" asp-controller="Profile" asp-action="Index" style="text-shadow: 0 0 5px rgba(251,191,36,0.5);"><i class="fa-solid fa-id-badge me-1"></i> Gamer Profili (XP)</a></li>
                         <li class="nav-item"><a class="nav-link px-3" asp-controller="Billing" asp-action="Index"><i class="fa-solid fa-gem me-1" style="color: @navPlanColor;"></i> <span class="badge rounded-pill px-2 py-1" style="background: @navPlanColor; color: #000; font-size: 0.65rem; letter-spacing: 1px;">@navPlanBadge</span></a></li>
                         @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Proje Sefi" ||
                              User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
@@ -135,6 +132,13 @@
                                 <a class="btn btn-outline-danger border-0 btn-sm rounded-circle d-flex align-items-center justify-content-center" asp-controller="Auth" asp-action="Logout" style="width:28px;height:28px; transition: 0.3s;" title="@L.Get("Logout")">
                                     <i class="fa-solid fa-power-off" style="font-size: 0.75rem;"></i>
                                 </a>
+                            </li>
+
+                            <!-- Install App Button (Hidden by default, shown by JS) -->
+                            <li class="nav-item ms-2 mt-1 d-none align-items-center" id="gbInstallContainer">
+                                <button class="btn btn-sm btn-outline-info rounded-pill fw-bold shadow-sm" id="gbInstallAppBtn" style="padding: 4px 12px; font-size: 0.85rem; border: 1px solid rgba(34,211,238,0.6);" title="Masaüstü/Mobil cihazınıza yükleyin">
+                                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> Yükle
+                                </button>
                             </li>
 
                             <!-- Fail-proof Language Buttons with SVG Flags -->
@@ -202,16 +206,8 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
-            <div class="offcanvas-body p-0 d-flex flex-column" style="background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; overflow: hidden;">
-                
-                <div class="p-4" style="border-bottom:1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
-                    <a asp-controller="Admin" asp-action="SystemLogs" class="btn w-100 fw-bold rounded-pill p-3 shadow-lg d-flex justify-content-center align-items-center position-relative overflow-hidden gb-btn-shine" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981;">
-                        <span style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#10b981,transparent);animation:dashboardShimmer 3s infinite;"></span>
-                        <i class="fa-solid fa-satellite-dish me-2" style="animation: pulse 2s infinite;"></i> @L.Get("SystemRadar")
-                    </a>
-                </div>
-
-                <div class="list-group list-group-flush mt-2 flex-grow-1" style="background: transparent; overflow-y: auto;">
+            <div class="offcanvas-body p-0 d-flex flex-column" style="background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px;">
+                <div class="list-group list-group-flush mt-3" style="background: transparent;">
                     <a asp-controller="Admin" asp-action="Roadmap" class="list-group-item list-group-item-action bg-transparent text-light border-0 py-3 hover-glass d-flex align-items-center mb-1">
                         <span class="bg-success bg-opacity-10 text-success rounded d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;"><i class="fa-solid fa-map-location-dot fa-lg"></i></span>
                         <div>
@@ -259,6 +255,16 @@
                             <small class="text-muted" style="font-size:0.75rem;">Sistem Geneli Özet</small>
                         </div>
                     </a>
+                </div>
+
+                <div class="mt-auto p-4" style="border-top:1px solid rgba(255,255,255,0.05);">
+                    <a asp-controller="Admin" asp-action="SystemLogs" class="btn w-100 fw-bold rounded-pill p-3 shadow-lg d-flex justify-content-center align-items-center position-relative overflow-hidden" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981;">
+                        <span style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#10b981,transparent);animation:dashboardShimmer 3s infinite;"></span>
+                        <i class="fa-solid fa-satellite-dish me-2" style="animation: pulse 2s infinite;"></i> @L.Get("SystemRadar")
+                    </a>
+                    <div class="text-center mt-3 text-muted small" style="font-family:'JetBrains Mono',monospace; opacity:0.5; font-size: 0.70rem;">
+                        [ @L.Get("CoreVersion") ]
+                    </div>
                 </div>
             </div>
         </div>
@@ -471,146 +477,12 @@
         <p id="voiceSpeechText" class="mb-0 small text-light">Dinliyorum...</p>
     </div>
 
-    <!-- 🌌 ZEN (HYPER-FOCUS) MODU BUTONU VE OVERLAY -->
-    <button id="zenModeBtn" class="btn btn-dark rounded-circle shadow-lg" title="Zen Modunu Aç" style="position: fixed; bottom: 30px; left: 30px; width: 65px; height: 65px; z-index: 1050; border: 2px solid rgba(167, 139, 250, 0.4); transition: all 0.5s; background: #0d1117;">
+    <!-- 🌌 ZEN (HYPER-FOCUS) MODU BUTONU -->
+    <a asp-controller="Zen" asp-action="Index" class="btn btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center" title="Zen Modunu Aç" style="position: fixed; bottom: 30px; left: 30px; width: 65px; height: 65px; z-index: 1050; border: 2px solid rgba(167, 139, 250, 0.4); transition: all 0.5s; background: #0d1117; text-decoration:none;">
         <i class="fa-solid fa-yin-yang text-purple" style="font-size: 1.5rem; color:#a855f7;"></i>
-    </button>
+    </a>
 
-    <div id="zenModeOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background: radial-gradient(circle at center, #1e1b4b 0%, #000000 100%); z-index: 1045; display:none; flex-direction:column; align-items:center; justify-content:center; opacity:0; transition: opacity 1s ease; overflow:hidden;">
-        
-        <!-- Animated Stars Background -->
-        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
-            <div id="zenStars" style="position:absolute;inset:0;"></div>
-        </div>
 
-        <!-- Close Button -->
-        <button id="zenCloseBtn" class="btn btn-outline-light rounded-circle" style="position:absolute;top:20px;right:20px;width:48px;height:48px;z-index:1050;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.03);" title="Zen Modunu Kapat">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <!-- Session Counter (top-left) -->
-        <div id="zenSessionInfo" style="position:absolute;top:24px;left:24px;display:flex;align-items:center;gap:10px;">
-            <div style="background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.25);border-radius:12px;padding:8px 16px;display:flex;align-items:center;gap:8px;">
-                <i class="fa-solid fa-fire" style="color:#fb923c;"></i>
-                <span id="zenSessionCount" style="font-family:'JetBrains Mono',monospace;color:#c084fc;font-weight:700;font-size:0.85rem;">0 seans</span>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div style="display:flex;flex-direction:column;align-items:center;z-index:2;max-width:700px;width:100%;padding:0 20px;">
-
-            <!-- Breathing Circle + Timer (merged) -->
-            <div style="position:relative;width:260px;height:260px;margin-bottom:2rem;">
-                <!-- Orbit Ring -->
-                <svg viewBox="0 0 260 260" style="position:absolute;inset:0;width:100%;height:100%;animation:zenOrbitSpin 30s linear infinite;">
-                    <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(192,132,252,0.08)" stroke-width="2"/>
-                    <circle cx="130" cy="10" r="5" fill="#c084fc" style="filter:drop-shadow(0 0 6px #c084fc);">
-                        <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                </svg>
-                <!-- Breathing Ring -->
-                <div id="zenBreathCircle" style="position:absolute;inset:20px;border-radius:50%;border:3px solid rgba(192,132,252,0.25);display:flex;align-items:center;justify-content:center;flex-direction:column;animation: zenBreathe 8s ease-in-out infinite;box-shadow:inset 0 0 40px rgba(192,132,252,0.05),0 0 30px rgba(192,132,252,0.05);">
-                    <div id="pomodoroTimer" class="fw-bold text-white" style="font-size: 4rem; font-variant-numeric: tabular-nums; line-height:1; text-shadow:0 0 30px rgba(255,255,255,0.1);">25:00</div>
-                    <div id="zenBreathText" class="text-muted mt-1" style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;">Nefes Al</div>
-                </div>
-            </div>
-
-            <h2 class="fw-bold mb-1" style="color:#c084fc; letter-spacing: 4px; font-size:1.5rem; text-shadow: 0 0 15px rgba(192,132,252,0.4);">ODAK & DİNLENME</h2>
-
-            <!-- Motivational Quote -->
-            <div id="zenQuote" class="text-center mb-4" style="max-width:500px;min-height:50px;">
-                <p class="mb-0" style="color:rgba(255,255,255,0.5);font-style:italic;font-size:0.9rem;line-height:1.6;transition:opacity 0.5s;">"Odaklanma enerjinin yoğunlaşmasıdır."</p>
-            </div>
-
-            <!-- Controls Row -->
-            <div class="d-flex gap-2 justify-content-center flex-wrap mb-4">
-                <button id="startPomodoro" class="btn rounded-pill px-4 py-2 fw-bold" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:0;color:#fff;box-shadow:0 4px 20px rgba(124,58,237,0.4);transition:all 0.3s;">
-                    <i class="fa-solid fa-play me-1"></i> Başlat
-                </button>
-                <button id="pausePomodoro" class="btn btn-outline-light rounded-pill px-4 py-2" style="border-color:rgba(255,255,255,0.15);">
-                    <i class="fa-solid fa-pause me-1"></i> Duraklat
-                </button>
-                <button id="resetPomodoro" class="btn rounded-pill px-4 py-2" style="border:1px solid rgba(239,68,68,0.3);color:#ef4444;background:rgba(239,68,68,0.05);">
-                    <i class="fa-solid fa-rotate-right me-1"></i> Sıfırla
-                </button>
-            </div>
-            <p id="pomodoroMessage" class="text-info" style="font-size:1rem; display:none;"><i class="fa-solid fa-bell"></i> Uyku Kalkanı Aktif! Esneme zamanı geldi.</p>
-
-            <!-- Bottom Panel: Ambient Sounds + Music -->
-            <div class="d-flex gap-3 flex-wrap justify-content-center" style="max-width:700px;width:100%;">
-                <!-- Ambient Sounds with Volume -->
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 20px;flex:1;min-width:280px;">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="fa-solid fa-headphones" style="color:#38bdf8;"></i>
-                        <span class="fw-bold small" style="color:rgba(255,255,255,0.7);">Ortam Sesleri</span>
-                        <button id="zenStopAllSounds" class="btn btn-sm ms-auto" style="font-size:0.7rem;color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:2px 10px;background:rgba(239,68,68,0.05);">
-                            <i class="fa-solid fa-stop me-1"></i>Tümünü Durdur
-                        </button>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="rain" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:#38bdf8;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                🌧️ Yağmur
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="rain" min="0" max="100" value="50" style="flex:1;accent-color:#38bdf8;">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="forest" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#22c55e;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                🌲 Orman
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="forest" min="0" max="100" value="50" style="flex:1;accent-color:#22c55e;">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="cafe" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:#fbbf24;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                ☕ Kafe
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="cafe" min="0" max="100" value="50" style="flex:1;accent-color:#fbbf24;">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="waves" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);color:#818cf8;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                🌊 Dalga
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="waves" min="0" max="100" value="50" style="flex:1;accent-color:#818cf8;">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Spotify - Custom Link -->
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;min-width:280px;flex:1;">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="fa-brands fa-spotify" style="color:#1DB954;"></i>
-                        <span class="fw-bold small" style="color:rgba(255,255,255,0.7);">Müziğini Seç</span>
-                    </div>
-                    <div class="mb-3">
-                        <div class="input-group input-group-sm">
-                            <input id="zenSpotifyUrl" type="text" class="form-control" placeholder="Spotify linki yapıştır..." 
-                                   style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:10px 0 0 10px;font-size:0.8rem;padding:8px 12px;">
-                            <button id="zenSpotifyLoad" class="btn btn-sm fw-bold" style="background:#1DB954;color:#000;border-radius:0 10px 10px 0;padding:0 14px;">
-                                <i class="fa-solid fa-play"></i>
-                            </button>
-                        </div>
-                        <div class="text-muted mt-1" style="font-size:0.65rem;">Şarkı, playlist veya albüm linki yapıştır</div>
-                    </div>
-                    <div id="zenSpotifyEmbed" style="border-radius: 12px; overflow:hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.5); min-height:80px;">
-                        <iframe id="zenSpotifyIframe" style="border-radius:12px" src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Daily Goal (bottom) -->
-            <div class="mt-4 text-center w-100" style="max-width:500px;">
-                <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 20px;">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold">🎯 Günlük Odak Hedefi</span>
-                        <span id="zenDailyProgress" style="font-family:'JetBrains Mono',monospace;color:#34d399;font-size:0.8rem;">0 / 4 seans</span>
-                    </div>
-                    <div class="progress" style="height:5px;background:rgba(255,255,255,0.05);border-radius:3px;">
-                        <div id="zenDailyBar" class="progress-bar" style="width:0%;background:linear-gradient(90deg,#a855f7,#34d399);border-radius:3px;transition:width 0.5s;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 💚 SAĞLIK KORUMA SİSTEMİ (Wellness Guardian) -->
     <div id="wellnessWidget" style="position:fixed; top:80px; right:20px; z-index:1048; display:none;">
@@ -678,7 +550,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"> </script>
 
     <script>
         // 💚 SAĞLIK KORUMA SİSTEMİ (WELLNESS GUARDIAN)
@@ -689,10 +561,10 @@
             }
 
             const W = {
-                EYE_INTERVAL_MS: 45 * 1000,        // 45 saniye (Göz Molası)
-                POSTURE_INTERVAL_MS: 90 * 1000,    // 1.5 dk (Kalk & Esne)
-                LOCK_AFTER_MS: 150 * 1000,         // 2.5 dk (Zorunlu Mola)
-                MIN_BREAK_MS: 30 * 1000,           // 30 saniye kilit süresi
+                EYE_INTERVAL_MS: 20 * 60 * 1000,       // 20 dk (20-20-20 kuralı)
+                POSTURE_INTERVAL_MS: 60 * 60 * 1000,   // 60 dk (Postür uyarısı)
+                LOCK_AFTER_MS: 120 * 60 * 1000,        // 120 dk (Zorunlu Mola - Uyku Kalkanı)
+                MIN_BREAK_MS: 5 * 60 * 1000,           // 5 dk zorunlu dinlenme süresi
 
                 STORAGE: {
                     lastBreakAt: 'gb_wellness_last_break_at',
@@ -793,13 +665,8 @@
                 if (lockDoneBtn) lockDoneBtn.disabled = !done;
             }
 
-            const pageLoadTime = now();
-
             // Hierarchical wellness engine (tek döngü)
             async function tick() {
-                // Sayfa ilk yüklendiğinde ufak bir tolerans (30 saniye) tanıyalım (Hoca sunumda login olunca hemen mola gelmesin)
-                if (now() - pageLoadTime < 30000) return;
-
                 // Lock devam ediyorsa sadece UI güncelle
                 if (isLocked()) {
                     showLockOverlay();
@@ -815,23 +682,24 @@
                 const lastPostureAt = getNum(W.STORAGE.lastPostureAt, lastBreakAt);
                 const sinceBreak = t - lastBreakAt;
 
-                // En son aşama: 90 dk molasız → kilit
+                // En son aşama: 90 dk molasız → kilit yerine AUTO-ZEN
                 if (sinceBreak >= W.LOCK_AFTER_MS) {
-                    // Kullanıcı gerçekten mola vermeden devam etmiş demek
-                    startLock(W.MIN_BREAK_MS);
-                    await sendSystemNotification({
-                        title: 'Zorunlu Mola',
-                        message: '90 dakikadır mola vermedin. 3 dakikalık zorunlu mola başlatıldı.'
-                    });
+                    setNum(W.STORAGE.lastBreakAt, t);
+                    setNum(W.STORAGE.lastEyeAt, t);
+                    setNum(W.STORAGE.lastPostureAt, t);
+                    
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'warning',
-                            title: '🛑 Zorunlu Mola',
-                            html: 'Sağlığın için ekranı kilitledim. <b>3 dakika</b> mola ver, sonra devam edebilirsin.',
+                            title: '🛑 Sistemsel Kilit (Zen Modu)',
+                            html: 'Dikkatini toplayabilmen için <b>3 dakikalık</b> mola merkezine yönlendiriliyorsun.',
                             background: '#0d1117',
                             color: '#f0f6fc',
-                            confirmButtonText: 'Tamam',
-                            confirmButtonColor: '#fbbf24'
+                            confirmButtonText: 'Zen Modunu Başlat',
+                            confirmButtonColor: '#fbbf24',
+                            allowOutsideClick: false
+                        }).then(() => {
+                            window.location.href = '/Zen?duration=3';
                         });
                     }
                     return;
@@ -841,19 +709,19 @@
                 if (sinceBreak >= W.POSTURE_INTERVAL_MS && (t - lastPostureAt) >= W.POSTURE_INTERVAL_MS) {
                     setNum(W.STORAGE.lastPostureAt, t);
                     await sendSystemNotification({
-                        title: 'Kalk & Postür',
-                        message: '1 saattir ekrandasın. Ayağa kalk, omuzlarını gevşet, 45 sn esne.'
+                        title: 'Kalk & Postür (Şimdi Zen Zamanı)',
+                        message: '1 saattir ekrandasın. 5 dakika dik durma ve meditasyon sırası.'
                     });
 
                     if (!document.hidden && typeof Swal !== 'undefined') {
                         const res = await Swal.fire({
                             icon: 'info',
                             title: '🧍 1 Saat Oldu',
-                            html: 'Ayağa kalk ve <b>45 saniye</b> esne. Duruşunu düzelt, omuzlarını gevşet.',
+                            html: 'Ayağa kalk, esne ve <b>5 dakikalık</b> mola paneline geç.',
                             background: '#0d1117',
                             color: '#f0f6fc',
                             showCancelButton: true,
-                            confirmButtonText: 'Mola verdim',
+                            confirmButtonText: 'Zen Moduna Geç',
                             cancelButtonText: 'Sonra',
                             confirmButtonColor: '#34d399',
                             cancelButtonColor: '#64748b',
@@ -862,37 +730,36 @@
                         });
                         if (res.isConfirmed) {
                             markBreakTaken();
+                            window.location.href = '/Zen?duration=5';
                         }
                     }
                     return;
                 }
 
-                // 30 dk: göz uyarısı (gösterilmediyse)
+                // 20 dk: göz kırpma/uzağa bakma (gösterilmediyse)
                 if (sinceBreak >= W.EYE_INTERVAL_MS && (t - lastEyeAt) >= W.EYE_INTERVAL_MS) {
                     setNum(W.STORAGE.lastEyeAt, t);
                     await sendSystemNotification({
-                        title: 'Göz Molası',
-                        message: '20-20-20: 20 sn boyunca uzağa bak.'
+                        title: 'Gözlerini Dinlendir',
+                        message: '20 dakikadır ekrana bakıyorsun. 1 dakikalık hızlı şarj zamanı.'
                     });
 
                     if (!document.hidden && typeof Swal !== 'undefined') {
                         const res = await Swal.fire({
                             icon: 'warning',
-                            title: '👁️ 30 Dakika Oldu',
-                            html: '<b>20-20-20</b> kuralı: 20 saniye boyunca uzağa bak.',
+                            title: '👁️ 20 Dakika Oldu',
+                            html: '<b>20-20-20</b> kuralı: 1 Dakikalık Çok Kısa Zen.',
                             background: '#0d1117',
                             color: '#f0f6fc',
                             showCancelButton: true,
-                            confirmButtonText: 'Yaptım',
+                            confirmButtonText: 'Odaklanmaya Ara Ver',
                             cancelButtonText: 'Sonra',
                             confirmButtonColor: '#38bdf8',
-                            cancelButtonColor: '#64748b',
-                            timer: 12000,
-                            timerProgressBar: true
+                            cancelButtonColor: '#64748b'
                         });
                         if (res.isConfirmed) {
-                            // göz molası sayalım ama break'i resetlemeyelim (mikro mola)
-                            // kullanıcı isterse 60dk zinciri bozulmasın; sadece göz uyarısını ertele.
+                            window.location.href = '/Zen?duration=1';
+                        } else {
                             setNum(W.STORAGE.lastEyeAt, now());
                         }
                     }
@@ -932,13 +799,12 @@
             if (isLocked()) showLockOverlay();
             updateLockUI();
 
-            // Tek interval: Her saniye kontrol et
-            setInterval(updateLockUI, 1000);
-            setInterval(tick, 1000);
-            tick();
+            // Tek interval: 1 dakikada bir kontrol + lock countdown için 1sn UI
+            // setInterval(tick, 10000); // DEMO MODU TEST İÇİN            // DEVREYE ALINAN YENİ WELLNESS AUTOPILOT
+            setInterval(tick, 1000); // Otomatik Zen Modu denetleyicisi
 
-            // İlk kurulum veya session sıfırlamasından sonra hoşgeldin bildirimi
-            const todayKey = "gb_wellness_welcome_v2_" + new Date().toISOString().slice(0, 10);
+            // İlk 5 sn sonra hoşgeldin bildirimi
+            const todayKey = "gb_wellness_welcome_" + new Date().toISOString().slice(0, 10);
             if (!localStorage.getItem(todayKey)) {
                 localStorage.setItem(todayKey, "1");
                 setTimeout(() => {
@@ -947,12 +813,12 @@
                             toast: true,
                             position: 'bottom-start',
                             icon: 'success',
-                            title: '🛡️ Wellness Guardian Aktif',
-                            text: 'Gözlerinizi ve duruşunuzu korumak için mola sistemi devrede.',
+                            title: '🔇 Sağlık Sistemi Geçici Kapatıldı',
+                            text: 'Test sürecini rahatça yapabilmen için mola uyarıları donduruldu.',
                             showConfirmButton: false,
-                            timer: 5000,
+                            timer: 3500,
                             background: '#0d1117',
-                            color: '#10b981'
+                            color: '#34d399'
                         });
                     }
                 }, 5000);
@@ -960,339 +826,345 @@
         });
     </script>
 
+
+
+
+
     <script>
-        // ZEN MODU VE POMODORO MANTIĞI (ENHANCED)
         document.addEventListener("DOMContentLoaded", () => {
-            const zenBtn = document.getElementById('zenModeBtn');
-            const zenOverlay = document.getElementById('zenModeOverlay');
-            const zenCloseBtn = document.getElementById('zenCloseBtn');
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const theme = btn.getAttribute('data-theme');
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('gb-theme', theme);
+                });
+            });
+        });
+
+        (function() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let w, h, particles = [];
+
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
             
-            let isZen = false;
+            let mouse = { x: null, y: null, radius: 150 };
+            window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+            window.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
 
-            // Motivational Quotes
-            const zenQuotes = [
-                '"Odaklanma enerjinin yoğunlaşmasıdır." — Tony Robbins',
-                '"Büyük işler, küçük adımların toplamıdır."',
-                '"Flow halinde zaman durur, verimlilik patlar."',
-                '"Dikkat dağınıklığı değil, odağını seç."',
-                '"Her pomodoro bir zafer, her mola bir ödül."',
-                '"Derinlere dal, yüzeyde kalanlar sıradan kalır."',
-                '"Sessizlikte üretilen, gürültüde asla yapılamaz."',
-                '"Şu an, hayatının en verimli anı olabilir."',
-                '"Bir seferde bir görev. Basit ama güçlü."',
-                '"Odaklan, uygula, tekrarla. Başarı formülü bu."'
-            ];
 
-            // Breathing text cycle
-            const breathTexts = ['Nefes Al', 'Tut...', 'Nefes Ver', 'Bekle...'];
-            let breathIdx = 0;
-            setInterval(() => {
-                const el = document.getElementById('zenBreathText');
-                if (el && isZen) {
-                    breathIdx = (breathIdx + 1) % breathTexts.length;
-                    el.textContent = breathTexts[breathIdx];
+            class Particle {
+                constructor() { this.reset(); }
+                reset() {
+                    this.x = Math.random() * w;
+                    this.y = Math.random() * h;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedX = (Math.random() - 0.5) * 0.3;
+                    this.speedY = (Math.random() - 0.5) * 0.3;
+                    this.opacity = Math.random() * 0.5 + 0.1;
+                    this.color = Math.random() > 0.7 ? '251,191,36' : (Math.random() > 0.5 ? '34,211,238' : '167,139,250');
                 }
-            }, 2000);
-
-            // Session tracking
-            const todayKey = 'gb_zen_sessions_' + new Date().toISOString().slice(0, 10);
-            function getSessions() { return parseInt(localStorage.getItem(todayKey)) || 0; }
-            function addSession() {
-                const s = getSessions() + 1;
-                localStorage.setItem(todayKey, s);
-                updateSessionUI(s);
-            }
-            function updateSessionUI(s) {
-                const el = document.getElementById('zenSessionCount');
-                if (el) el.textContent = s + ' seans';
-                const prog = document.getElementById('zenDailyProgress');
-                if (prog) prog.textContent = s + ' / 4 seans';
-                const bar = document.getElementById('zenDailyBar');
-                if (bar) bar.style.width = Math.min(100, (s / 4) * 100) + '%';
-            }
-            updateSessionUI(getSessions());
-
-            // Quote rotation
-            function showRandomQuote() {
-                const el = document.getElementById('zenQuote');
-                if (!el) return;
-                const q = zenQuotes[Math.floor(Math.random() * zenQuotes.length)];
-                const p = el.querySelector('p');
-                if (p) { p.style.opacity = '0'; setTimeout(() => { p.textContent = q; p.style.opacity = '1'; }, 300); }
-            }
-
-            // Generate stars
-            function generateStars() {
-                const container = document.getElementById('zenStars');
-                if (!container || container.children.length > 0) return;
-                for (let i = 0; i < 60; i++) {
-                    const star = document.createElement('div');
-                    star.style.cssText = `position:absolute;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;background:white;border-radius:50%;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${Math.random()*0.5+0.1};animation:zenStarTwinkle ${Math.random()*4+2}s ${Math.random()*3}s ease-in-out infinite;`;
-                    container.appendChild(star);
-                }
-            }
-
-            function openZen() {
-                generateStars();
-                showRandomQuote();
-                zenOverlay.style.display = 'flex';
-                setTimeout(() => { zenOverlay.style.opacity = '1'; }, 10);
-                isZen = true;
-                document.addEventListener('keydown', handleEscape);
-            }
-
-            function closeZen() {
-                zenOverlay.style.opacity = '0';
-                setTimeout(() => { zenOverlay.style.display = 'none'; }, 1000);
-                isZen = false;
-                document.removeEventListener('keydown', handleEscape);
-                // Stop all ambient sounds when closing
-                if (typeof stopAllSounds === 'function') stopAllSounds();
-            }
-
-            zenBtn.addEventListener('click', () => { if (!isZen) openZen(); });
-            if (zenCloseBtn) zenCloseBtn.addEventListener('click', closeZen);
-
-            function handleEscape(e) {
-                if (e.key === "Escape") closeZen();
-            }
-
-            // Quote rotation interval
-            setInterval(() => { if (isZen) showRandomQuote(); }, 15000);
-
-            // ========== WEB AUDIO API — PROCEDURAL AMBIENT SOUNDS ==========
-            let audioCtx = null;
-            const activeSounds = {};
-
-            function getAudioCtx() {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                return audioCtx;
-            }
-
-            function createNoiseBuffer(ctx, duration) {
-                const sr = ctx.sampleRate;
-                const buf = ctx.createBuffer(2, sr * duration, sr);
-                for (let ch = 0; ch < 2; ch++) {
-                    const d = buf.getChannelData(ch);
-                    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-                }
-                return buf;
-            }
-
-            function startSound(type, volume) {
-                if (activeSounds[type]) return;
-                const ctx = getAudioCtx();
-                const gain = ctx.createGain();
-                gain.gain.value = volume;
-                gain.connect(ctx.destination);
-                const nodes = { gain };
-
-                if (type === 'rain') {
-                    // Rain: filtered white noise (highpass + lowpass combo)
-                    const src = ctx.createBufferSource();
-                    src.buffer = createNoiseBuffer(ctx, 4);
-                    src.loop = true;
-                    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 400;
-                    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 8000;
-                    src.connect(hp); hp.connect(lp); lp.connect(gain);
-                    src.start(); nodes.src = src;
-                }
-                else if (type === 'forest') {
-                    // Forest: very soft filtered noise + periodic chirps
-                    const src = ctx.createBufferSource();
-                    src.buffer = createNoiseBuffer(ctx, 4);
-                    src.loop = true;
-                    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2000; bp.Q.value = 0.5;
-                    const subGain = ctx.createGain(); subGain.gain.value = 0.3;
-                    src.connect(bp); bp.connect(subGain); subGain.connect(gain);
-                    src.start(); nodes.src = src;
-                    // Bird chirps
-                    nodes.chirpInterval = setInterval(() => {
-                        if (!activeSounds[type]) return;
-                        const osc = ctx.createOscillator();
-                        const cGain = ctx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.value = 2000 + Math.random() * 3000;
-                        cGain.gain.setValueAtTime(0, ctx.currentTime);
-                        cGain.gain.linearRampToValueAtTime(volume * 0.15, ctx.currentTime + 0.05);
-                        cGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
-                        osc.connect(cGain); cGain.connect(ctx.destination);
-                        osc.start(); osc.stop(ctx.currentTime + 0.2);
-                    }, 2000 + Math.random() * 4000);
-                }
-                else if (type === 'cafe') {
-                    // Cafe: brown noise (integrated white noise)
-                    const bufLen = ctx.sampleRate * 4;
-                    const buf = ctx.createBuffer(2, bufLen, ctx.sampleRate);
-                    for (let ch = 0; ch < 2; ch++) {
-                        const d = buf.getChannelData(ch);
-                        let last = 0;
-                        for (let i = 0; i < bufLen; i++) {
-                            const white = Math.random() * 2 - 1;
-                            d[i] = (last + (0.02 * white)) / 1.02;
-                            last = d[i]; d[i] *= 3.5;
+                update() {
+                    if (mouse.x != null && mouse.y != null) {
+                        let dx = mouse.x - this.x;
+                        let dy = mouse.y - this.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < mouse.radius) {
+                            const forceDirX = dx / dist;
+                            const forceDirY = dy / dist;
+                            const force = (mouse.radius - dist) / mouse.radius;
+                            this.x -= forceDirX * force * 5;
+                            this.y -= forceDirY * force * 5;
                         }
                     }
-                    const src = ctx.createBufferSource();
-                    src.buffer = buf; src.loop = true;
-                    src.connect(gain); src.start(); nodes.src = src;
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) this.reset();
                 }
-                else if (type === 'waves') {
-                    // Waves: modulated filtered noise
-                    const src = ctx.createBufferSource();
-                    src.buffer = createNoiseBuffer(ctx, 6);
-                    src.loop = true;
-                    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
-                    const modGain = ctx.createGain();
-                    // LFO for wave movement
-                    const lfo = ctx.createOscillator();
-                    const lfoGain = ctx.createGain();
-                    lfo.type = 'sine'; lfo.frequency.value = 0.1;
-                    lfoGain.gain.value = volume * 0.4;
-                    lfo.connect(lfoGain); lfoGain.connect(modGain.gain);
-                    modGain.gain.value = volume * 0.6;
-                    src.connect(lp); lp.connect(modGain); modGain.connect(ctx.destination);
-                    src.start(); lfo.start();
-                    nodes.src = src; nodes.lfo = lfo; nodes.modGain = modGain;
-                }
-
-                activeSounds[type] = nodes;
-            }
-
-            function stopSound(type) {
-                const nodes = activeSounds[type];
-                if (!nodes) return;
-                try { nodes.src?.stop(); } catch(e) {}
-                try { nodes.lfo?.stop(); } catch(e) {}
-                if (nodes.chirpInterval) clearInterval(nodes.chirpInterval);
-                delete activeSounds[type];
-            }
-
-            function stopAllSounds() {
-                Object.keys(activeSounds).forEach(stopSound);
-                document.querySelectorAll('.zen-sound-btn').forEach(b => b.classList.remove('active'));
-            }
-
-            // Sound button click handlers
-            document.querySelectorAll('.zen-sound-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const type = btn.dataset.sound;
-                    if (activeSounds[type]) {
-                        stopSound(type);
-                        btn.classList.remove('active');
-                    } else {
-                        const slider = document.querySelector(`.zen-volume[data-sound="${type}"]`);
-                        const vol = slider ? slider.value / 100 : 0.5;
-                        startSound(type, vol);
-                        btn.classList.add('active');
-                    }
-                });
-            });
-
-            // Volume sliders
-            document.querySelectorAll('.zen-volume').forEach(slider => {
-                slider.addEventListener('input', () => {
-                    const type = slider.dataset.sound;
-                    const nodes = activeSounds[type];
-                    if (nodes?.gain) {
-                        nodes.gain.gain.value = slider.value / 100;
-                    }
-                    if (nodes?.modGain) {
-                        nodes.modGain.gain.value = (slider.value / 100) * 0.6;
-                    }
-                });
-            });
-
-            // Stop all button
-            const stopAllBtn = document.getElementById('zenStopAllSounds');
-            if (stopAllBtn) stopAllBtn.addEventListener('click', stopAllSounds);
-
-            // ========== SPOTIFY CUSTOM URL ==========
-            const spotifyUrlInput = document.getElementById('zenSpotifyUrl');
-            const spotifyLoadBtn = document.getElementById('zenSpotifyLoad');
-            const spotifyIframe = document.getElementById('zenSpotifyIframe');
-
-            function loadSpotifyUrl() {
-                const url = (spotifyUrlInput?.value || '').trim();
-                if (!url) return;
-                // Parse Spotify URL: https://open.spotify.com/track/xxx or /playlist/xxx etc
-                const match = url.match(/open\.spotify\.com\/(track|playlist|album|episode|show)\/([a-zA-Z0-9]+)/);
-                if (match) {
-                    const type = match[1], id = match[2];
-                    spotifyIframe.src = `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
-                    // Save to localStorage
-                    localStorage.setItem('gb_zen_spotify', url);
-                } else {
-                    // Try direct paste of URI like spotify:track:xxx
-                    const uriMatch = url.match(/spotify:(track|playlist|album):([a-zA-Z0-9]+)/);
-                    if (uriMatch) {
-                        spotifyIframe.src = `https://open.spotify.com/embed/${uriMatch[1]}/${uriMatch[2]}?utm_source=generator&theme=0`;
-                        localStorage.setItem('gb_zen_spotify', url);
-                    }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(' + this.color + ',' + this.opacity + ')';
+                    ctx.fill();
                 }
             }
 
-            if (spotifyLoadBtn) spotifyLoadBtn.addEventListener('click', loadSpotifyUrl);
-            if (spotifyUrlInput) spotifyUrlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadSpotifyUrl(); });
+            for (let i = 0; i < 60; i++) particles.push(new Particle());
 
-            // Restore saved Spotify
-            const savedSpotify = localStorage.getItem('gb_zen_spotify');
-            if (savedSpotify && spotifyUrlInput) {
-                spotifyUrlInput.value = savedSpotify;
-                // Auto-load on zen open (only parse, don't auto-play)
-                const match = savedSpotify.match(/open\.spotify\.com\/(track|playlist|album|episode|show)\/([a-zA-Z0-9]+)/);
-                if (match && spotifyIframe) {
-                    spotifyIframe.src = `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
+            function animate() {
+                ctx.clearRect(0, 0, w, h);
+                particles.forEach(p => { p.update(); p.draw(); });
+
+                // Draw connections
+                for (let i = 0; i < particles.length; i++) {
+                    if (mouse.x != null && mouse.y != null) {
+                        const mdx = particles[i].x - mouse.x;
+                        const mdy = particles[i].y - mouse.y;
+                        const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+                        if (mDist < 180) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = 'rgba(34,211,238,' + (0.2 * (1 - mDist / 180)) + ')';
+                            ctx.lineWidth = 1.2;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(mouse.x, mouse.y);
+                            ctx.stroke();
+                        }
+                    }
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = 'rgba(251,191,36,' + (0.06 * (1 - dist / 120)) + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+    </script>
+    <script>
+        // Service Worker & Notifications API
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('SW Registered!', reg);
+                }).catch(err => console.log('SW Registration failed', err));
+            });
+        }
+        
+        // Push Notification Request On Login
+        document.addEventListener('DOMContentLoaded', () => {
+            if ("Notification" in window) {
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification("GoldBranch AI", { 
+                                body: "Sistem bildirimleri aktif edildi! Yeni görevlerde haberdar olacaksınız.",
+                                icon: "https://cdn-icons-png.flaticon.com/512/9334/9334400.png"
+                            });
+                        }
+                    });
                 }
             }
-
-            // Pomodoro Counter
-            let pTimer;
-            let pTime = 25 * 60;
-            const pDisplay = document.getElementById('pomodoroTimer');
-            let isRunning = false;
-
-            function updateDisplay() {
-                const m = Math.floor(pTime / 60).toString().padStart(2, '0');
-                const s = (pTime % 60).toString().padStart(2, '0');
-                pDisplay.innerText = `${m}:${s}`;
-            }
-
-            document.getElementById('startPomodoro').addEventListener('click', () => {
-                if(isRunning) return;
-                isRunning = true;
-                pTimer = setInterval(() => {
-                    if(pTime > 0) { pTime--; updateDisplay(); }
-                    else { 
-                        clearInterval(pTimer); 
-                        isRunning = false; 
-                        document.getElementById('pomodoroMessage').style.display = 'block';
-                        addSession();
-                    }
-                }, 1000);
-            });
-
-            document.getElementById('pausePomodoro').addEventListener('click', () => {
-                clearInterval(pTimer);
-                isRunning = false;
-            });
-
-            document.getElementById('resetPomodoro').addEventListener('click', () => {
-                clearInterval(pTimer);
-                isRunning = false;
-                pTime = 25 * 60;
-                updateDisplay();
-                document.getElementById('pomodoroMessage').style.display = 'none';
-            });
         });
     </script>
 
+    <!-- GLOBAL PAGE LOADER & ERROR HANDLER -->
+    <script>
+        // Page Loader: hide when fully loaded
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('pageLoader');
+            if(loader) { setTimeout(() => { loader.classList.remove('active'); }, 400); }
+        });
 
+        // Show loader on navigation
+        document.querySelectorAll('a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript"])').forEach(link => {
+            link.addEventListener('click', () => {
+                const loader = document.getElementById('pageLoader');
+                if(loader) loader.classList.add('active');
+            });
+        });
 
+        // Global JS Error Handler
+        window.onerror = function(msg, source, line, col, error) {
+            console.error('[GoldBranch Hata Yakalayıcı]', { msg, source, line, col });
+            return false;
+        };
 
-    <!-- Theme & Particle logic moved to site.js -->
+        // --- A to Z ELEGANT TOUCHES --- //
+        // 1. Dynamic Tab Title (Attention Grabber)
+        const originalDocTitle = document.title;
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                document.title = "🚀 Geri Dön Şef! Sistem Bekliyor...";
+            } else {
+                document.title = originalDocTitle;
+            }
+        });
 
-    <!-- SW, Page Loader, Error Handler & Elegant Touches logic moved to site.js -->
+        // 2. Ambient Mouse Aura (Follows cursor with Gold/Cyan pulse)
+        if (window.innerWidth > 992) {
+            const aura = document.createElement('div');
+            aura.style.cssText = 'position:fixed; top:0; left:0; width:400px; height:400px; background:radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 60%); border-radius:50%; transform:translate(-50%, -50%); pointer-events:none; z-index:9999; transition:width 0.3s, height 0.3s, background 0.3s; mix-blend-mode: screen;';
+            document.body.appendChild(aura);
+
+            document.addEventListener('mousemove', (e) => {
+                aura.style.left = e.clientX + 'px';
+                aura.style.top = e.clientY + 'px';
+            });
+            document.addEventListener('mousedown', () => { 
+                aura.style.width = '250px'; aura.style.height = '250px'; 
+                aura.style.background = 'radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 60%)'; 
+            });
+            document.addEventListener('mouseup', () => { 
+                aura.style.width = '400px'; aura.style.height = '400px'; 
+                aura.style.background = 'radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 60%)'; 
+            });
+        }
+        
+        // 3. Smooth Body Fade-In on Page Load
+        document.body.style.animation = "bodyFadeIn 0.8s ease forwards";
+        
+        // 4. Parallax 3D Hologram Effect for Cards
+        document.querySelectorAll('.card.bg-dark, .compact-task, .welcome-banner').forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                // Ignore for very small screens or nested elements that might glitch
+                if(window.innerWidth < 768) return;
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left - (rect.width/2);
+                const y = e.clientY - rect.top - (rect.height/2);
+                const tiltX = -(y / rect.height) * 10; // Max 10 deg
+                const tiltY = (x / rect.width) * 10;
+                
+                el.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`;
+                el.style.transition = 'none';
+                el.style.zIndex = '10';
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = '';
+                el.style.transition = 'transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                el.style.zIndex = '1';
+            });
+        });
+
+        // 5. Liquid Click Ripple for Buttons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('mousedown', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const ripple = document.createElement('span');
+                ripple.style.cssText = `position:absolute; width:2px; height:2px; background:rgba(255,255,255,0.4); left:${x}px; top:${y}px; border-radius:50%; transform:translate(-50%, -50%); pointer-events:none; animation:liquidRipple 0.6s linear forwards;`;
+                
+                if(window.getComputedStyle(this).position === 'static'){
+                    this.style.position = 'relative';
+                }
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // 6. Cinematic Scroll Reveal Observer (Fade Up on Scroll)
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0) scale(1)';
+                    // remove observer after reveal
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Wait a tiny bit for render
+        setTimeout(() => {
+            document.querySelectorAll('.card.bg-dark, .gb-section, .kanban-lane').forEach(el => {
+                if (!el.classList.contains('no-reveal')) {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(40px) scale(0.98)';
+                    el.style.transition = 'opacity 0.8s ease, transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1)';
+                    revealObserver.observe(el);
+                }
+            });
+        }, 100);
+
+        if(!document.querySelector('#bodyFadeStyle')){
+            const style = document.createElement('style');
+            style.id = 'bodyFadeStyle';
+            style.innerHTML = `
+                @@keyframes bodyFadeIn { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: scale(1); } }
+                @@keyframes liquidRipple { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(200); opacity: 0; } }
+                .neural-card { position: relative; }
+                .neural-card::before {
+                    content: ""; position: absolute; top:0; left:0; width:100%; height:100%;
+                    background: radial-gradient(400px circle at var(--mx) var(--my), rgba(34,211,238,0.15), transparent 40%);
+                    z-index: 1; opacity: 0; transition: opacity 0.3s; pointer-events: none; mix-blend-mode: screen; border-radius: inherit;
+                }
+                .neural-card:hover::before { opacity: 1; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // 7. Cybernetic Scroll Progress Bar
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            const bar = document.getElementById("gbScrollProgressBar");
+            if (bar) bar.style.width = scrolled + "%";
+        });
+
+        // 8. Neural Card Active Lighting (Hologram Surface Lighting)
+        document.querySelectorAll('.card.bg-dark, .compact-task, .welcome-banner').forEach(card => {
+            card.classList.add('neural-card');
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                card.style.setProperty('--mx', (e.clientX - rect.left) + 'px');
+                card.style.setProperty('--my', (e.clientY - rect.top) + 'px');
+            });
+        });
+
+        // 9. Magnetic Floating Action Bar (Pulls towards mouse)
+        const fabDock = document.getElementById('gbFabDock');
+        if (fabDock && window.innerWidth > 768) {
+            fabDock.addEventListener('mousemove', e => {
+                const rect = fabDock.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                fabDock.style.transform = `translate(${x * 0.4}px, ${y * 0.4}px)`;
+            });
+            fabDock.addEventListener('mouseleave', () => {
+                fabDock.style.transform = 'translate(0px, 0px)';
+            });
+            fabDock.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        }
+
+        // 10. Matrix/Hacker Decode Effect on Brand Logo Hover
+        const brandLogo = document.querySelector('.navbar-brand');
+        if(brandLogo) {
+            const originalHtml = brandLogo.innerHTML;
+            const originalText = "GoldBranch AI";
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@@#$%^&*";
+            let glitchInterval = null;
+            brandLogo.addEventListener('mouseover', () => {
+                let iteration = 0;
+                clearInterval(glitchInterval);
+                glitchInterval = setInterval(() => {
+                    const iconHtml = '<i class="fa-solid fa-leaf text-warning" style="-webkit-text-fill-color: #fbbf24;"></i> ';
+                    const scrambled = originalText.split("").map((letter, index) => {
+                        if(index < iteration) return originalText[index];
+                        return letters[Math.floor(Math.random() * letters.length)];
+                    }).join("");
+                    brandLogo.innerHTML = iconHtml + scrambled;
+                    if(iteration >= originalText.length) clearInterval(glitchInterval);
+                    iteration += 1 / 3;
+                }, 30);
+            });
+            brandLogo.addEventListener('mouseleave', () => {
+                clearInterval(glitchInterval);
+                brandLogo.innerHTML = originalHtml;
+            });
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

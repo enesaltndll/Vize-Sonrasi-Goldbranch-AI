@@ -65,9 +65,14 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => !t.IsCompleted && t.Status != "Devam Ediyor" && t.Status != "Onay Bekliyor"))
             {
-                <div class="kanban-item" draggable="true" data-id="@t.Id">
+                bool isLocked = t.DependsOnTask != null && !t.DependsOnTask.IsCompleted;
+                <div class="kanban-item" draggable="@(isLocked ? "false" : "true")" style="@(isLocked ? "opacity:0.5; cursor:not-allowed; border-color: rgba(220,53,69,0.5);" : "")" data-id="@t.Id">
                     <div class="fw-bold text-light mb-1">@t.Title</div>
                     <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                    @if(isLocked)
+                    {
+                        <div class="mb-2"><span class="badge border border-danger text-danger bg-dark w-100 text-start" style="font-size:0.65rem;"><i class="fa-solid fa-lock"></i> Önce: @t.DependsOnTask.Title</span></div>
+                    }
                     <span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;">@L.Get("KanbanWaiting")</span>
                     <a href="/Task/Details/@t.Id" class="stretched-link"></a>
                 </div>
@@ -83,9 +88,14 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => t.Status == "Devam Ediyor"))
             {
-                <div class="kanban-item border-warning border-opacity-25" draggable="true" data-id="@t.Id">
+                bool isLocked = t.DependsOnTask != null && !t.DependsOnTask.IsCompleted;
+                <div class="kanban-item border-warning border-opacity-25" draggable="@(isLocked ? "false" : "true")" style="@(isLocked ? "opacity:0.5; cursor:not-allowed;" : "")" data-id="@t.Id">
                     <div class="fw-bold text-light mb-1">@t.Title</div>
                     <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                    @if(isLocked)
+                    {
+                        <div class="mb-2"><span class="badge border border-danger text-danger bg-dark w-100 text-start" style="font-size:0.65rem;"><i class="fa-solid fa-lock"></i> Önce: @t.DependsOnTask.Title</span></div>
+                    }
                     <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;"><i class="fa-solid fa-spinner fa-spin"></i> @L.Get("KanbanProcessing")</span>
                     <a href="/Task/Details/@t.Id" class="stretched-link"></a>
                 </div>
@@ -140,11 +150,12 @@
             item.addEventListener('dragstart', () => {
                 item.classList.add('dragging');
                 item.style.opacity = '0.5';
+                item.dataset.origParent = item.closest('.kanban-column').id;
             });
             item.addEventListener('dragend', () => {
                 item.classList.remove('dragging');
                 item.style.opacity = '1';
-                // Not: AJAX entegrasyonu ile durum Backend'e yazılabilir.
+                item.removeAttribute('data-origParent');
             });
         });
 
@@ -159,21 +170,39 @@
             
             column.addEventListener('drop', e => {
                 e.preventDefault();
-                const dragging = document.querySelector('.dragging');
-                if (dragging) {
-                    const taskId = dragging.getAttribute('data-id');
-                    const newStatus = column.getAttribute('data-status');
+                const dragging = document.querySelector('.dragging[data-origParent]');
+                if (!dragging) return;
+                
+                const origParentId = dragging.dataset.origParent;
+                const newColId = column.id;
+                
+                // Fetch to update status
+                const taskId = dragging.getAttribute('data-id');
+                const newStatus = column.getAttribute('data-status');
+                
+                // AJAX call with explicit headers so controller knows it's an API request
+                fetch(`/Task/ChangeStatus?id=${taskId}&newStatus=${encodeURIComponent(newStatus)}`, {
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(async res => {
+                    if (!res.ok) {
+                        const errMsg = await res.text();
+                        throw new Error(errMsg || "Durum güncellenemedi.");
+                    }
+                    if (window.GB && typeof window.GB.toast === 'function') {
+                        window.GB.toast({ icon: 'success', title: 'Durum güncellendi: ' + newStatus });
+                    }
+                }).catch(err => {
+                    // Revert UI to original parent
+                    const origCol = document.getElementById(origParentId);
+                    if(origCol) origCol.querySelector('.kanban-items').appendChild(dragging);
                     
-                    fetch(`/Task/ChangeStatus?id=${taskId}&newStatus=${encodeURIComponent(newStatus)}`, {
-                        method: 'GET'
-                    }).then(() => {
-                        if (window.GB && typeof window.GB.toast === 'function') {
-                            window.GB.toast({ icon: 'success', title: 'Durum güncellendi: ' + newStatus });
-                        }
-                    }).catch(err => {
-                        console.error('Update failed:', err);
-                    });
-                }
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'HATA', text: err.message, background: '#161b22', color: '#f0f6fc' });
+                    } else {
+                        alert(err.message);
+                    }
+                });
             });
         });
     </script>

@@ -43,7 +43,15 @@
                 <input id="gbTaskSearch" class="form-control gb-input" type="search" placeholder="@L.Get("SearchTaskPersonStatus")" autocomplete="off" />
             </div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center">
+                @if (userRole == "Proje Sefi" || userRole == "Admin")
+                {
+                    <form asp-action="DeleteAllTasks" asp-controller="Task" method="post" class="m-0" onsubmit="return confirm('@L.Get("DeleteAllConfirm")');">
+                        <button type="submit" class="btn btn-outline-danger rounded-pill px-3 fw-bold btn-sm">
+                            <i class="fa-solid fa-trash-can me-1"></i> @L.Get("DeleteAllTasks")
+                        </button>
+                    </form>
+                }
                 <a asp-action="Kanban" class="btn btn-outline-warning rounded-pill px-3 fw-bold btn-sm">
                     <i class="fa-solid fa-chess-board me-1"></i> @L.Get("Kanban")
                 </a>
@@ -283,15 +291,21 @@
                         }
                         @foreach (var task in (List<GoldBranchAI.Models.TodoTask>)lane.Tasks)
                         {
+                            bool isLocked = task.DependsOnTask != null && !task.DependsOnTask.IsCompleted;
                             var searchable = (task.Title + " " + (task.AppUser?.FullName ?? "") + " " + task.Status).ToLower();
                             <div class="compact-task gb-task" 
                                  data-search="@searchable"
                                  data-task-id="@task.Id"
-                                 style="border-left: 4px solid @(task.Status == "Revize" ? "#fb923c" : (task.Status == "Onay Bekliyor" ? "#c084fc" : "#38bdf8"));">
+                                 style="border-left: 4px solid @(task.Status == "Revize" ? "#fb923c" : (task.Status == "Onay Bekliyor" ? "#c084fc" : "#38bdf8")); @(isLocked ? "opacity:0.6;" : "")">
                                 
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h6 class="text-light fw-bold mb-0" style="font-size: 0.9rem;">@task.Title</h6>
                                 </div>
+                                
+                                @if(isLocked)
+                                {
+                                    <div class="mb-2"><span class="badge bg-dark border border-danger text-danger w-100 text-start small"><i class="fa-solid fa-lock me-1"></i> Önce: @task.DependsOnTask.Title</span></div>
+                                }
 
                                 @if (task.Status == "Onay Bekliyor")
                                 {

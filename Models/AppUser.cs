@@ -25,6 +25,11 @@ namespace GoldBranchAI.Models
         public int ExperiencePoints { get; set; } = 0;
         public string? AvatarUrl { get; set; }
 
+        // AI Sağlayıcı Tercihleri
+        public string PreferredAiProvider { get; set; } = "default"; // default, openai, gemini, anthropic, cohere, sambanova
+        public string? CustomAiApiKey { get; set; }
+        public string? CustomAiModel { get; set; }
+
         public ICollection<TodoTask> TodoTasks { get; set; } = new List<TodoTask>();
         public ICollection<ChatGroupMember> Memberships { get; set; } = new List<ChatGroupMember>();
         public ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();

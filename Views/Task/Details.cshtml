@@ -11,6 +11,8 @@
     else if (Model.Status == "Onay Bekliyor") { statusBadge = "bg-info text-dark"; statusIcon = "fa-check"; }
     else if (Model.Status == "Revize") { statusBadge = "bg-warning text-dark"; statusIcon = "fa-rotate-left"; }
     else if (Model.Status == "Tamamlandi") { statusBadge = "bg-success"; statusIcon = "fa-check-double"; }
+
+    bool isLocked = Model.DependsOnTask != null && !Model.DependsOnTask.IsCompleted;
 }
 
 <div class="gb-page fade-in-up" style="max-width: 980px; margin: 0 auto;">
@@ -45,6 +47,17 @@
             }
         </div>
     </div>
+
+    @if (isLocked)
+    {
+        <div class="alert alert-danger d-flex align-items-center mb-4 border border-danger fade-in-up shadow" style="background: rgba(220,53,69,0.1); border-radius: 12px;">
+            <i class="fa-solid fa-lock fa-2x me-3"></i>
+            <div>
+                <h5 class="mb-1 fw-bold text-danger">Bu Görev Kilitli</h5>
+                <p class="mb-0 text-light">Bu göreve başlamak veya eylem almak için öncelikle <a asp-action="Details" asp-route-id="@Model.DependsOnTaskId" class="text-info fw-bold text-decoration-underline">#@Model.DependsOnTask.Id - @Model.DependsOnTask.Title</a> görevinin tamamlanması gerekmektedir.</p>
+            </div>
+        </div>
+    }
 
     <div class="gb-section">
         <div class="gb-section-body">
@@ -106,20 +119,29 @@
             <span class="text-muted small"><i class="fa-regular fa-clock"></i> @L.Get("RegistrationDate"): @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
 
             <div class="d-flex flex-wrap gap-2">
-                @if (currentUserRole == "Gelistirici" && (Model.Status == "Devam Ediyor" || Model.Status == "Revize"))
+                @if(isLocked)
                 {
-                    <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Onay Bekliyor" class="btn btn-info fw-bold rounded-pill text-dark px-4">
-                        <i class="fa-solid fa-paper-plane me-2"></i> @L.Get("SendToLead")
-                    </a>
+                    <span class="btn btn-dark border border-danger text-danger fw-bold rounded-pill px-4 disabled" style="opacity:0.8; cursor:not-allowed;">
+                        <i class="fa-solid fa-lock me-2"></i> KİLİTLİ
+                    </span>
                 }
-                else if (currentUserRole == "Proje Sefi" && Model.Status == "Onay Bekliyor")
+                else
                 {
-                    <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Revize" class="btn btn-warning fw-bold rounded-pill text-dark px-4">
-                        <i class="fa-solid fa-rotate-left me-2"></i> @L.Get("RequestRevision")
-                    </a>
-                    <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Tamamlandi" class="btn btn-success fw-bold rounded-pill text-dark px-4">
-                        <i class="fa-solid fa-check-double me-2"></i> @L.Get("AcceptWork")
-                    </a>
+                    if (currentUserRole == "Gelistirici" && (Model.Status == "Devam Ediyor" || Model.Status == "Revize" || Model.Status == "Bekliyor"))
+                    {
+                        <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Onay Bekliyor" class="btn btn-info fw-bold rounded-pill text-dark px-4">
+                            <i class="fa-solid fa-paper-plane me-2"></i> @L.Get("SendToLead")
+                        </a>
+                    }
+                    else if (currentUserRole == "Proje Sefi" && Model.Status == "Onay Bekliyor")
+                    {
+                        <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Revize" class="btn btn-warning fw-bold rounded-pill text-dark px-4">
+                            <i class="fa-solid fa-rotate-left me-2"></i> @L.Get("RequestRevision")
+                        </a>
+                        <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Tamamlandi" class="btn btn-success fw-bold rounded-pill text-dark px-4">
+                            <i class="fa-solid fa-check-double me-2"></i> @L.Get("AcceptWork")
+                        </a>
+                    }
                 }
             </div>
         </div>
