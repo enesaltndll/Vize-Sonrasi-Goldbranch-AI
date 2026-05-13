@@ -121,9 +121,9 @@ dotnet run
 
 | Rol | E-posta | Şifre |
 |-----|---------|-------|
-| 👑 Admin | admin@test.com | admin123 |
-| ⭐ Proje Şefi | sef@test.com | sef123 |
-| 💻 Geliştirici | dev@test.com | dev123 |
+| 👑 Admin | admin@test.com | admin |
+| ⭐ Proje Şefi | sef@test.com | sef12 |
+| 💻 Geliştirici | dev@test.com | dev1 |
 
 > ⚠️ Google OAuth ve AI anahtarları güvenlik nedeniyle GitHub'dan çıkartılmıştır.
 
