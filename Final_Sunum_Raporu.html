@@ -1,223 +1,233 @@
 <!DOCTYPE html>
-<html lang="tr" data-bs-theme="dark">
+<html lang="tr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GoldBranch AI - Proje Sunum Raporu</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldBranch AI - Final Sunum Raporu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #050505;
-            --surface-color: #111111;
-            --primary-accent: #fbbf24;
-            --secondary-accent: #22d3ee;
+            --gb-gold: #fbbf24;
+            --gb-dark: #0d1117;
+            --gb-card: rgba(22, 27, 34, 0.8);
+            --gb-border: rgba(251, 191, 36, 0.2);
         }
         body {
-            background-color: var(--bg-color);
-            color: #e5e5e5;
-            font-family: 'Outfit', sans-serif;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(251, 191, 36, 0.04), transparent 30%),
-                radial-gradient(circle at 85% 30%, rgba(34, 211, 238, 0.04), transparent 30%);
+            background-color: #010409;
+            color: #c9d1d9;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
         }
-        .header-glass {
-            background: rgba(17, 17, 17, 0.7);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(251, 191, 36, 0.2);
-            position: sticky;
-            top: 0;
+        .slide-page {
+            min-height: 100vh;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            page-break-after: always;
+        }
+        .title-gold {
+            color: var(--gb-gold);
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+        .glass-card {
+            background: var(--gb-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--gb-border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .tech-badge {
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--gb-gold);
+            border: 1px solid var(--gb-border);
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin: 5px;
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--gb-gold);
+            margin-bottom: 20px;
+        }
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
             z-index: 1000;
         }
-        .report-section {
-            padding: 5rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 2rem;
-            transition: all 0.3s ease;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(251, 191, 36, 0.3);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .icon-circle {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .bg-gold-light { background: rgba(251, 191, 36, 0.1); color: var(--primary-accent); }
-        .bg-cyan-light { background: rgba(34, 211, 238, 0.1); color: var(--secondary-accent); }
-        .bg-purple-light { background: rgba(192, 132, 252, 0.1); color: #c084fc; }
-        .bg-emerald-light { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .bg-rose-light { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
-
-        .gradient-text {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .code-font {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #94a3b8;
-        }
-        .pulse-blob {
-            position: absolute; width: 300px; height: 300px;
-            background: rgba(251, 191, 36, 0.15);
-            border-radius: 50%; filter: blur(80px);
-            top: -50px; right: -50px; pointer-events: none;
+        @media print {
+            .print-btn { display: none; }
+            body { background: white; color: black; }
+            .glass-card { border: 1px solid #ddd; box-shadow: none; background: white; }
+            .tech-badge { border: 1px solid #ddd; background: #f9f9f9; color: black; }
+            .title-gold { color: #856404; }
         }
     </style>
 </head>
 <body>
 
-    <header class="header-glass py-4">
-        <div class="container d-flex justify-content-between align-items-center">
-            <h3 class="mb-0 fw-bold"><i class="fa-solid fa-leaf text-warning me-2"></i>GoldBranch<span class="text-light">AI</span></h3>
-            <span class="badge border border-warning text-warning px-3 py-2 rounded-pill code-font">v4.0 Final Build</span>
-        </div>
-    </header>
+    <button onclick="window.print()" class="btn btn-warning btn-lg rounded-pill shadow print-btn">
+        <i class="fa-solid fa-file-pdf me-2"></i> PDF OLARAK KAYDET / YAZDIR
+    </button>
 
-    <main class="container py-5">
-        
-        <!-- INTRO HERO -->
-        <div class="text-center py-5 position-relative">
-            <div class="pulse-blob"></div>
-            <h1 class="display-3 fw-bolder mb-3">Akademik Sunum Raporu</h1>
-            <p class="lead text-muted w-75 mx-auto">
-                Bilişim ekipleri için geliştirilmiş; <span class="text-light fw-bold">Yapay Zeka Destekli</span>, 
-                <span class="text-light fw-bold">Oyunlaştırma (Gamification)</span> altyapılı ve 
-                geliştirici <span class="text-light fw-bold">iş sağlığını (Wellness)</span> odağına alan 
-                modern Görev Yönetim Sistemi A'dan Z'ye gelişim süreci.
-            </p>
+    <!-- SLIDE 1: KAPAK -->
+    <section class="slide-page text-center">
+        <div class="container">
+            <i class="fa-solid fa-leaf feature-icon" style="font-size: 5rem;"></i>
+            <h1 class="display-1 title-gold mb-3">GOLDBRANCH AI</h1>
+            <h2 class="h3 text-muted mb-5">Final Dönem Projesi Sunumu</h2>
+            <div class="mt-5">
+                <p class="mb-1">Hazırlayan</p>
+                <h4 class="fw-bold">Enes Altındal</h4>
+                <p class="text-muted">Yapay Zeka Destekli Yeni Nesil Görev Yönetim Platformu</p>
+            </div>
         </div>
+    </section>
 
-        <!-- 1. ROLLER VE MİMARİ -->
-        <section class="report-section">
-            <h2 class="fw-bold gradient-text mb-4">1. Kimlik ve Yetki Mimarisi (RBAC)</h2>
+    <!-- SLIDE 2: VİZYON -->
+    <section class="slide-page">
+        <div class="container">
+            <h2 class="title-gold mb-5"><i class="fa-solid fa-eye me-3"></i>Proje Vizyonu</h2>
+            <div class="glass-card">
+                <p class="lead">GoldBranch AI, standart bir TODO listesinden öte, kullanıcının verimliliğini AI (Yapay Zeka) analitiği, oyunlaştırma ve ileri düzey kullanıcı deneyimi (UX) ile maksimize eden bir **"Yapay Zeka Karargahı"** olmayı hedefler.</p>
+                <hr class="my-4 opacity-25">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5 class="text-warning">Akıllı Analiz</h5>
+                        <p class="small">Görevleri aciliyet ve nöral yük skoruna göre otomatik sıralar.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="text-warning">Oyunlaştırma</h5>
+                        <p class="small">XP, Rozet ve Sertifika sistemiyle motivasyonu canlı tutar.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="text-warning">Derin Odak</h5>
+                        <p class="small">Zen modu ve ortam sesleriyle akış halini (Flow) korur.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 3: TEKNOLOJİ YIĞINI -->
+    <section class="slide-page">
+        <div class="container">
+            <h2 class="title-gold mb-5"><i class="fa-solid fa-microchip me-3"></i>Teknolojik Altyapı</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="glass-card h-100">
+                        <h4 class="text-warning mb-4">Backend & Web</h4>
+                        <span class="tech-badge">.NET 8 (ASP.NET Core MVC)</span>
+                        <span class="tech-badge">Entity Framework Core</span>
+                        <span class="tech-badge">SQL Server</span>
+                        <span class="tech-badge">SignalR (Canlı Bildirimler)</span>
+                        <span class="tech-badge">GitHub OAuth (Kimlik Doğrulama)</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card h-100">
+                        <h4 class="text-warning mb-4">AI & Modern UI</h4>
+                        <span class="tech-badge">SambaNova (Llama 3.3)</span>
+                        <span class="tech-badge">Cohere AI</span>
+                        <span class="tech-badge">Web Speech API (Sesli Komut)</span>
+                        <span class="tech-badge">Vanilla JS & CSS3 Animations</span>
+                        <span class="tech-badge">Bootstrap 5 & FontAwesome 6</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 4: ÖNE ÇIKAN ÖZELLİKLER - I -->
+    <section class="slide-page">
+        <div class="container">
+            <h2 class="title-gold mb-5"><i class="fa-solid fa-star me-3"></i>Masterclass Özellikler - I</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="glass-card">
+                        <i class="fa-solid fa-ghost feature-icon"></i>
+                        <h4>🛡️ Ghost Mode</h4>
+                        <p class="text-muted small">Hassas verileri (görev başlıkları, kullanıcı isimleri) tek tuşla buzlayarak halka açık yerlerde gizlilik sağlar.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card">
+                        <i class="fa-solid fa-microphone-lines feature-icon"></i>
+                        <h4>🎙️ AI Daily Briefing</h4>
+                        <p class="text-muted small">Güne başlarken o günkü önceliklerinizi ve stratejik tavsiyeleri AI asistanınızdan sesli olarak dinlersiniz.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card">
+                        <i class="fa-solid fa-clock-rotate-left feature-icon"></i>
+                        <h4>🕰️ Project Time Machine</h4>
+                        <p class="text-muted small">Kanban tahtasında geçmişe yolculuk yaparak projenin eski durumlarını interaktif olarak görebilirsiniz.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card">
+                        <i class="fa-solid fa-certificate feature-icon"></i>
+                        <h4>📜 Digital Certificate</h4>
+                        <p class="text-muted small">XP ve başarılarınızı resmi, imzalı bir sertifika ile belgeleyip sosyal medyada paylaşmanızı sağlar.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 5: ÖNE ÇIKAN ÖZELLİKLER - II -->
+    <section class="slide-page">
+        <div class="container">
+            <h2 class="title-gold mb-5"><i class="fa-solid fa-robot me-3"></i>Masterclass Özellikler - II</h2>
             <div class="row g-4">
                 <div class="col-md-4">
-                    <div class="feature-card border-top border-3 border-danger">
-                        <h4 class="fw-bold text-light"><i class="fa-solid fa-crown text-danger me-2"></i>Admin</h4>
-                        <p class="text-muted mt-3">Sistemin kalbi. Tüm kullanıcıları yönetebilir, Z-Raporlarına erişebilir, takımı denetler. Özel "Sistem Radarı Paneli"ne sahiptir.</p>
+                    <div class="glass-card text-center">
+                        <i class="fa-solid fa-yin-yang feature-icon"></i>
+                        <h5>Zen Mode 2.0</h5>
+                        <p class="smallest text-muted">YouTube odaklı ders çalışma alanı ve ortam sesleri (Yağmur, Orman).</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="feature-card border-top border-3 border-info">
-                        <h4 class="fw-bold text-light"><i class="fa-solid fa-user-tie text-info me-2"></i>Proje Şefi</h4>
-                        <p class="text-muted mt-3">Görevleri atayan ve takibi sağlayan rol. Lider tablosunu denetler ve tükenmişlik (Burnout) risk haritasını inceler.</p>
+                    <div class="glass-card text-center">
+                        <i class="fa-solid fa-microchip feature-icon"></i>
+                        <h5>Jarvis HUD</h5>
+                        <p class="smallest text-muted">Fütüristik sesli komut arayüzü ve nöral yük takip sistemi.</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="feature-card border-top border-3 border-success">
-                        <h4 class="fw-bold text-light"><i class="fa-solid fa-laptop-code text-success me-2"></i>Geliştirici</h4>
-                        <p class="text-muted mt-3">Görevleri çözen rol. XP kazanır, seviye atlar (Level sistemi), başarım rozetleri açar ve Kanban bordunu kullanır.</p>
+                    <div class="glass-card text-center">
+                        <i class="fa-solid fa-satellite-dish feature-icon"></i>
+                        <h5>Strategic Radar</h5>
+                        <p class="smallest text-muted">Görevlerin risk ve aciliyet durumunu 3 boyutlu radar analizi ile sunar.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- 2. GELİŞTİRİLEN MODÜLLER -->
-        <section class="report-section">
-            <h2 class="fw-bold gradient-text mb-4">2. Bütünleşik Geliştirme (Neler Yaptık?)</h2>
-            
-            <div class="row g-4 mt-2">
-                <!-- WOW UI -->
-                <div class="col-md-6">
-                    <div class="feature-card">
-                        <div class="icon-circle bg-gold-light"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <h4 class="fw-bold mt-2">Gelişmiş WOW UI & Tema Motoru</h4>
-                        <p class="text-muted">Standart bir paneli "Glassmorphism" tasarımıyla baştan yarattık. 5 farklı renk teması anlık değiştirilebilir kılındı. 
-                        Tüm arayüze Hover parlamaları, Sayaç animasyonları (Count-up) ve Neonsal görsel geri bildirimler eklendi.</p>
-                    </div>
-                </div>
-                
-                <!-- Localization -->
-                <div class="col-md-6">
-                    <div class="feature-card">
-                        <div class="icon-circle bg-cyan-light"><i class="fa-solid fa-globe"></i></div>
-                        <h4 class="fw-bold mt-2">Uluslararası Dil Desteği (Bilingual)</h4>
-                        <p class="text-muted">Projenin her bir kelimesi hardcoded yazılmaktan kurtarıldı. Özel <code>L.Get()</code> mimarisi yazılarak anlık Türkçe (TR) ve İngilizce (EN) geçişi sisteme entegre edildi.</p>
-                    </div>
-                </div>
-
-                <!-- Gamification -->
-                <div class="col-md-6">
-                    <div class="feature-card">
-                        <div class="icon-circle bg-purple-light"><i class="fa-solid fa-gamepad"></i></div>
-                        <h4 class="fw-bold mt-2">Oyunlaştırma (XP & Rozet) Sistemi</h4>
-                        <p class="text-muted">Çalışan motivasyonunu artırmak için görevler tamamlandığında Experience Point (XP) kazandıran bir seviye algoritması kodlandı. <i>Sıvı akış (Liquid flow)</i> animasyonlu Progress Barlar ve "İlk Kan", "Şampiyon" gibi rozet kazanımları profil modülüne entegre edildi.</p>
-                    </div>
-                </div>
-
-                <!-- Wellness -->
-                <div class="col-md-6">
-                    <div class="feature-card">
-                        <div class="icon-circle bg-emerald-light"><i class="fa-solid fa-heart-pulse"></i></div>
-                        <h4 class="fw-bold mt-2">Sağlık Kalkanı (Wellness Guardian)</h4>
-                        <p class="text-muted">Sadece iş takibi değil, sağlık takibi yapıyoruz. Sisteme zamanlayıcılar entegre ettik: 
-                        <br>- 45 sn: Göz molası uyarısı
-                        <br>- 90 sn: Ayağa kalkma ve postür onarımı
-                        <br>- 150 sn: 30 saniyelik zorunlu ekran kilitlenmesi (Çalışanın dinlenmeye zorlanması).</p>
-                    </div>
-                </div>
-
-                <!-- AI -->
-                <div class="col-md-6">
-                    <div class="feature-card">
-                        <div class="icon-circle bg-rose-light"><i class="fa-solid fa-brain"></i></div>
-                        <h4 class="fw-bold mt-2">AI Proje Analizi ve Veri Dışa Aktarım</h4>
-                        <p class="text-muted">Proje Şeflerinin AI ile projeyi analiz ettiği bir asistan eklendi. AI çıktıları doğrudan Akademik Word/Rapor çıktısı olarak '.doc' ve '.txt' uzantılı makinelere indirilebilir şekilde kodlandı (Dinamik event delegation ile DOM sorunları aşıldı).</p>
-                    </div>
-                </div>
-
-                <!-- Kanban -->
-                <div class="col-md-6">
-                    <div class="feature-card">
-                        <div class="icon-circle" style="background:rgba(255,255,255,0.05); color:#fff;"><i class="fa-solid fa-table-columns"></i></div>
-                        <h4 class="fw-bold mt-2">Dinamik Görev & Kanban Yolu</h4>
-                        <p class="text-muted">Standart grid yapıları esnetilerek; işlerin durumlarının renklerle (Kritik, Acil, Normal) yönetildiği panolar kodlandı. Sayfaya entegre hızlı bildirim ve sesli ikaz (SignalR / Toast) özellikleri kurgulandı.</p>
-                    </div>
+    <!-- SLIDE 6: SONUÇ -->
+    <section class="slide-page text-center">
+        <div class="container">
+            <h2 class="display-4 title-gold mb-5">Teşekkürler</h2>
+            <div class="glass-card d-inline-block px-5">
+                <p class="mb-0">GoldBranch AI: "The Future of Workspace"</p>
+                <div class="mt-4">
+                    <a href="https://github.com/enesaltndll/Vize-Sonrasi-Goldbranch-AI" class="text-warning text-decoration-none small">
+                        <i class="fa-brands fa-github me-2"></i> GitHub Repositories
+                    </a>
                 </div>
             </div>
-        </section>
-
-        <!-- 3. TEKNOLOJİ YIĞINI -->
-        <section class="report-section mb-5">
-            <h2 class="fw-bold gradient-text mb-4">3. Kullanılan Teknolojiler</h2>
-            <div class="d-flex flex-wrap gap-2">
-                <span class="badge bg-dark border border-secondary px-3 py-2 fs-6">ASP.NET Core 8.0</span>
-                <span class="badge bg-dark border border-secondary px-3 py-2 fs-6">C# & Entity Framework</span>
-                <span class="badge bg-dark border border-secondary px-3 py-2 fs-6">HTML5 / CSS3 (Grid & Flexbox)</span>
-                <span class="badge bg-dark border border-secondary px-3 py-2 fs-6">Vanilla JavaScript (ES6)</span>
-                <span class="badge bg-dark border border-secondary px-3 py-2 fs-6">Bootstrap 5.3 Framework</span>
-                <span class="badge bg-dark border border-warning px-3 py-2 fs-6">SweetAlert2 (Popups)</span>
-                <span class="badge bg-dark border border-warning px-3 py-2 fs-6">CSS Keyframes & Glassmorphism</span>
-            </div>
-            <div class="mt-4 p-4 rounded-4" style="background: rgba(251, 191, 36, 0.05); border-left: 4px solid var(--primary-accent);">
-                <h5 class="fw-bold text-warning"><i class="fa-solid fa-code-branch me-2"></i>Versiyon Kontrol ve Hata Yönetimi</h5>
-                <p class="text-muted mb-0">Proje geliştirilirken Razor engine compile hataları, port çatışmaları (Port 7012 vs 5161) ve InnerHTML parse problemleri uçtan uca yakalanıp "Event Delegation" ve System Architecture Refactoring taktikleriyle çözümlenmiştir. Global C# stateleri JS localStorage alanlarıyla hibrit (hybrid) çalışacak şekilde koordine edilmiştir.</p>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="text-center py-4 text-muted code-font border-top" style="border-color: rgba(255,255,255,0.05)!important; background: rgba(0,0,0,0.5);">
-        © 2026 GoldBranch AI - Gelişen Takımlar İçin Yeni Nesil Yazılım
-    </footer>
+        </div>
+    </section>
 
 </body>
 </html>
