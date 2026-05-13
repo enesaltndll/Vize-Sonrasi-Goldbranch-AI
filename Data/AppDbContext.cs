@@ -21,8 +21,11 @@ namespace GoldBranchAI.Data
         public DbSet<UserBadge> UserBadges { get; set; }
         public DbSet<TaskFilterView> TaskFilterViews { get; set; }
 
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+
+            
             modelBuilder.Entity<ChatMessage>().HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<ChatMessage>().HasOne(m => m.Receiver).WithMany().HasForeignKey(m => m.ReceiverId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<ChatMessage>().HasOne(m => m.ChatGroup).WithMany(g => g.Messages).HasForeignKey(m => m.ChatGroupId).OnDelete(DeleteBehavior.Restrict);

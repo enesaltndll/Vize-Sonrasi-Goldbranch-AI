@@ -190,20 +190,34 @@
                 previewContainer.classList.remove("d-none");
             }
 
-            // AKILLI FORM KURTARMA (LOCALSTORAGE)
+            // --- ENTERPRISE CRASH RECOVERY (Hafta 8) ---
             const formInputs = ["Title", "Description", "DueDate", "EstimatedTimeHours", "AppUserId"];
             const storageKey = "goldbranch_task_backup";
 
             // Load saved data on page load
             const savedData = JSON.parse(localStorage.getItem(storageKey) || "{}");
+            let recovered = false;
+
             formInputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el && savedData[id]) {
                     el.value = savedData[id];
+                    recovered = true;
                 }
             });
 
-            // Save data on any input change
+            if (recovered && typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true, position: 'top-end',
+                    icon: 'info',
+                    title: 'Taslak Kurtarıldı',
+                    text: 'Kapatılan veya bağlantısı kopan önceki form verileriniz geri yüklendi.',
+                    showConfirmButton: false, timer: 5000,
+                    background: '#0d1117', color: '#fbbf24'
+                });
+            }
+
+            // Save data on any input change (Auto-Save)
             document.querySelector("form").addEventListener("input", (e) => {
                 const currentData = {};
                 formInputs.forEach(id => {

@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "AI İşbirliği Merkezi";
+}
+
+<div class="gb-page fade-in-up">
+    <div class="mb-5 text-center">
+        <div class="system-title gold-text mb-2">HYPER-COLLABORATION HUB v1.0</div>
+        <h1 class="gb-hero-title" style="font-weight: 900;">AI Görüntülü Toplantı & Ekran Paylaşımı</h1>
+        <p class="text-muted">Geliştirici sunumları, sprint planlamaları ve anlık görüntülü görüşmeler için kurumsal çözüm.</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="gb-glass-card p-5 text-center border-warning">
+                <div class="mb-4">
+                    <i class="fa-solid fa-video fa-4x text-warning pulse-gold"></i>
+                </div>
+                <h4 class="fw-bold mb-3">Toplantı Başlat veya Katıl</h4>
+                <p class="small text-muted mb-4">Bir oda ismi girerek anında toplantı başlatabilir veya paylaşılan bir ID ile ekibe katılabilirsiniz.</p>
+
+                <form asp-action="Room" method="get">
+                    <div class="mb-4">
+                        <input type="text" name="id" class="form-control form-control-lg text-center fw-bold" 
+                               placeholder="ODA ID GİRİNİZ" value="@ViewBag.SuggestedRoomId" 
+                               style="background: rgba(255,255,255,0.05); border: 2px solid rgba(251,191,36,0.2); color: #fff; letter-spacing: 2px;">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-lg rounded-pill px-5 fw-bold gb-btn-shine">
+                        <i class="fa-solid fa-door-open me-2"></i>Odaya Giriş Yap
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="gb-glass-card p-4 h-100">
+                <h6 class="fw-bold text-info mb-3"><i class="fa-solid fa-shield-halved me-2"></i>Güvenli İşbirliği</h6>
+                <ul class="list-unstyled small text-muted">
+                    <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i>Uçtan uca şifreli görüşme</li>
+                    <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i>Yüksek çözünürlüklü ekran paylaşımı</li>
+                    <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i>Sınırsız katılımcı desteği</li>
+                    <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i>Entegre sohbet ve el kaldırma</li>
+                </ul>
+                <hr class="opacity-10">
+                <div class="p-3 rounded-3" style="background: rgba(34, 211, 238, 0.05); border: 1px solid rgba(34, 211, 238, 0.1);">
+                    <small class="text-info d-block fw-bold mb-1"><i class="fa-solid fa-lightbulb me-1"></i> AI İpucu:</small>
+                    <small class="text-muted">Ekran paylaşımı yaparken "Sekme Sesi" paylaşmayı unutmayın, böylece videoları ekipçe izleyebilirsiniz.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

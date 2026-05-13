@@ -1,0 +1,158 @@
+@model IEnumerable<GoldBranchAI.Models.TodoTask>
+@{
+    ViewData["Title"] = "Stratejik Görev Radarı";
+}
+
+<div class="gb-page">
+    <div class="gb-page-header fade-in-up">
+        <div>
+            <h2 class="gb-title">
+                <i class="fa-solid fa-satellite-dish text-warning me-2"></i> Operasyonel Radar
+            </h2>
+            <p class="gb-subtitle mb-0">Aktif görevlerin merkeze (teslim tarihine) olan uzaklığını izleyin.</p>
+        </div>
+        <div class="gb-actions">
+             <div class="gb-glass-card px-3 py-2 small fw-bold text-warning border-warning border-opacity-25">
+                <i class="fa-solid fa-circle-dot me-2"></i> MERKEZ = KRİTİK EŞİK
+             </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 fade-in-up" style="animation-delay: 0.1s;">
+            <div class="gb-glass-card p-0 overflow-hidden position-relative" style="height: 600px;">
+                <canvas id="radarCanvas" style="width: 100%; height: 100%; cursor: crosshair;"></canvas>
+                
+                <!-- Radar HUD Info -->
+                <div class="position-absolute top-0 start-0 p-4 pointer-events-none">
+                    <div class="smallest text-muted text-uppercase letter-spacing-2 mb-1">Radar Durumu</div>
+                    <div class="fw-bold text-info"><i class="fa-solid fa-wifi fa-spin me-2"></i> AKTİF TARAMA...</div>
+                </div>
+
+                <!-- Legend -->
+                <div class="position-absolute bottom-0 start-0 p-4">
+                    <div class="d-flex gap-3">
+                        <div class="smallest"><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#ef4444;"></span> Kritik</div>
+                        <div class="smallest"><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#fbbf24;"></span> Orta</div>
+                        <div class="smallest"><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#38bdf8;"></span> Stabil</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 fade-in-up" style="animation-delay: 0.2s;">
+            <div class="gb-glass-card p-4 h-100 overflow-hidden d-flex flex-column">
+                <h5 class="fw-bold text-light mb-4"><i class="fa-solid fa-list-check me-2"></i> Yakın Hedefler</h5>
+                <div class="flex-grow-1 overflow-auto pe-2" style="max-height: 500px;">
+                    @foreach (var task in Model.OrderBy(t => t.DueDate))
+                    {
+                        var diff = (task.DueDate - DateTime.Now).TotalHours;
+                        var urgencyClass = diff < 24 ? "danger" : (diff < 72 ? "warning" : "info");
+                        <div class="gb-glass-card p-3 mb-2 border-start-4 border-@urgencyClass" style="background: rgba(255,255,255,0.02);">
+                            <div class="small fw-bold text-light mb-1">@task.Title</div>
+                            <div class="smallest text-muted">@task.AppUser?.FullName | @task.DueDate.ToString("dd MMM HH:mm")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-start-4 { border-left-width: 4px !important; }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const canvas = document.getElementById('radarCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, centerX, centerY, maxRadius;
+
+        const tasks = [
+            @foreach (var task in Model) {
+                var diffHours = (task.DueDate - DateTime.Now).TotalHours;
+                var normalizedDist = Math.Min(1.0, diffHours / (24.0 * 7.0)); // 1 week max
+                <text>{ title: "@task.Title", dist: @normalizedDist.ToString().Replace(",", "."), color: "@(diffHours < 24 ? "#ef4444" : (diffHours < 72 ? "#fbbf24" : "#38bdf8"))" },</text>
+            }
+        ];
+
+        function resize() {
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+            centerX = width / 2;
+            centerY = height / 2;
+            maxRadius = Math.min(centerX, centerY) * 0.85;
+        }
+
+        let angle = 0;
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Background Rings
+            ctx.strokeStyle = "rgba(251, 191, 36, 0.1)";
+            ctx.setLineDash([5, 5]);
+            for (let i = 1; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, maxRadius * (i / 4), 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw Crosshair
+            ctx.setLineDash([]);
+            ctx.strokeStyle = "rgba(251, 191, 36, 0.05)";
+            ctx.beginPath();
+            ctx.moveTo(0, centerY); ctx.lineTo(width, centerY);
+            ctx.moveTo(centerX, 0); ctx.lineTo(centerX, height);
+            ctx.stroke();
+
+            // Draw Scanning Sweep
+            let sweepGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
+            sweepGradient.addColorStop(0, 'rgba(251, 191, 36, 0)');
+            sweepGradient.addColorStop(1, 'rgba(251, 191, 36, 0.1)');
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, maxRadius, -0.2, 0);
+            ctx.lineTo(0, 0);
+            ctx.fillStyle = sweepGradient;
+            ctx.fill();
+            ctx.restore();
+
+            // Draw Tasks
+            tasks.forEach((t, index) => {
+                const tAngle = (index * (Math.PI * 2 / tasks.length)) || 0;
+                const r = t.dist * maxRadius;
+                const x = centerX + Math.cos(tAngle) * r;
+                const y = centerY + Math.sin(tAngle) * r;
+
+                // Point
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = t.color;
+                ctx.fill();
+
+                // Glow
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = t.color;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Text
+                ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+                ctx.font = "10px Inter";
+                ctx.fillText(t.title.substring(0, 15), x + 8, y + 4);
+            });
+
+            angle += 0.01;
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        draw();
+    });
+</script>

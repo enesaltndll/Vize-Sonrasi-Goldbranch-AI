@@ -337,33 +337,58 @@
 
     if (SpeechRec) {
         recognition = new SpeechRec();
-        recognition.lang = 'tr-TR';
+        
+        // Dil tespiti (Cookie veya HTML lang üzerinden)
+        const getLang = () => {
+             const cookieValue = document.cookie.split('; ').find(row => row.startsWith('PreferredLanguage='))?.split('=')[1];
+             return cookieValue === 'en' ? 'en-US' : 'tr-TR';
+        };
+
+        recognition.lang = getLang();
         recognition.onresult = (e) => {
             const t = e.results[0][0].transcript;
             stopListen();
             sendQuestion(t);
         };
         recognition.onend = () => { if(isListening) stopListen(); };
+        recognition.onerror = (e) => {
+            console.error("Speech Error:", e.error);
+            const isTr = recognition.lang === 'tr-TR';
+            const errMap = {
+                'no-speech': isTr ? 'Ses algılanmadı.' : 'No speech detected.',
+                'audio-capture': isTr ? 'Mikrofon bulunamadı.' : 'Microphone not found.',
+                'not-allowed': isTr ? 'Mikrofon izni yok!' : 'No mic permission!',
+                'network': isTr ? 'Ağ hatası.' : 'Network error.'
+            };
+            if(status) status.textContent = errMap[e.error] || (isTr ? 'Hata: ' : 'Error: ') + e.error;
+            stopListen();
+        };
 
         function stopListen() {
             recognition.stop();
             isListening = false;
             micBtn.classList.remove('vc-recording');
-            document.getElementById('vcMicIcon').className = 'fa-solid fa-microphone';
-            if(status) status.textContent = txtReady;
+            const micIcon = document.getElementById('vcMicIcon');
+            if(micIcon) micIcon.className = 'fa-solid fa-microphone';
+            if(status && status.textContent.indexOf('Hata') === -1) status.textContent = txtReady;
         }
 
         if(micBtn) {
             micBtn.onclick = async () => {
                 if (isListening) { stopListen(); return; }
                 try {
+                    // Update lang just before start
+                    recognition.lang = getLang();
                     if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     recognition.start();
                     isListening = true;
                     micBtn.classList.add('vc-recording');
-                    document.getElementById('vcMicIcon').className = 'fa-solid fa-stop';
+                    const micIcon = document.getElementById('vcMicIcon');
+                    if(micIcon) micIcon.className = 'fa-solid fa-stop';
                     if(status) status.textContent = txtListening;
-                } catch(e) { if(status) status.textContent = 'Erişim Hatası'; }
+                } catch(e) { 
+                    if(status) status.textContent = (getLang() === 'tr-TR') ? 'Erişim Hatası' : 'Access Error'; 
+                }
             };
         }
     }

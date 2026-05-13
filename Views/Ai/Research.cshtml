@@ -1,94 +1,127 @@
 @{
     ViewData["Title"] = "AI Geliştirici Asistanı";
 }
+<div class="container-fluid py-4 fade-in-up">
+    <div class="row g-4 justify-content-center">
+        <!-- 🧪 LABORATORY SIDEBAR (SYSTEMS) -->
+        <div class="col-lg-4 col-xl-3">
+            <!-- Lab Status Panel -->
+            <div class="card bg-dark border-0 shadow-lg mb-4 hover-wow" style="border-radius:24px; border-left: 4px solid var(--gb-accent-cyan) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="lab-pulse"></div>
+                        <div>
+                            <h5 class="text-light fw-bold mb-0">Lab Durumu</h5>
+                            <span class="text-info smallest fw-bold uppercase letter-spacing-2">Sistem Stabil</span>
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted small mb-0">Kodlama asistanı en son geliştirme verileriyle senkronize edildi.</p>
+                </div>
+            </div>
 
-<div class="row justify-content-center mt-4 mb-5 fade-in-up">
-    <div class="col-lg-10 col-xl-8">
-        <!-- HEADER -->
-        <div class="d-flex align-items-center gap-3 mb-4">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,rgba(34,211,238,0.2),rgba(59,130,246,0.1));border:1px solid rgba(34,211,238,0.3);">
-                <i class="fa-solid fa-code text-info" style="font-size:1.5rem;"></i>
-            </span>
-            <div>
-                <h2 class="text-light fw-bold mb-0">AI <span class="text-info">Araştırma Paneli</span></h2>
-                <p class="text-muted mb-0 small">Kod yazarken takıldığınız yerleri direkt yapay zekaya sorun. (Sistem veritabanına kaydedilir).</p>
-        </div>
+            <!-- AI Configuration Panel -->
+            <div class="card bg-dark border-0 shadow-lg mb-4 glass-card" style="border-radius:24px;">
+                <div class="card-body p-4">
+                    <h6 class="text-light fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-sliders text-warning"></i> @L.Get("AiProviderSettings")
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <label class="text-muted smallest mb-2 uppercase fw-bold">Sağlayıcı</label>
+                        <select id="aiProviderRes" class="form-select bg-dark text-light border-secondary" style="border-radius:12px; font-size: 0.9rem;">
+                            <option value="default">🔄 @L.Get("AiProviderDefault")</option>
+                            <option value="openai">🟢 OpenAI (GPT-4o)</option>
+                            <option value="gemini">🔵 Google Gemini</option>
+                            <option value="anthropic">🟠 Anthropic Claude</option>
+                            <option value="sambanova">⚡ SambaNova</option>
+                        </select>
+                    </div>
 
-        <!-- 🤖 AI SAĞLAYICI SEÇİMİ (Inline) -->
-        <div class="mb-3">
-            <button class="btn btn-sm w-100 text-start d-flex align-items-center justify-content-between px-3 py-2 rounded-3" 
-                    style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.2);color:#22d3ee;font-size:0.8rem;"
-                    type="button" data-bs-toggle="collapse" data-bs-target="#aiProviderCollapseRes">
-                <span><i class="fa-solid fa-microchip me-2"></i>@L.Get("AiProviderSettings")</span>
-                <i class="fa-solid fa-chevron-down" style="font-size:0.65rem;transition:transform 0.3s;"></i>
-            </button>
-            <div class="collapse mt-2" id="aiProviderCollapseRes">
-                <div class="p-3 rounded-3" style="background:rgba(34,211,238,0.03);border:1px solid rgba(34,211,238,0.1);">
-                    <select id="aiProviderRes" class="form-select form-select-sm bg-dark text-light mb-2" 
-                            style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;">
-                        <option value="default">🔄 @L.Get("AiProviderDefault")</option>
-                        <option value="openai">🟢 OpenAI (GPT-4o)</option>
-                        <option value="gemini">🔵 Google Gemini</option>
-                        <option value="anthropic">🟠 Anthropic Claude</option>
-                        <option value="cohere">🟣 Cohere</option>
-                        <option value="sambanova">⚡ SambaNova</option>
-                    </select>
-                    <input type="password" id="aiApiKeyRes" class="form-control form-control-sm bg-dark text-light mb-2" 
-                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;"
-                           placeholder="@L.Get("AiApiKeyPlaceholder")">
-                    <input type="text" id="aiModelRes" class="form-control form-control-sm bg-dark text-light mb-2" 
-                           style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:0.8rem;"
-                           placeholder="@L.Get("AiModelPlaceholder")">
+                    <div class="mb-3">
+                        <label class="text-muted smallest mb-2 uppercase fw-bold">API Anahtarı</label>
+                        <input type="password" id="aiApiKeyRes" class="form-control bg-dark text-light border-secondary" style="border-radius:12px;" placeholder="****">
+                    </div>
+
                     <div class="d-flex gap-2">
-                        <button id="testAiBtnRes" class="btn btn-sm flex-fill" style="background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:0.75rem;border-radius:8px;">
-                            <i class="fa-solid fa-plug me-1"></i>@L.Get("TestConnection")
+                        <button id="testAiBtnRes" class="btn btn-outline-info w-100 rounded-pill py-2 smallest fw-bold">
+                            <i class="fa-solid fa-bolt me-1"></i> Test
                         </button>
-                        <button id="saveAiBtnRes" class="btn btn-sm flex-fill" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;font-size:0.75rem;border-radius:8px;">
-                            <i class="fa-solid fa-floppy-disk me-1"></i>@L.Get("SaveSettings")
+                        <button id="saveAiBtnRes" class="btn btn-warning w-100 text-dark rounded-pill py-2 smallest fw-bold">
+                            <i class="fa-solid fa-check me-1"></i> Kaydet
                         </button>
                     </div>
-                    <div id="aiTestResultRes" class="mt-2 small d-none"></div>
+                    <div id="aiTestResultRes" class="mt-3 small d-none text-center"></div>
+                </div>
+            </div>
+
+            <!-- Research Presets -->
+            <div class="card bg-dark border-0 shadow-lg glass-card" style="border-radius:24px;">
+                <div class="card-body p-4">
+                    <h6 class="text-light fw-bold mb-3">Hızlı Analiz Birimleri</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <button class="btn btn-sm btn-dark text-start py-2 px-3 border-secondary research-preset-btn" data-prompt="Lütfen şu kodu incele ve güvenlik/performans açısından kritik hataları bul:\n\n" style="border-radius:12px;">
+                            <i class="fa-solid fa-magnifying-glass-chart text-info me-2"></i> @L.Get("CodeReview")
+                        </button>
+                        <button class="btn btn-sm btn-dark text-start py-2 px-3 border-secondary research-preset-btn" data-prompt="Şu kodda hata alıyorum, nedenini açıklar mısın?\n\n" style="border-radius:12px;">
+                            <i class="fa-solid fa-bug text-danger me-2"></i> @L.Get("BugFinder")
+                        </button>
+                        <button class="btn btn-sm btn-dark text-start py-2 px-3 border-secondary research-preset-btn" data-prompt="Bu kodun çalışma hızını nasıl 10 kat artırabilirim?\n\n" style="border-radius:12px;">
+                            <i class="fa-solid fa-gauge-high text-success me-2"></i> @L.Get("PerformanceBoost")
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- SOHBET PANELİ -->
-        <div class="card bg-dark border-0 shadow-lg h-100" style="border-radius:20px;border-top:3px solid #22d3ee !important;">
-            <div class="card-body p-4 d-flex flex-column" style="min-height: 500px;">
-                
-                <!-- History Container -->
-                <div id="chatHistory" class="flex-grow-1 overflow-auto pe-2 mb-4 d-flex flex-column gap-3" style="max-height: 500px;">
-                    <!-- İlk Mesaj (Sistem) -->
-                    <div class="d-flex gap-3 fade-in-up">
-                        <div class="flex-shrink-0">
-                            <span class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);">
-                                <i class="fa-solid fa-robot text-info"></i>
-                            </span>
-                        </div>
-                        <div class="p-3 rounded-4 bg-dark" style="border:1px solid rgba(255,255,255,0.05); border-top-left-radius: 0 !important; color:#e2e8f0; font-size: 0.95rem;">
-                            Selam! Ben senin kodlama asistanınım. Hata aldığın bir kodu incelememi isteyebilir, yeni bir teknoloji hakkında soru sorabilir veya algoritma oluşturmama yardımcı olmamı isteyebilirsin. Nasıl yardımcı olabilirim?
-                        </div>
+        <!-- 🧪 NEURAL SANDBOX (CHAT) -->
+        <div class="col-lg-8 col-xl-7">
+            <div class="card bg-dark border-0 shadow-lg h-100 glass-card" style="border-radius:28px; background: rgba(13, 17, 23, 0.8) !important;">
+                <div class="card-header bg-transparent border-0 p-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="text-light fw-bold mb-0">AI <span class="text-info">Labaratuvarı</span></h4>
+                        <span class="badge rounded-pill px-3 py-2" style="background: rgba(34,211,238,0.1); color:#22d3ee; border:1px solid rgba(34,211,238,0.2);">
+                            <i class="fa-solid fa-network-wired me-1"></i> Sinirsel Bağlantı Aktif
+                        </span>
                     </div>
                 </div>
+                <div class="card-body p-4 d-flex flex-column" style="min-height: 600px;">
+                    
+                    <!-- History Container -->
+                    <div id="chatHistory" class="flex-grow-1 overflow-auto pe-2 mb-4 d-flex flex-column gap-3" style="max-height: 550px;">
+                        <!-- İlk Mesaj (Sistem) -->
+                        <div class="d-flex gap-3 fade-in-up">
+                            <div class="flex-shrink-0">
+                                <span class="d-flex align-items-center justify-content-center rounded-circle shadow-glow-cyan" style="width:40px;height:40px;background:linear-gradient(135deg,#0ea5e9,#0284c7); border:none;">
+                                    <i class="fa-solid fa-bolt text-white"></i>
+                                </span>
+                            </div>
+                            <div class="p-3 rounded-4 bg-dark shadow-sm" style="border:1px solid rgba(255,255,255,0.08); border-top-left-radius: 0 !important; color:#e2e8f0; font-size: 0.95rem; max-width: 85%;">
+                                Araştırma Lab'e hoş geldin şef. Bugün hangi teknolojiyi parçalıyoruz? Kodunu buraya yapıştır veya sol taraftaki analiz birimlerini kullan.
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- Input Alanı -->
-                <div class="mt-auto">
-                    <div class="position-relative">
-                        <textarea id="aiInput" class="form-control bg-dark text-light shadow-sm pe-5" 
-                                  style="border:1px solid rgba(34,211,238,0.3); border-radius:16px; min-height:60px; max-height: 200px; resize:none; padding-top:14px; padding-bottom:14px; line-height:1.5;" 
-                                  placeholder="Buraya sorunuzu veya hata veren kodunuzu yapıştırın..."
-                                  oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-                                  
-                        <button id="aiSendBtn" class="btn position-absolute top-50 translate-middle-y end-0 me-2 rounded-circle shadow d-flex align-items-center justify-content-center"
-                                style="width:42px;height:42px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:white;border:none;transition:all 0.3s ease;">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
+                    <!-- Input Alanı -->
+                    <div class="mt-auto pt-3 border-top border-secondary">
+                        <div class="position-relative">
+                            <textarea id="aiInput" class="form-control bg-dark text-light shadow-sm pe-5" 
+                                      style="border:1px solid rgba(34,211,238,0.3); border-radius:20px; min-height:80px; max-height: 300px; resize:none; padding:18px; line-height:1.6;" 
+                                      placeholder="Sorunuzu veya kod bölmesini buraya bırakın..."></textarea>
+                                      
+                            <button id="aiSendBtn" class="btn position-absolute top-50 translate-middle-y end-0 me-3 rounded-circle shadow-lg d-flex align-items-center justify-content-center glow-btn-cyan"
+                                    style="width:50px;height:50px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:white;border:none;transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="text-center mt-3">
+                            <small class="text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="fa-solid fa-shield-halved me-1"></i> Lab verileri kurum içi sunucuda işlenir ve güvenlidir.
+                            </small>
+                        </div>
                     </div>
-                    <div class="text-end mt-2">
-                        <small class="text-muted" style="font-size: 0.7rem;">Cevaplar Multi-LLM (Cohere / SambaNova / Claude) tarafından üretilir. İşlemlerinizin loglandığını unutmayın.</small>
-                    </div>
+
                 </div>
-
             </div>
         </div>
     </div>
@@ -180,6 +213,20 @@
             });
 
             sendBtn.addEventListener("click", sendMessage);
+
+            // Araştırma Birimleri (Presets)
+            document.querySelectorAll(".research-preset-btn").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    const prompt = this.getAttribute("data-prompt");
+                    inputField.value = prompt;
+                    inputField.focus();
+                    
+                    // Smooth visual feedback
+                    inputField.style.height = inputField.scrollHeight + "px";
+                    
+                    GB.toast({ title: 'Analiz Birimi Hazır', text: 'Analiz şablonu yüklendi. Kodunu ekleyip gönderebilirsin.', icon: 'info', timer: 1500 });
+                });
+            });
 
             async function sendMessage() {
                 const text = inputField.value.trim();

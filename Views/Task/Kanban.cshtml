@@ -44,6 +44,15 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
     .kanban-item:active { cursor: grabbing; opacity: 0.8; }
+    
+    /* Professional Card Additions */
+    .avatar-circle {
+        width: 24px; height: 24px;
+        background: linear-gradient(135deg, #fbbf24, #d97706);
+        color: #000; font-weight: bold; font-size: 0.7rem;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; border: 1px solid rgba(0,0,0,0.5);
+    }
 </style>
 
 <div class="mb-4 d-flex justify-content-between align-items-center fade-in-up">
@@ -51,9 +60,17 @@
         <h2 class="fw-bold mb-1"><i class="fa-solid fa-chess-board text-warning"></i> @L.Get("KanbanRadarTitle")</h2>
         <p class="text-muted mb-0">@L.Get("KanbanRadarDesc")</p>
     </div>
-    <a asp-controller="Task" asp-action="Index" class="btn btn-outline-secondary rounded-pill fw-bold">
-        <i class="fa-solid fa-table me-2"></i> @L.Get("ListViewBtn")
-    </a>
+    <div class="d-flex align-items-center gap-3">
+        <div class="input-group" style="width: 300px;">
+            <span class="input-group-text bg-transparent border-0 pe-0" style="color: var(--gb-text-secondary);">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input id="kanbanSearchInput" class="form-control gb-input bg-transparent text-light border-secondary" style="border-radius:20px;" type="search" placeholder="Görev veya kişi ara..." autocomplete="off" />
+        </div>
+        <a asp-controller="Task" asp-action="Index" class="btn btn-outline-secondary rounded-pill fw-bold text-nowrap">
+            <i class="fa-solid fa-table me-2"></i> @L.Get("ListViewBtn")
+        </a>
+    </div>
 </div>
 
 <div class="kanban-board fade-in-up" id="kanbanBoard">
@@ -66,14 +83,26 @@
             @foreach(var t in Model.Where(t => !t.IsCompleted && t.Status != "Devam Ediyor" && t.Status != "Onay Bekliyor"))
             {
                 bool isLocked = t.DependsOnTask != null && !t.DependsOnTask.IsCompleted;
-                <div class="kanban-item" draggable="@(isLocked ? "false" : "true")" style="@(isLocked ? "opacity:0.5; cursor:not-allowed; border-color: rgba(220,53,69,0.5);" : "")" data-id="@t.Id">
-                    <div class="fw-bold text-light mb-1">@t.Title</div>
-                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                <div class="kanban-item" draggable="@(isLocked ? "false" : "true")" style="border-left: 3px solid var(--bs-@t.AuraColor); @(isLocked ? "opacity:0.6; cursor:not-allowed;" : "")" data-id="@t.Id">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="fw-bold text-light" style="font-size: 0.95rem; line-height: 1.3;">@t.Title</div>
+                        <div class="avatar-circle" title="@t.AppUser?.FullName">@(t.AppUser?.FullName?.Substring(0,1).ToUpper() ?? "U")</div>
+                    </div>
+                    
                     @if(isLocked)
                     {
-                        <div class="mb-2"><span class="badge border border-danger text-danger bg-dark w-100 text-start" style="font-size:0.65rem;"><i class="fa-solid fa-lock"></i> Önce: @t.DependsOnTask.Title</span></div>
+                        <div class="mb-2"><span class="badge bg-danger bg-opacity-10 border border-danger text-danger w-100 text-start" style="font-size:0.7rem;"><i class="fa-solid fa-lock"></i> Kilit: @t.DependsOnTask.Title</span></div>
                     }
-                    <span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;">@L.Get("KanbanWaiting")</span>
+
+                    <div class="d-flex justify-content-between align-items-end mt-3">
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-@t.AuraColor bg-opacity-25 text-@t.AuraColor" style="font-size:0.65rem;"><i class="fa-regular fa-clock"></i> @t.DueDate.ToString("dd MMM")</span>
+                            @if(t.EstimatedTimeHours > 0) {
+                                <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem;"><i class="fa-solid fa-hourglass-half"></i> @t.EstimatedTimeHours sa</span>
+                            }
+                        </div>
+                        <span class="badge bg-dark border border-secondary text-info" style="font-size:0.65rem;">@L.Get("KanbanWaiting")</span>
+                    </div>
                     <a href="/Task/Details/@t.Id" class="stretched-link"></a>
                 </div>
             }
@@ -89,14 +118,26 @@
             @foreach(var t in Model.Where(t => t.Status == "Devam Ediyor"))
             {
                 bool isLocked = t.DependsOnTask != null && !t.DependsOnTask.IsCompleted;
-                <div class="kanban-item border-warning border-opacity-25" draggable="@(isLocked ? "false" : "true")" style="@(isLocked ? "opacity:0.5; cursor:not-allowed;" : "")" data-id="@t.Id">
-                    <div class="fw-bold text-light mb-1">@t.Title</div>
-                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
+                <div class="kanban-item" draggable="@(isLocked ? "false" : "true")" style="border-left: 3px solid var(--bs-warning); @(isLocked ? "opacity:0.6; cursor:not-allowed;" : "")" data-id="@t.Id">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="fw-bold text-light" style="font-size: 0.95rem; line-height: 1.3;">@t.Title</div>
+                        <div class="avatar-circle" title="@t.AppUser?.FullName">@(t.AppUser?.FullName?.Substring(0,1).ToUpper() ?? "U")</div>
+                    </div>
+                    
                     @if(isLocked)
                     {
-                        <div class="mb-2"><span class="badge border border-danger text-danger bg-dark w-100 text-start" style="font-size:0.65rem;"><i class="fa-solid fa-lock"></i> Önce: @t.DependsOnTask.Title</span></div>
+                        <div class="mb-2"><span class="badge bg-danger bg-opacity-10 border border-danger text-danger w-100 text-start" style="font-size:0.7rem;"><i class="fa-solid fa-lock"></i> Kilit: @t.DependsOnTask.Title</span></div>
                     }
-                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;"><i class="fa-solid fa-spinner fa-spin"></i> @L.Get("KanbanProcessing")</span>
+
+                    <div class="d-flex justify-content-between align-items-end mt-3">
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-@t.AuraColor bg-opacity-25 text-@t.AuraColor" style="font-size:0.65rem;"><i class="fa-regular fa-clock"></i> @t.DueDate.ToString("dd MMM")</span>
+                            @if(t.EstimatedTimeHours > 0) {
+                                <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem;"><i class="fa-solid fa-hourglass-half"></i> @t.EstimatedTimeHours sa</span>
+                            }
+                        </div>
+                        <span class="badge bg-warning bg-opacity-10 border border-warning text-warning" style="font-size:0.65rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i>Çalışılıyor</span>
+                    </div>
                     <a href="/Task/Details/@t.Id" class="stretched-link"></a>
                 </div>
             }
@@ -112,9 +153,17 @@
             @foreach(var t in Model.Where(t => t.Status == "Onay Bekliyor" && !t.IsCompleted))
             {
                 <div class="kanban-item" draggable="true" style="border-left: 3px solid #c084fc;" data-id="@t.Id">
-                    <div class="fw-bold text-light mb-1">@t.Title</div>
-                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
-                    <span class="badge" style="background: rgba(192,132,252,0.2); color: #c084fc;">@L.Get("KanbanLeadWait")</span>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="fw-bold text-light" style="font-size: 0.95rem; line-height: 1.3;">@t.Title</div>
+                        <div class="avatar-circle" title="@t.AppUser?.FullName" style="background: linear-gradient(135deg, #c084fc, #9333ea); color:#fff;">@(t.AppUser?.FullName?.Substring(0,1).ToUpper() ?? "U")</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-end mt-3">
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem;">Code Review</span>
+                        </div>
+                        <span class="badge" style="background: rgba(192,132,252,0.15); color: #c084fc; border: 1px solid rgba(192,132,252,0.3); font-size:0.65rem;">@L.Get("KanbanLeadWait")</span>
+                    </div>
                     <a href="/Task/Details/@t.Id" class="stretched-link"></a>
                 </div>
             }
@@ -129,10 +178,18 @@
         <div class="kanban-items" style="min-height: 100px;">
             @foreach(var t in Model.Where(t => t.IsCompleted))
             {
-                <div class="kanban-item" draggable="true" style="opacity: 0.6;" data-id="@t.Id">
-                    <div class="fw-bold text-success mb-1 text-decoration-line-through">@t.Title</div>
-                    <small class="text-muted d-block mb-2">@t.AppUser?.FullName</small>
-                    <span class="badge bg-success bg-opacity-25 text-success"><i class="fa-solid fa-check-double"></i> @L.Get("KanbanFinished")</span>
+                <div class="kanban-item" draggable="true" style="border-left: 3px solid #10b981; opacity: 0.7;" data-id="@t.Id">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="fw-bold text-success text-decoration-line-through" style="font-size: 0.95rem; line-height: 1.3;">@t.Title</div>
+                        <div class="avatar-circle" title="@t.AppUser?.FullName" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;">@(t.AppUser?.FullName?.Substring(0,1).ToUpper() ?? "U")</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-end mt-3">
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem;">Production</span>
+                        </div>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success" style="font-size:0.65rem;"><i class="fa-solid fa-check-double me-1"></i>@L.Get("KanbanFinished")</span>
+                    </div>
                     <a href="/Task/Details/@t.Id" class="stretched-link"></a>
                 </div>
             }
@@ -176,13 +233,17 @@
                 const origParentId = dragging.dataset.origParent;
                 const newColId = column.id;
                 
-                // Fetch to update status
+                // Fetch to update status (POST)
                 const taskId = dragging.getAttribute('data-id');
                 const newStatus = column.getAttribute('data-status');
                 
-                // AJAX call with explicit headers so controller knows it's an API request
-                fetch(`/Task/ChangeStatus?id=${taskId}&newStatus=${encodeURIComponent(newStatus)}`, {
-                    method: 'GET',
+                const formData = new FormData();
+                formData.append('id', taskId);
+                formData.append('newStatus', newStatus);
+
+                fetch(`/Task/UpdateStatus`, {
+                    method: 'POST',
+                    body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 }).then(async res => {
                     if (!res.ok) {
@@ -192,6 +253,8 @@
                     if (window.GB && typeof window.GB.toast === 'function') {
                         window.GB.toast({ icon: 'success', title: 'Durum güncellendi: ' + newStatus });
                     }
+                    // Optional: Refresh page to update counters and markers
+                    setTimeout(() => location.reload(), 800);
                 }).catch(err => {
                     // Revert UI to original parent
                     const origCol = document.getElementById(origParentId);
@@ -205,5 +268,21 @@
                 });
             });
         });
+
+        // Search / Filter Logic
+        const kanbanSearch = document.getElementById('kanbanSearchInput');
+        if (kanbanSearch) {
+            kanbanSearch.addEventListener('input', function() {
+                const q = this.value.toLowerCase().trim();
+                document.querySelectorAll('.kanban-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(q)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
     </script>
 }

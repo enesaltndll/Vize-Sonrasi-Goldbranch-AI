@@ -2,7 +2,6 @@ using GoldBranchAI.Data;
 using GoldBranchAI.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using GoldBranchAI.Services;
@@ -30,7 +29,8 @@ namespace GoldBranchAI.Controllers
                     FullName = "Enes Altındal (Admin)",
                     Email = "admin@test.com",
                     Password = BCrypt.Net.BCrypt.HashPassword("admin123"),
-                    Role = "Admin"
+                    Role = "Admin",
+                    TelegramChatId = "6208233846"
                 };
                 _context.Users.Add(admin);
                 _context.SaveChanges();
@@ -152,13 +152,13 @@ namespace GoldBranchAI.Controllers
             return RedirectToAction("Login", "Auth");
         }
 
-        public IActionResult GoogleLogin()
+        public IActionResult GithubLogin()
         {
-            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse") };
-            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GithubResponse") };
+            return Challenge(properties, "GitHub");
         }
 
-        public async Task<IActionResult> GoogleResponse()
+        public async Task<IActionResult> GithubResponse()
         {
             var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             if (!result.Succeeded) return RedirectToAction("Login");
@@ -166,23 +166,28 @@ namespace GoldBranchAI.Controllers
             var claims = result.Principal.Identities.FirstOrDefault()?.Claims;
             var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            var githubId = claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            if (email == null) return RedirectToAction("Login");
+            if (email == null)
+            {
+                // GitHub bazen email dönmeyebilir (ayarlara bağlı), bu durumda id ile eşleştirme yapabiliriz
+                email = $"{githubId}@github.user";
+            }
 
             var user = _context.Users.FirstOrDefault(u => u.Email == email);
             if (user == null)
             {
                 user = new AppUser
                 {
-                    FullName = name ?? "Google User",
+                    FullName = name ?? "GitHub User",
                     Email = email,
-                    Password = "GoogleOAuthLogin",
+                    Password = "GithubOAuthLogin",
                     Role = "Gelistirici"
                 };
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
                 
-                _context.SystemLogs.Add(new SystemLog { ActionType = "GİRİŞ / KAYIT", Message = $"'{user.FullName}' Google ile sisteme katıldı." });
+                _context.SystemLogs.Add(new SystemLog { ActionType = "GİRİŞ / KAYIT", Message = $"'{user.FullName}' GitHub ile sisteme katıldı." });
                 await _context.SaveChangesAsync();
             }
 

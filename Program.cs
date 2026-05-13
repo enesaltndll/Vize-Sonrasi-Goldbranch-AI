@@ -2,7 +2,7 @@ using GoldBranchAI.Data;
 using GoldBranchAI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.Extensions.DependencyInjection;
 using GoldBranchAI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +24,7 @@ builder.Services.AddSingleton<BillingService>();
 // Localization Service
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<LocalizationService>();
+builder.Services.AddTransient<TelegramService>();
 
 // SignalR Service
 builder.Services.AddSignalR();
@@ -31,16 +32,18 @@ builder.Services.AddSignalR();
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = "GitHub";
     })
     .AddCookie(options =>
     {
         options.LoginPath = "/Auth/Login";
     })
-    .AddGoogle(options =>
+    .AddGitHub(options =>
     {
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? throw new InvalidOperationException("Google ClientId not found.");
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? throw new InvalidOperationException("Google ClientSecret not found.");
+        options.ClientId = builder.Configuration["Authentication:GitHub:ClientId"] ?? "GITHUB_CLIENT_ID";
+        options.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"] ?? "GITHUB_CLIENT_SECRET";
+        options.CallbackPath = "/signin-github";
+        options.Scope.Add("user:email");
     });
 
 var app = builder.Build();
@@ -65,6 +68,13 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [Users] ADD [CustomAiApiKey] nvarchar(max) NULL;
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Users') AND name = 'CustomAiModel')
                     ALTER TABLE [Users] ADD [CustomAiModel] nvarchar(max) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Users') AND name = 'Bio')
+                    ALTER TABLE [Users] ADD [Bio] nvarchar(max) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Users') AND name = 'TelegramChatId')
+                    ALTER TABLE [Users] ADD [TelegramChatId] nvarchar(max) NULL;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'Tasks') AND name = 'CompletedAt')
+                    ALTER TABLE [Tasks] ADD [CompletedAt] datetime2 NULL;
             ");
         }
         catch { /* Kolonlar zaten varsa hata görmezden gel */ }

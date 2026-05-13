@@ -48,17 +48,17 @@
 1. **🎭 Oyunlaştırma (Gamification) & Profil:**
    Geliştirici motivasyonunu artırmak için sistemi bir oyun gibi kurguladık. Görev bitirildikçe XP (Tecrübe Puanı) kazanılıyor, seviye atlanıyor ve başarımlara (İlk Kan, Şampiyon) göre rozet kilitleri açılıyor.
 
-2. **💚 Sağlık Kalkanı (Wellness Guardian) & Zen Modu:**
-   Yalnızca görev bitirmeyi değil, çalışan sağlığını da düşündük. Belirli periyotlarla (45sn, 90sn, 150sn demo süreleri) kullanıcıya "Uzağa Bak", "Ayağa Kalk" gibi SweetAlert ikazları veriyor ve gerektiğinde sistemi ekran kilidine alarak dinlenmeye zorluyoruz. Zen Modu ile de odaklanmayı artıran Lo-Fi sesler eşliğinde bir çalışma alanı sunduk.
+2. **🎙️ Supreme JARVIS Voice Interface & HUD:**
+   Sistemi tamamen sesli komutlarla yönetebileceğiniz, fütüristik bir HUD katmanı ve gerçek zamanlı yapay zeka geri bildirimi içeren kontrol merkezi.
 
-3. **🌍 Uluslararası Dil Desteği (Localization - L.Get):**
-   Sistemi tamamen İngilizce ve Türkçe olarak çift dilli kullanıma uygun hale getirdik. Hardcoded kelimeler temizlendi.
+3. **🌍 Uluslararası Dil Desteği (Localization):**
+   Sistemi tamamen İngilizce ve Türkçe olarak çift dilli kullanıma uygun hale getirdik. Tüm UI dinamik `L.Get()` yapısına geçirildi.
 
 4. **✨ WOW Tasarım & Temalar:**
-   Sıkıcı paneller yerine; Glassmorphism (şeffaf cam efekti), 5 farklı tema motoru, neon parlamalar (input focus), sayı sayma (Count-up) animasyonları ve fütüristik fare imleçleriyle UI/UX zirveye taşındı.
+   Sıkıcı paneller yerine; Glassmorphism (şeffaf cam efekti), dinamik tema motoru ve 1400px merkezli modern layout ile UI/UX zirveye taşındı.
 
 5. **📄 AI Akademik Çıktı Exportları:**
-   ChatGPT benzeri asistanımız sadece konuşmakla kalmıyor, proje analiz detaylarını doğrudan `.doc` formatında cihazlara indirebilecek "Event Delegation" mimarisiyle güçlendirildi.
+   ChatGPT benzeri asistanımız sadece konuşmakla kalmıyor, proje analiz detaylarını doğrudan `.doc` formatında indirebilecek bir mimari sunuyor.
 
 ---
 
@@ -95,10 +95,22 @@ pie title 10 Haftalık Efor Gerçekleşme Oranları (Total: 107 Saat)
     "Hafta 1-5 (Altyapı, Kanban, Chat) - 62 Saat" : 62
     "6. Hafta (WOW UI & Animasyon) - 13 Saat" : 13
     "7. Hafta (Oyunlaştırma & Profil) - 11 Saat" : 11
-    "8. Hafta (Sağlık Sistemi/Wellness) - 8 Saat" : 8
+    "8. Hafta (Supreme JARVIS & HUD) - 8 Saat" : 8
     "9. Hafta (Gelişmiş AI Çıktıları) - 7 Saat" : 7
     "10. Hafta (Dil Paketi & Z-Rapor) - 6 Saat" : 6
 ```
+
+### 🌟 Masterclass Güncellemeleri (v2.5)
+*   **🛡️ Ghost Mode:** Halka açık alanlarda çalışırken hassas verileri (görev başlıkları, kullanıcı isimleri) tek tuşla buzlayan (blur) gizlilik katmanı.
+*   **🎙️ AI Daily Briefing:** Güne başlarken o günkü önceliklerini, nöral yükünü ve stratejik tavsiyelerini sesli olarak dinleyebileceğin yapay zeka asistanı.
+*   **🕰️ Project Time Machine:** Kanban tahtasında geçmişteki 30 güne kadar yolculuk yapmanı sağlayan interaktif zaman çizelgesi.
+*   **📜 Achievement Certificate:** Başarılarını ve XP puanlarını resmi bir sertifika olarak belgeleyen ve sosyal medyada paylaşmanı sağlayan sistem.
+*   **🧘 Zen Mode 2.0:** Genişletilebilir video paneli ve yeni odaklanma sesleri ile derin çalışma ortamı.
+*   **🎙️ Jarvis 2.0 HUD:** `Ctrl+K` ile açılan, holografik ses dalgaları ve nöral arayüz ile donatılmış yeni sesli komut ekranı.
+
+---
+Bu proje, bir görev yöneticisinden daha fazlasıdır; o senin **Yapay Zeka Karargahındır.** 🚀🦾🔥
+
 *\*6-10 Haftaları: Sistemin standart bir görev panosundan çıkarak yapay zeka, kullanıcı deneyimi ve vizyoner bir sağlık sistemine evrilme sürecidir.*
 
 ---

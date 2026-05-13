@@ -1,6 +1,6 @@
 @{
     Layout = null;
-    int duration = (int)(ViewBag.Duration ?? 25);
+    int currentXP = ViewBag.CurrentXP ?? 0;
 }
 
 <!DOCTYPE html>
@@ -8,583 +8,643 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zen Mode - GoldBranch AI</title>
+    <title>Zen Modu 2.0 - GoldBranch AI</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
+        :root {
+            --gold: #fbbf24;
+            --gold-glow: rgba(251, 191, 36, 0.4);
+            --bg-dark: #0a0a0c;
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --border: rgba(251, 191, 36, 0.15);
+        }
+
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+            background: var(--bg-dark); font-family: 'Inter', sans-serif; color: #fff;
+        }
+
+        #zenWrapper {
+            display: grid;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+            background: radial-gradient(circle at top right, #1a1a1a 0%, #000 100%);
+        }
+
+        /* Top Header */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 100;
+        }
+
+        .xp-badge {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            padding: 6px 16px; border-radius: 20px; font-weight: 700;
+            font-size: 0.9rem; box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .mola-timer {
+            font-family: 'JetBrains Mono', monospace; color: var(--gold);
+            font-size: 1.1rem; letter-spacing: 1px;
+        }
+
+        /* Main Grid */
+        main {
+            display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;
+            padding: 20px; overflow: hidden;
+        }
+
+        .zen-panel {
+            background: var(--panel-bg); border: 1px solid var(--border);
+            border-radius: 24px; display: flex; flex-direction: column;
+            overflow: hidden; position: relative;
+        }
+
+        /* YouTube Section */
+        #ytPanel { padding: 15px; }
+        .search-box { position: relative; margin-bottom: 15px; }
+        #zenYouTubeUrl {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: #fff; border-radius: 12px; padding: 12px 15px; width: 100%;
+        }
+
+        /* Snake Game Section */
+        #gamePanel { 
+            display: flex; align-items: center; justify-content: center;
+            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), #000;
+        }
+        #gameCanvas {
+            border: 2px solid var(--gold); box-shadow: 0 0 30px var(--gold-glow);
             background: #000;
         }
-
-        #zenModeOverlay {
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle at center, #1e1b4b 0%, #000000 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            transition: background 1s ease;
+        .game-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10;
         }
 
-        @@keyframes zenStarTwinkle {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.2); }
+        /* Animations */
+        @@keyframes goldPulse {
+            0% { box-shadow: 0 0 10px var(--gold-glow); }
+            50% { box-shadow: 0 0 30px var(--gold-glow); }
+            100% { box-shadow: 0 0 10px var(--gold-glow); }
         }
 
-        @@keyframes zenOrbitSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        .gold-text { color: var(--gold); text-shadow: 0 0 10px var(--gold-glow); }
 
-        @@keyframes zenBreathe {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; }
-        }
-
-        .zen-scene-btn.active {
-            border-width: 2px !important;
-            box-shadow: 0 0 15px currentColor;
-        }
-
-        /* Custom Scrollbar for Results */
-        #zenSpotifyResults::-webkit-scrollbar { width: 5px; }
-        #zenSpotifyResults::-webkit-scrollbar-track { background: transparent; }
-        #zenSpotifyResults::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .hover-bg:hover { background: rgba(255,255,255,0.05); }
     </style>
 </head>
-<body class="bg-dark">
+<body>
 
-    <div id="zenModeOverlay">
-        
-        <!-- Animated Stars Background -->
-        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
-            <div id="zenStars" style="position:absolute;inset:0;"></div>
-        </div>
-
-        <!-- Back to Workspace Button -->
-        <a href="/" class="btn btn-outline-light rounded-pill px-4" style="position:absolute;top:20px;right:20px;z-index:1050;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.03); backdrop-filter:blur(5px);">
-            <i class="fa-solid fa-arrow-left me-2"></i> İşe Geri Dön
-        </a>
-
-        <!-- Session Counter (top-left) -->
-        <div id="zenSessionInfo" style="position:absolute;top:24px;left:24px;display:flex;flex-direction:column;gap:15px;z-index:1050;">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <i class="fa-solid fa-leaf text-warning" style="font-size:1.2rem; filter:drop-shadow(0 0 10px rgba(251,191,36,0.5));"></i>
-                <span id="zenSessionCount" style="font-family:'JetBrains Mono',monospace;color:#c084fc;font-weight:700;font-size:0.85rem;">0 seans</span>
-            </div>
-            
-            <!-- Scene (Mood) Selector -->
-            <div id="zenSceneSelector" class="d-flex flex-column gap-2 mt-2">
-                <span class="text-muted small fw-bold" style="font-size:0.7rem;letter-spacing:1px;">SAHNE DEĞİŞTİR</span>
-                <button class="btn btn-sm rounded-pill zen-scene-btn active" data-scene="cyber" style="background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.4); color:#22d3ee; width:130px; text-align:left; font-size:0.75rem;">
-                    <i class="fa-solid fa-microchip me-2"></i> Cyber-Focus
-                </button>
-                <button class="btn btn-sm rounded-pill zen-scene-btn" data-scene="space" style="background:rgba(192,132,252,0.1); border:1px solid rgba(192,132,252,0.4); color:#c084fc; width:130px; text-align:left; font-size:0.75rem;">
-                    <i class="fa-solid fa-meteor me-2"></i> Derin Uzay
-                </button>
-                <button class="btn btn-sm rounded-pill zen-scene-btn" data-scene="forest" style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.4); color:#34d399; width:130px; text-align:left; font-size:0.75rem;">
-                    <i class="fa-solid fa-tree me-2"></i> Zümrüt Orman
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div style="display:flex;flex-direction:column;align-items:center;z-index:2;max-width:700px;width:100%;padding:0 20px;">
-
-            <!-- Breathing Circle + Timer -->
-            <div style="position:relative;width:260px;height:260px;margin-bottom:2rem;">
-                <!-- Orbit Ring -->
-                <svg viewBox="0 0 260 260" style="position:absolute;inset:0;width:100%;height:100%;animation:zenOrbitSpin 30s linear infinite;">
-                    <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(192,132,252,0.08)" stroke-width="2"/>
-                    <circle cx="130" cy="10" r="5" fill="#c084fc" style="filter:drop-shadow(0 0 6px #c084fc);">
-                        <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                </svg>
-                <!-- Breathing Ring -->
-                <div id="zenBreathCircle" style="position:absolute;inset:20px;border-radius:50%;border:3px solid rgba(192,132,252,0.25);display:flex;align-items:center;justify-content:center;flex-direction:column;animation: zenBreathe 8s ease-in-out infinite;box-shadow:inset 0 0 40px rgba(192,132,252,0.05),0 0 30px rgba(192,132,252,0.05);">
-                    <div id="pomodoroTimer" class="fw-bold text-white" style="font-size: 4rem; font-variant-numeric: tabular-nums; line-height:1; text-shadow:0 0 30px rgba(255,255,255,0.1);">@string.Format("{0:00}:00", duration)</div>
-                    <div id="zenBreathText" class="text-muted mt-1" style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;">Nefes Al</div>
+    <div id="zenWrapper">
+        <header>
+            <div class="d-flex align-items-center gap-3">
+                <a asp-controller="Task" asp-action="Dashboard" class="btn btn-danger btn-sm rounded-pill px-3 fw-bold shadow">
+                    <i class="fa-solid fa-power-off me-1"></i> Zen'den Çık
+                </a>
+                <div class="mola-timer" id="sessionTimerWrapper">
+                    <i class="fa-solid fa-clock opacity-50 me-2"></i>
+                    <span id="sessionTimer">00:00</span>
                 </div>
             </div>
 
-            <h2 class="fw-bold mb-1" style="color:#c084fc; letter-spacing: 4px; font-size:1.5rem; text-shadow: 0 0 15px rgba(192,132,252,0.4);">ODAK & DİNLENME</h2>
-
-            <!-- Motivational Quote -->
-            <div id="zenQuote" class="text-center mb-4" style="max-width:500px;min-height:50px;">
-                <p class="mb-0" style="color:rgba(255,255,255,0.5);font-style:italic;font-size:0.9rem;line-height:1.6;transition:opacity 0.5s;">"Odaklanma enerjinin yoğunlaşmasıdır."</p>
+            <div class="navbar-brand fw-bold m-0" style="font-size:1.2rem; color:var(--gold);">
+                <i class="fa-solid fa-leaf me-2"></i>ZEN 2.0
             </div>
 
-            <!-- Controls Row -->
-            <div class="d-flex gap-2 justify-content-center flex-wrap mb-4">
-                <button id="startPomodoro" class="btn rounded-pill px-4 py-2 fw-bold" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:0;color:#fff;box-shadow:0 4px 20px rgba(124,58,237,0.4);transition:all 0.3s;">
-                    <i class="fa-solid fa-play me-1"></i> Başlat
-                </button>
-                <button id="pausePomodoro" class="btn btn-outline-light rounded-pill px-4 py-2" style="border-color:rgba(255,255,255,0.15);">
-                    <i class="fa-solid fa-pause me-1"></i> Duraklat
-                </button>
-                <button id="resetPomodoro" class="btn rounded-pill px-4 py-2" style="border:1px solid rgba(239,68,68,0.3);color:#ef4444;background:rgba(239,68,68,0.05);">
-                    <i class="fa-solid fa-rotate-right me-1"></i> Sıfırla
-                </button>
+            <div class="d-flex align-items-center gap-3">
+                <div class="xp-badge" id="xpCounter">
+                    <i class="fa-solid fa-star"></i>
+                    <span>@currentXP XP</span>
+                </div>
             </div>
-            <p id="pomodoroMessage" class="text-info" style="font-size:1rem; display:none;"><i class="fa-solid fa-bell"></i> Uyku Kalkanı Aktif! Esneme zamanı geldi.</p>
+        </header>
 
-            <!-- Bottom Panel: Ambient Sounds + Music -->
-            <div class="d-flex gap-3 flex-wrap justify-content-center" style="max-width:700px;width:100%;">
-                <!-- Ambient Sounds with Volume -->
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 20px;flex:1;min-width:280px;">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="fa-solid fa-headphones" style="color:#ef4444;"></i>
-                        <span class="fw-bold small" style="color:rgba(255,255,255,0.7);">Ortam Sesleri</span>
-                        <button id="zenStopAllSounds" class="btn btn-sm ms-auto" style="font-size:0.7rem;color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:2px 10px;background:rgba(239,68,68,0.05);">
-                            <i class="fa-solid fa-stop me-1"></i>Tümünü Durdur
-                        </button>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="rain" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:#38bdf8;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                🌧️ Yağmur
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="rain" min="0" max="100" value="50" style="flex:1;accent-color:#38bdf8;">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="forest" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#22c55e;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                🌲 Orman
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="forest" min="0" max="100" value="50" style="flex:1;accent-color:#22c55e;">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="cafe" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:#fbbf24;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                ☕ Kafe
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="cafe" min="0" max="100" value="50" style="flex:1;accent-color:#fbbf24;">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm rounded-pill zen-sound-btn flex-shrink-0" data-sound="waves" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);color:#818cf8;font-size:0.8rem;padding:6px 14px;width:100px;">
-                                🌊 Dalga
-                            </button>
-                            <input type="range" class="form-range zen-volume" data-sound="waves" min="0" max="100" value="50" style="flex:1;accent-color:#818cf8;">
-                        </div>
+        <main>
+            <!-- LEFT: Video & Music -->
+            <div class="zen-panel" id="ytPanel">
+                <div class="search-box">
+                    <input id="zenYouTubeUrl" type="text" placeholder="Şarkı veya Video Ara...">
+                    <button id="zenYouTubeLoad" class="btn position-absolute top-50 end-0 translate-middle-y me-2" style="color:var(--gold);">
+                        <i class="fa-solid fa-search"></i>
+                    </button>
+                    <!-- Floating Results -->
+                    <div id="zenYouTubeResults" class="dropdown-menu w-100 shadow-lg" style="display:none; background:#1c1c24; border:1px solid var(--border); max-height: 300px; overflow-y: auto;">
+                        <div id="zenYouTubeList" class="p-2"></div>
                     </div>
                 </div>
 
-                <!-- YouTube - Search & Play -->
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;min-width:320px;flex:1.5;">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="fa-brands fa-youtube" style="color:#FF0000; font-size: 1.2rem;"></i>
-                        <span class="fw-bold small" style="color:rgba(255,255,255,0.7);">YouTube & Video</span>
-                    </div>
-                    <div class="mb-3">
-                        <div class="input-group input-group-sm mb-2" style="position:relative;">
-                            <input id="zenYouTubeUrl" type="text" class="form-control" placeholder="Video / Şarkı Ara veya URL..." autocomplete="off"
-                                   style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:10px 0 0 10px;font-size:0.8rem;padding:8px 12px;">
-                            <button id="zenYouTubeLoad" class="btn btn-sm fw-bold" style="background:#FF0000;color:#fff;border-radius:0 10px 10px 0;padding:0 14px;" title="Ara / Oynat">
-                                <i class="fa-solid fa-search" id="zenYouTubeIcon"></i>
-                            </button>
-                            
-                            <!-- Search Results Dropdown -->
-                            <div id="zenYouTubeResults" class="dropdown-menu w-100 shadow-lg p-2" style="display:none; position:absolute; top:100%; left:0; z-index:1060; background:#1c1c24; border:1px solid rgba(255,255,255,0.1); border-radius:8px; max-height:250px; overflow-y:auto; font-size:0.8rem; margin-top:5px;">
-                                <div class="text-center text-muted small py-2" id="zenYouTubeLoading" style="display:none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Aranıyor...</div>
-                                <div id="zenYouTubeList" class="d-flex flex-column gap-1"></div>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-wrap gap-1 mt-1">
-                            <button class="badge rounded-pill border-0 px-2 py-1 zen-youtube-preset" data-id="jfKfPfyJRdk" style="background:rgba(255,0,0,0.1); color:#ff4444; font-size:0.65rem; cursor:pointer;"><i class="fa-solid fa-fire"></i> Lofi Girl</button>
-                            <button class="badge rounded-pill border-0 px-2 py-1 zen-youtube-preset" data-id="5X8-mZ2d06s" style="background:rgba(251,191,36,0.1); color:#fbbf24; font-size:0.65rem; cursor:pointer;"><i class="fa-solid fa-cloud-rain"></i> Rain Sounds</button>
-                            <button class="badge rounded-pill border-0 px-2 py-1 zen-youtube-preset" data-id="DWZUPN_92o4" style="background:rgba(192,132,252,0.1); color:#c084fc; font-size:0.65rem; cursor:pointer;"><i class="fa-solid fa-moon"></i> Deep Focus</button>
-                        </div>
-                    </div>
-                    <div id="zenYouTubeEmbed" style="border-radius: 12px; overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6); aspect-ratio: 16 / 9; background: #000; position:relative;">
-                        <iframe id="zenYouTubeIframe" style="border:0; width:100%; height:100%; transition:opacity 0.5s;" src="about:blank" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
-                        <!-- Placeholder -->
-                        <div id="zenYouTubePlaceholder" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="pointer-events:none;">
-                            <i class="fa-brands fa-youtube d-block mb-2 opacity-25" style="font-size:3rem; color: #ff0000;"></i>
-                            <span class="small text-muted opacity-50">Video veya Şarkı Bekleniyor...</span>
-                        </div>
-                    </div>
+                <div class="mb-3 d-flex gap-2 align-items-center">
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="loadRadio('https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1')">🎧 Lofi Radyo</button>
+                    <button class="btn btn-sm btn-warning rounded-pill px-3 fw-bold" onclick="loadRadio('https://www.youtube.com/embed/videoseries?list=PLbH8t4I558_6e2oYlE_sF2OQk8dO6F5H1&autoplay=1')">👑 Kral Pop</button>
+                    <button class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="loadRadio('https://www.youtube.com/embed/videoseries?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG&autoplay=1')">🎸 Akustik</button>
+                    <button id="btnToggleYTSize" class="btn btn-sm btn-dark rounded-pill ms-auto" title="Görünümü Genişlet/Daralt">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+                <div id="ytContainer" style="flex:1; border-radius:16px; overflow:hidden; background:#000; transition: all 0.5s ease;">
+                    <iframe id="zenYouTubeIframe" style="width:100%; height:100%; border:0;" src="https://www.youtube.com/embed/videoseries?list=PLbH8t4I558_6e2oYlE_sF2OQk8dO6F5H1&autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media"></iframe>
                 </div>
             </div>
 
-            <!-- Daily Goal (bottom) -->
-            <div class="mt-4 text-center w-100" style="max-width:500px;">
-                <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 20px;">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold">🎯 Günlük Odak Hedefi</span>
-                        <span id="zenDailyProgress" style="font-family:'JetBrains Mono',monospace;color:#34d399;font-size:0.8rem;">0 / 4 seans</span>
+            <!-- RIGHT: Game -->
+            <div class="zen-panel" id="gamePanel">
+                <div id="gameUI" class="game-overlay">
+                    <div class="d-flex gap-3 mb-4">
+                        <button class="btn btn-outline-warning game-select-btn active" data-game="snake">🐍 FOCUS SNAKE</button>
+                        <button class="btn btn-outline-info game-select-btn" data-game="pong">🏓 PING PONG</button>
                     </div>
-                    <div class="progress" style="height:4px;background:rgba(255,255,255,0.05);border-radius:10px;">
-                        <div id="zenDailyBar" class="progress-bar" style="width:0%;background:linear-gradient(90deg,#34d399,#10b981);box-shadow:0 0 10px rgba(16,185,129,0.3);transition:width 1s ease;"></div>
+                    
+                    <h2 class="gold-text fw-bold mb-1" id="gameTitleDisplay">FOCUS SNAKE</h2>
+                    <div id="scoreStats" class="mb-3 text-center" style="display:none;">
+                        <div class="small text-muted mb-1">OYUN BİTTİ</div>
+                        <div class="h4 gold-text mb-0" id="lastScore">0</div>
+                        <div class="small text-white-50">Son Skor</div>
+                        <hr class="my-2 border-secondary" style="opacity:0.2;">
+                        <div class="h5 text-warning mb-0" id="highScoreText">0</div>
+                        <div class="small text-white-50">En Yüksek Skor</div>
+                    </div>
+                    <p class="text-muted small mb-4 text-center" id="gameDescDisplay">Her skor <b class="text-warning">+25 XP</b> kazandırır.<br>Oyun bittiğinde puanın kaydedilir.</p>
+                    <button id="startGameBtn" class="btn px-5 py-2 rounded-pill fw-bold" style="background:var(--gold); color:#000; box-shadow: 0 0 20px var(--gold-glow);">
+                        OYUNA BAŞLA
+                    </button>
+                    <div class="mt-4 text-center">
+                        <small class="text-muted d-block mb-2">Kontroller</small>
+                        <div class="d-flex gap-2 justify-content-center" id="gameControlsDisplay">
+                            <span class="badge border border-secondary px-2">W-A-S-D</span>
+                            <span class="text-muted">veya</span>
+                            <span class="badge border border-secondary px-2">Yön Tuşları</span>
+                        </div>
                     </div>
                 </div>
+                <canvas id="gameCanvas"></canvas>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
+
     <script>
+        function loadRadio(url) {
+            document.getElementById('zenYouTubeIframe').src = url;
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
-            const zenOverlayEl = document.getElementById('zenModeOverlay');
-            const zenBreathCircle = document.getElementById('zenBreathCircle');
-            const spotifyUrlInput = document.getElementById('zenSpotifyUrl');
-            const spotifyLoadBtn = document.getElementById('zenSpotifyLoad');
-            const spotifyIframe = document.getElementById('zenSpotifyIframe');
-            const pDisplay = document.getElementById('pomodoroTimer');
-
-            let isZen = true;
-            let durationMins = @duration;
-
-            // Motivational Quotes
-            const zenQuotes = [
-                '"Odaklanma enerjinin yoğunlaşmasıdır." — Tony Robbins',
-                '"Büyük işler, küçük adımların toplamıdır."',
-                '"Flow halinde zaman durur, verimlilik patlar."',
-                '"Dikkat dağınıklığı değil, odağını seç."',
-                '"Her pomodoro bir zafer, her mola bir ödül."',
-                '"Derinlere dal, yüzeyde kalanlar sıradan kalır."',
-                '"Sessizlikte üretilen, gürültüde asla yapılamaz."',
-                '"Şu an, hayatının en verimli anı olabilir."',
-                '"Bir seferde bir görev. Basit ama güçlü."',
-                '"Odaklan, uygula, tekrarla. Başarı formülü bu."'
-            ];
-
-            // Breathing text cycle
-            const breathTexts = ['Nefes Al', 'Tut...', 'Nefes Ver', 'Bekle...'];
-            let breathIdx = 0;
-            setInterval(() => {
-                const el = document.getElementById('zenBreathText');
-                if (el) {
-                    breathIdx = (breathIdx + 1) % breathTexts.length;
-                    el.textContent = breathTexts[breathIdx];
-                }
-            }, 2000);
-
-            // Session tracking
-            const todayKey = 'gb_zen_sessions_' + new Date().toISOString().slice(0, 10);
-            function getSessions() { return parseInt(localStorage.getItem(todayKey)) || 0; }
-            function addSession() {
-                const s = getSessions() + 1;
-                localStorage.setItem(todayKey, s);
-                updateSessionUI(s);
-            }
-            function updateSessionUI(s) {
-                const el = document.getElementById('zenSessionCount');
-                if (el) el.textContent = s + ' seans';
-                const prog = document.getElementById('zenDailyProgress');
-                if (prog) prog.textContent = s + ' / 4 seans';
-                const bar = document.getElementById('zenDailyBar');
-                if (bar) bar.style.width = Math.min(100, (s / 4) * 100) + '%';
-            }
-            updateSessionUI(getSessions());
-
-            // Quote rotation
-            function showRandomQuote() {
-                const el = document.getElementById('zenQuote');
-                if (!el) return;
-                const q = zenQuotes[Math.floor(Math.random() * zenQuotes.length)];
-                const p = el.querySelector('p');
-                if (p) { p.style.opacity = '0'; setTimeout(() => { p.textContent = q; p.style.opacity = '1'; }, 300); }
-            }
-            setInterval(showRandomQuote, 15000);
-
-            // Generate stars
-            function generateStars() {
-                const container = document.getElementById('zenStars');
-                if (!container) return;
-                for (let i = 0; i < 60; i++) {
-                    const star = document.createElement('div');
-                    star.style.cssText = `position:absolute;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;background:white;border-radius:50%;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${Math.random()*0.5+0.1};animation:zenStarTwinkle ${Math.random()*4+2}s ${Math.random()*3}s ease-in-out infinite;`;
-                    container.appendChild(star);
-                }
-            }
-            generateStars();
-
-            // ========== WEB AUDIO API ==========
-            let audioCtx = null;
-            const activeSounds = {};
-
-            function getAudioCtx() {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                return audioCtx;
-            }
-
-            function createNoiseBuffer(ctx, duration) {
-                const sr = ctx.sampleRate;
-                const buf = ctx.createBuffer(2, sr * duration, sr);
-                for (let ch = 0; ch < 2; ch++) {
-                    const d = buf.getChannelData(ch);
-                    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-                }
-                return buf;
-            }
-
-            function startSound(type, volume) {
-                if (activeSounds[type]) return;
-                const ctx = getAudioCtx();
-                const gain = ctx.createGain();
-                gain.gain.value = volume;
-                gain.connect(ctx.destination);
-                const nodes = { gain };
-
-                if (type === 'rain') {
-                    const src = ctx.createBufferSource();
-                    src.buffer = createNoiseBuffer(ctx, 4);
-                    src.loop = true;
-                    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 400;
-                    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 8000;
-                    src.connect(hp); hp.connect(lp); lp.connect(gain);
-                    src.start(); nodes.src = src;
-                } else if (type === 'forest') {
-                    const src = ctx.createBufferSource();
-                    src.buffer = createNoiseBuffer(ctx, 4);
-                    src.loop = true;
-                    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2000; bp.Q.value = 0.5;
-                    const subGain = ctx.createGain(); subGain.gain.value = 0.3;
-                    src.connect(bp); bp.connect(subGain); subGain.connect(gain);
-                    src.start(); nodes.src = src;
-                    nodes.chirpInterval = setInterval(() => {
-                        const osc = ctx.createOscillator();
-                        const cGain = ctx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.value = 2000 + Math.random() * 3000;
-                        cGain.gain.setValueAtTime(0, ctx.currentTime);
-                        cGain.gain.linearRampToValueAtTime(volume * 0.15, ctx.currentTime + 0.05);
-                        cGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
-                        osc.connect(cGain); cGain.connect(ctx.destination);
-                        osc.start(); osc.stop(ctx.currentTime + 0.2);
-                    }, 2000 + Math.random() * 4000);
-                } else if (type === 'cafe') {
-                    const bufLen = ctx.sampleRate * 4;
-                    const buf = ctx.createBuffer(2, bufLen, ctx.sampleRate);
-                    for (let ch = 0; ch < 2; ch++) {
-                        const d = buf.getChannelData(ch);
-                        let last = 0;
-                        for (let i = 0; i < bufLen; i++) {
-                            const white = Math.random() * 2 - 1;
-                            d[i] = (last + (0.02 * white)) / 1.02;
-                            last = d[i]; d[i] *= 3.5;
-                        }
-                    }
-                    const src = ctx.createBufferSource();
-                    src.buffer = buf; src.loop = true;
-                    src.connect(gain); src.start(); nodes.src = src;
-                } else if (type === 'waves') {
-                    const src = ctx.createBufferSource();
-                    src.buffer = createNoiseBuffer(ctx, 6);
-                    src.loop = true;
-                    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
-                    const modGain = ctx.createGain();
-                    const lfo = ctx.createOscillator();
-                    const lfoGain = ctx.createGain();
-                    lfo.type = 'sine'; lfo.frequency.value = 0.1;
-                    lfoGain.gain.value = volume * 0.4;
-                    lfo.connect(lfoGain); lfoGain.connect(modGain.gain);
-                    modGain.gain.value = volume * 0.6;
-                    src.connect(lp); lp.connect(modGain); modGain.connect(ctx.destination);
-                    src.start(); lfo.start();
-                    nodes.src = src; nodes.lfo = lfo; nodes.modGain = modGain;
-                }
-                activeSounds[type] = nodes;
-            }
-
-            function stopSound(type) {
-                const nodes = activeSounds[type];
-                if (!nodes) return;
-                try { nodes.src?.stop(); } catch(e) {}
-                try { nodes.lfo?.stop(); } catch(e) {}
-                if (nodes.chirpInterval) clearInterval(nodes.chirpInterval);
-                delete activeSounds[type];
-            }
-
-            document.querySelectorAll('.zen-sound-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const type = btn.dataset.sound;
-                    if (activeSounds[type]) {
-                        stopSound(type);
-                        btn.classList.remove('active');
-                    } else {
-                        const slider = document.querySelector(`.zen-volume[data-sound="${type}"]`);
-                        const vol = slider ? slider.value / 100 : 0.5;
-                        startSound(type, vol);
-                        btn.classList.add('active');
-                    }
-                });
-            });
-
-            document.querySelectorAll('.zen-volume').forEach(slider => {
-                slider.addEventListener('input', () => {
-                    const type = slider.dataset.sound;
-                    const nodes = activeSounds[type];
-                    if (nodes?.gain) { nodes.gain.gain.value = slider.value / 100; }
-                });
-            });
-
-            document.getElementById('zenStopAllSounds')?.addEventListener('click', () => {
-                Object.keys(activeSounds).forEach(stopSound);
-                document.querySelectorAll('.zen-sound-btn').forEach(b => b.classList.remove('active'));
-            });
-
-            // ========== YOUTUBE LOGIC ==========
-            async function performYouTubeSearch(query) {
-                const resultsContainer = document.getElementById('zenYouTubeResults');
-                const loadingEl = document.getElementById('zenYouTubeLoading');
-                const listEl = document.getElementById('zenYouTubeList');
-                const iconBtn = document.getElementById('zenYouTubeIcon');
-                
-                resultsContainer.style.display = 'block';
-                loadingEl.style.display = 'block';
-                listEl.innerHTML = '';
-                if(iconBtn) { iconBtn.classList.remove('fa-search'); iconBtn.classList.add('fa-circle-notch', 'fa-spin'); }
-
-                try {
-                    const response = await fetch(`/api/YouTube/Search?query=${encodeURIComponent(query)}`);
-                    loadingEl.style.display = 'none';
-                    if(iconBtn) { iconBtn.classList.add('fa-search'); iconBtn.classList.remove('fa-circle-notch', 'fa-spin'); }
-
-                    if (!response.ok) {
-                        listEl.innerHTML = `<div class="p-2 text-danger text-center small text-wrap">API Hatası: Lütfen appsettings.json içerisine YouTube API Key ekleyin.</div>`;
-                        return;
-                    }
-
-                    const videos = await response.json();
-                    if (videos.length === 0) {
-                        listEl.innerHTML = `<div class="p-2 text-muted text-center small">Sonuç bulunamadı</div>`;
-                        return;
-                    }
-
-                    videos.forEach(video => {
-                        const div = document.createElement('div');
-                        div.className = 'd-flex align-items-center gap-2 p-2 rounded';
-                        div.style.cursor = 'pointer';
-                        div.style.background = 'rgba(255,255,255,0.02)';
-                        div.innerHTML = `
-                            <img src="${video.imageUrl || 'https://via.placeholder.com/80x45'}" style="width:60px; height:34px; border-radius:4px; object-fit:cover;">
-                            <div style="flex:1; overflow:hidden;">
-                                <div class="fw-bold text-truncate" style="color:#fff; font-size:0.75rem;">${video.name}</div>
-                                <div class="text-muted text-truncate" style="font-size:0.65rem;">${video.artist}</div>
-                            </div>
-                        `;
-                        div.onclick = () => {
-                            const embedUrl = `https://www.youtube.com/embed/${video.id}?autoplay=1&modestbranding=1&rel=0`;
-                            document.getElementById('zenYouTubeIframe').src = embedUrl;
-                            if (document.getElementById('zenYouTubePlaceholder')) document.getElementById('zenYouTubePlaceholder').style.display = 'none';
-                            resultsContainer.style.display = 'none';
-                            document.getElementById('zenYouTubeUrl').value = video.name;
-                        };
-                        listEl.appendChild(div);
-                    });
-                } catch (e) {
-                    loadingEl.style.display = 'none';
-                    listEl.innerHTML = `<div class="p-2 text-danger text-center small">Hata oluştu.</div>`;
-                }
-            }
-
-            function loadYouTubeUrl() {
-                const urlInput = document.getElementById('zenYouTubeUrl');
-                const url = (urlInput?.value || '').trim();
-                if (!url) return;
-                
-                // YouTube URL detection regex
-                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                const match = url.match(regExp);
-                
-                if (match && match[2].length === 11) {
-                    const videoId = match[2];
-                    document.getElementById('zenYouTubeIframe').src = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0`;
-                    if (document.getElementById('zenYouTubePlaceholder')) document.getElementById('zenYouTubePlaceholder').style.display = 'none';
-                    return;
-                }
-                performYouTubeSearch(url);
-            }
-
-            document.getElementById('zenYouTubeLoad')?.addEventListener('click', loadYouTubeUrl);
-            document.getElementById('zenYouTubeUrl')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadYouTubeUrl(); });
+            // TIMER & CORE VARS
+            let seconds = 0;
+            const timerEl = document.getElementById('sessionTimer');
             
-            document.querySelectorAll('.zen-youtube-preset').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.getAttribute('data-id');
-                    document.getElementById('zenYouTubeIframe').src = `https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1&rel=0`;
-                    if (document.getElementById('zenYouTubePlaceholder')) document.getElementById('zenYouTubePlaceholder').style.display = 'none';
-                });
-            });
+            // FRENZY FOCUS & ACHIEVEMENTS
+            let sessionStartTime = Date.now();
+            let hasFocusMasterTriggered = false;
 
-            // ========== POMODORO LOGIC ==========
-            let pTimer;
-            let pTime = durationMins * 60;
-            let isRunning = false;
-
-            function updateDisplay() {
-                const m = Math.floor(pTime / 60).toString().padStart(2, '0');
-                const s = (pTime % 60).toString().padStart(2, '0');
-                pDisplay.innerText = `${m}:${s}`;
+            function triggerAchievement(title, sub, icon) {
+                if (window.parent && window.parent.triggerAchievementSplash) {
+                    window.parent.triggerAchievementSplash(title, sub, icon);
+                } else if (typeof triggerAchievementSplash !== 'undefined') {
+                    triggerAchievementSplash(title, sub, icon);
+                }
             }
-            updateDisplay();
 
-            document.getElementById('startPomodoro').addEventListener('click', () => {
-                if(isRunning) return;
-                isRunning = true;
-                pTimer = setInterval(() => {
-                    if(pTime > 0) { pTime--; updateDisplay(); }
-                    else { 
-                        clearInterval(pTimer); 
-                        isRunning = false; 
-                        document.getElementById('pomodoroMessage').style.display = 'block';
-                        addSession();
-                        if (typeof confetti === 'function') {
-                            const end = Date.now() + 3000;
-                            (function frame() {
-                                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#fbbf24', '#34d399'] });
-                                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#a855f7', '#22d3ee'] });
-                                if (Date.now() < end) requestAnimationFrame(frame);
-                            }());
-                        }
+            function toggleFrenzyFocus(active) {
+                const body = document.body;
+                if (active) {
+                    body.classList.add('frenzy-active');
+                    startNeuralStream();
+                } else {
+                    body.classList.remove('frenzy-active');
+                    stopNeuralStream();
+                }
+            }
+
+            // --- NEURAL STREAM (MATRIX EFFECT) ---
+            let neuralInterval = null;
+            function startNeuralStream() {
+                if (neuralInterval) return;
+                const canvas = document.createElement('canvas');
+                canvas.id = 'neuralStreamCanvas';
+                canvas.style.position = 'fixed'; canvas.style.inset = '0';
+                canvas.style.zIndex = '4'; canvas.style.opacity = '0.4';
+                canvas.style.pointerEvents = 'none';
+                document.body.appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                const hex = "0123456789ABCDEF";
+                const fontSize = 16;
+                const columns = canvas.width / fontSize;
+                const drops = [];
+                for(let x = 0; x < columns; x++) drops[x] = 1;
+
+                neuralInterval = setInterval(() => {
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = "#fbbf24"; // Gold rain
+                    ctx.font = fontSize + "px monospace";
+
+                    for(let i = 0; i < drops.length; i++) {
+                        const text = hex.charAt(Math.floor(Math.random() * hex.length));
+                        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                        if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                        drops[i]++;
                     }
-                }, 1000);
-            });
+                }, 33);
+            }
 
-            document.getElementById('pausePomodoro').addEventListener('click', () => {
-                clearInterval(pTimer);
-                isRunning = false;
-            });
+            function stopNeuralStream() {
+                clearInterval(neuralInterval);
+                neuralInterval = null;
+                const c = document.getElementById('neuralStreamCanvas');
+                if (c) c.remove();
+            }
 
-            document.getElementById('resetPomodoro').addEventListener('click', () => {
-                clearInterval(pTimer);
-                isRunning = false;
-                pTime = durationMins * 60;
-                updateDisplay();
-                document.getElementById('pomodoroMessage').style.display = 'none';
-            });
+            // STYLE INJECTION FOR FRENZY
+            const frenzyStyles = document.createElement('style');
+            frenzyStyles.innerHTML = `
+                body.frenzy-active {
+                    background: #000 !important;
+                }
+                body.frenzy-active #zenWrapper {
+                    background: radial-gradient(circle at center, #1a0f00 0%, #000 100%);
+                }
+                body.frenzy-active #gameCanvas {
+                    border-color: #ef4444;
+                    box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
+                }
+                body.frenzy-active .mola-timer {
+                    color: #ef4444; text-shadow: 0 0 10px #ef4444;
+                }
+                .combo-text {
+                    position: absolute; color: #fbbf24; font-weight: 900; font-size: 2.5rem;
+                    text-shadow: 0 0 30px #fbbf24; pointer-events: none; z-index: 1000;
+                    animation: comboPop 0.8s ease-out forwards; font-family: 'JetBrains Mono';
+                }
+                @@keyframes comboPop {
+                    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+                    40% { transform: translate(-50%, -80px) scale(1.3); opacity: 1; }
+                    100% { transform: translate(-50%, -150px) scale(1); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(frenzyStyles);
 
-            // Auto-start pomodoro on page load
-            document.getElementById('startPomodoro').click();
+            // TIMER LOOP
+            setInterval(() => {
+                seconds++;
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                timerEl.textContent = `${m}:${s}`;
 
-            // ========== SCENES ==========
-            document.querySelectorAll('.zen-scene-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.zen-scene-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    const scene = btn.getAttribute('data-scene');
-                    if (scene === 'cyber') {
-                        zenOverlayEl.style.background = 'radial-gradient(circle at center, #064e3b 0%, #000000 100%)';
-                        zenBreathCircle.style.border = '3px solid rgba(52,211,153,0.3)';
-                    } else if (scene === 'space') {
-                        zenOverlayEl.style.background = 'radial-gradient(circle at center, #1e1b4b 0%, #000000 100%)';
-                        zenBreathCircle.style.border = '3px solid rgba(192,132,252,0.3)';
-                    } else if (scene === 'forest') {
-                        zenOverlayEl.style.background = 'radial-gradient(circle at center, #065f46 0%, #000000 100%)';
-                        zenBreathCircle.style.border = '3px solid rgba(52,211,153,0.3)';
+                // ODAK USTASI (5 dk durursa)
+                if (seconds >= 300 && !hasFocusMasterTriggered) {
+                    hasFocusMasterTriggered = true;
+                    // Note: In real app, we'd sync this badge to DB too
+                    triggerAchievement("Odak Ustası", "5 dakikadır kesintisiz derin odaktasın!", "🧘");
+                }
+            }, 1000);
+
+            // XP & SCORE SYSTEM
+            let userXP = @currentXP;
+            let highScore = @(ViewBag.HighScore ?? 0);
+            let comboCount = 0;
+            let lastEatTime = 0;
+
+            function updateXP(amount) {
+                const t = Date.now();
+                if (t - lastEatTime < 3000) { // 3 saniye içinde yerse kombo
+                    comboCount++;
+                    if (comboCount >= 3) toggleFrenzyFocus(true);
+                } else {
+                    comboCount = 0;
+                    toggleFrenzyFocus(false);
+                }
+                lastEatTime = t;
+
+                let multiplier = comboCount >= 5 ? 2 : 1;
+                let finalAmount = amount * multiplier;
+                
+                userXP += finalAmount;
+                document.getElementById('xpCounter').querySelector('span').textContent = `${userXP} XP`;
+                
+                // Visual Combo Text
+                if (comboCount > 1) {
+                    const comboEl = document.createElement('div');
+                    comboEl.className = 'combo-text';
+                    comboEl.textContent = `${comboCount}X COMBO!`;
+                    comboEl.style.left = '50%'; comboEl.style.top = '20%';
+                    document.body.appendChild(comboEl);
+                    setTimeout(() => comboEl.remove(), 600);
+                }
+
+                fetch('/Zen/EarnXP', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: finalAmount })
+                }).then(r => r.json()).then(data => {
+                    if (data.badgeEarned) {
+                        // 🏆 ACHIEVEMENT SPLASH — Yeni Rozet Kazanıldı!
+                        Swal.fire({
+                            title: `${data.badgeIcon} YENİ ROZET!`,
+                            html: `<span style="color:#fbbf24;font-weight:900;font-size:1.5rem;">${data.badgeName}</span><br><span class="text-muted">Bu rozet başarı kartına eklendi!</span>`,
+                            background: '#0d1117', color: '#fbbf24',
+                            confirmButtonColor: '#fbbf24',
+                            confirmButtonText: 'Muhteşem!'
+                        });
+                        confetti({ particleCount: 400, spread: 140, origin: { y: 0.4 }, colors: ['#fbbf24', '#ef4444', '#22d3ee', '#a78bfa'] });
+                    }
+                }).catch(() => {});
+
+                confetti({ 
+                    particleCount: 20, spread: 60, origin: { y: 0.1 }, 
+                    colors: [comboCount >= 3 ? '#ef4444' : '#fbbf24'],
+                    zIndex: 2000
+                });
+            }
+
+            async function syncHighScoreToDB(score) {
+                try {
+                    const response = await fetch('/Zen/UpdateHighScore', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ score: score })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.rewardGranted) {
+                        Swal.fire({
+                            title: '🏆 ÖZEL AYRICALIK KAZANDIN!',
+                            text: data.rewardMessage,
+                            icon: 'success',
+                            background: '#0d1117', color: '#fbbf24',
+                            confirmButtonColor: '#fbbf24',
+                            confirmButtonText: 'Süper!'
+                        });
+                        // Massive visual effect for premium reward
+                        confetti({ particleCount: 300, spread: 120, origin: { y: 0.5 }, colors: ['#fbbf24', '#ef4444', '#22d3ee'] });
+                    }
+                } catch (e) {
+                    console.error("HighScore sync failed:", e);
+                }
+            }
+
+            // 🎮 GAME ENGINE CORE
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = 400; canvas.height = 400;
+
+            let currentActiveGame = 'snake';
+            let gameInterval = null;
+            let currentScore = 0;
+
+            // --- GAME SELECTION LOGIC ---
+            document.querySelectorAll('.game-select-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.game-select-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentActiveGame = this.getAttribute('data-game');
+                    
+                    if (gameInterval) clearInterval(gameInterval);
+                    document.getElementById('gameUI').style.display = 'flex';
+                    document.getElementById('scoreStats').style.display = 'none';
+
+                    if (currentActiveGame === 'snake') {
+                        document.getElementById('gameTitleDisplay').textContent = "FOCUS SNAKE";
+                        document.getElementById('gameDescDisplay').innerHTML = "Her skor <b class='text-warning'>+25 XP</b> kazandırır.<br>Oyun bittiğinde puanın kaydedilir.";
+                        document.getElementById('gameControlsDisplay').innerHTML = '<span class="badge border border-secondary px-2">W-A-S-D</span> <span class="text-muted">veya</span> <span class="badge border border-secondary px-2">Yön Tuşları</span>';
+                        initSnake(); drawSnake();
+                    } else if (currentActiveGame === 'pong') {
+                        document.getElementById('gameTitleDisplay').textContent = "PING PONG";
+                        document.getElementById('gameDescDisplay').innerHTML = "Rallilerde hedefe ulaştıkça <b class='text-warning'>+50 XP</b> kazandırır.";
+                        document.getElementById('gameControlsDisplay').innerHTML = '<span class="badge border border-secondary px-2">W - S</span> <span class="text-muted">veya</span> <span class="badge border border-secondary px-2">Yön Tuşları</span>';
+                        initPong(); drawPong();
                     }
                 });
             });
+
+            document.getElementById('startGameBtn').onclick = () => {
+                document.getElementById('gameUI').style.display = 'none';
+                if (gameInterval) clearInterval(gameInterval);
+                if (currentActiveGame === 'snake') {
+                    initSnake(); gameInterval = setInterval(drawSnake, snakeSpeed);
+                } else {
+                    initPong(); gameInterval = setInterval(drawPong, 1000/60); // 60 FPS
+                }
+            };
+
+            function gameOver(score) {
+                if(gameInterval) clearInterval(gameInterval);
+                document.getElementById('lastScore').textContent = score;
+                if (score > highScore) {
+                    highScore = score;
+                    syncHighScoreToDB(highScore);
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                }
+                document.getElementById('highScoreText').textContent = highScore;
+                document.getElementById('scoreStats').style.display = 'block';
+                document.getElementById('gameUI').style.display = 'flex';
+            }
+
+            // ==========================================
+            // 🐍 FOCUS SNAKE LOGIC
+            // ==========================================
+            const box = 20;
+            let snake = [], food = {}, d = null, snakeSpeed = 150;
+
+            function initSnake() {
+                snake = [{ x: 9 * box, y: 10 * box }];
+                generateFood();
+                d = null; currentScore = 0; snakeSpeed = 150;
+            }
+
+            function generateFood() {
+                let overlap = true;
+                while(overlap) {
+                    food = { x: Math.floor(Math.random() * 20) * box, y: Math.floor(Math.random() * 20) * box };
+                    overlap = snake.some(s => s.x === food.x && s.y === food.y);
+                }
+            }
+
+            function drawSnake() {
+                ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = "rgba(251,191,36,0.03)";
+                for(let i=0; i<canvas.width; i+=box) {
+                    ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke();
+                }
+
+                const isFrenzy = document.body.classList.contains('frenzy-active');
+                for (let i = 0; i < snake.length; i++) {
+                    ctx.fillStyle = (i == 0) ? "#fbbf24" : (isFrenzy ? "rgba(239, 68, 68, 0.6)" : "rgba(251,191,36,0.3)");
+                    if(i==0) { ctx.shadowBlur = isFrenzy ? 20 : 10; ctx.shadowColor = isFrenzy ? "#ef4444" : "#fbbf24"; }
+                    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                    ctx.shadowBlur = 0;
+                }
+
+                const pulse = Math.sin(Date.now() / 200) * 5;
+                ctx.fillStyle = "#fff"; ctx.shadowBlur = 15 + pulse; ctx.shadowColor = "#fbbf24";
+                ctx.beginPath(); ctx.arc(food.x + box/2, food.y + box/2, (box/2 - 2) + (pulse/4), 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0;
+
+                let snakeX = snake[0].x; let snakeY = snake[0].y;
+                if (d == "LEFT") snakeX -= box; if (d == "UP") snakeY -= box;
+                if (d == "RIGHT") snakeX += box; if (d == "DOWN") snakeY += box;
+
+                if (snakeX == food.x && snakeY == food.y) {
+                    currentScore++; updateXP(25); generateFood();
+                    snakeSpeed = Math.max(40, 150 - (currentScore * 5));
+                    clearInterval(gameInterval); gameInterval = setInterval(drawSnake, snakeSpeed);
+                } else {
+                    if(d) snake.pop();
+                }
+
+                if(d) {
+                    let newHead = { x: snakeX, y: snakeY };
+                    if (snakeX < 0 || snakeX >= canvas.width || snakeY < 0 || snakeY >= canvas.height || snake.some(s=> s.x===newHead.x && s.y===newHead.y)) {
+                        gameOver(currentScore); return;
+                    }
+                    snake.unshift(newHead);
+                }
+            }
+
+            // ==========================================
+            // 🏓 PING PONG LOGIC
+            // ==========================================
+            let paddleY = 160, aiY = 160, ballX = 200, ballY = 200, ballDX = 4, ballDY = 4, pongScore = 0, rallyCount = 0;
+            const paddleW = 10, paddleH = 80;
+
+            function initPong() {
+                paddleY = 160; aiY = 160; ballX = 200; ballY = 200;
+                ballDX = 5; ballDY = 5; pongScore = 0; rallyCount = 0;
+            }
+
+            function drawPong() {
+                ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // Center line
+                ctx.setLineDash([5, 15]); ctx.beginPath(); ctx.moveTo(200,0); ctx.lineTo(200,400); 
+                ctx.strokeStyle="rgba(251,191,36,0.2)"; ctx.stroke(); ctx.setLineDash([]);
+
+                // Paddles
+                ctx.fillStyle = "#fbbf24"; ctx.shadowBlur = 10; ctx.shadowColor = "#fbbf24";
+                ctx.fillRect(10, paddleY, paddleW, paddleH); // Player
+                ctx.fillStyle = "#ef4444"; ctx.shadowColor = "#ef4444";
+                ctx.fillRect(380, aiY, paddleW, paddleH); // AI
+                ctx.shadowBlur = 0;
+
+                // Ball
+                ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ballX, ballY, 8, 0, Math.PI*2); ctx.fill();
+
+                // Ball movement
+                ballX += ballDX; ballY += ballDY;
+
+                // AI Logic
+                aiY += (ballY - (aiY + paddleH/2)) * 0.1;
+
+                // Wall collision
+                if (ballY <= 0 || ballY >= canvas.height) ballDY *= -1;
+
+                // Paddle collision
+                if (ballX <= 20 && ballY >= paddleY && ballY <= paddleY + paddleH) {
+                    ballDX *= -1.1; rallyCount++; 
+                    if(rallyCount % 3 === 0) { pongScore++; updateXP(50); }
+                }
+                if (ballX >= 380 && ballY >= aiY && ballY <= aiY + paddleH) ballDX *= -1;
+
+                // Score / Out of bounds
+                if (ballX < 0) { gameOver(pongScore); return; } // Player lost
+                if (ballX > 400) { ballX = 200; ballY = 200; ballDX = -5; ballDY = 5; } // AI missed (rare)
+            }
+
+            // --- CONTROLS ---
+            document.addEventListener("keydown", (e) => {
+                // Snake
+                if (currentActiveGame === 'snake') {
+                    if ((e.keyCode == 37 || e.key === 'a') && d != "RIGHT") { d = "LEFT"; e.preventDefault(); }
+                    else if ((e.keyCode == 38 || e.key === 'w') && d != "DOWN") { d = "UP"; e.preventDefault(); }
+                    else if ((e.keyCode == 39 || e.key === 'd') && d != "LEFT") { d = "RIGHT"; e.preventDefault(); }
+                    else if ((e.keyCode == 40 || e.key === 's') && d != "UP") { d = "DOWN"; e.preventDefault(); }
+                } 
+                // Pong
+                else if (currentActiveGame === 'pong') {
+                    if (e.keyCode == 38 || e.key === 'w') { paddleY = Math.max(0, paddleY - 30); e.preventDefault(); }
+                    if (e.keyCode == 40 || e.key === 's') { paddleY = Math.min(canvas.height - paddleH, paddleY + 30); e.preventDefault(); }
+                }
+            });
+
+            // Start Initial Visual State
+            initSnake(); drawSnake();
+
+            // YOUTUBE SEARCH
+            async function performSearch(q) {
+                if(!q.trim()) return;
+                const resEl = document.getElementById('zenYouTubeResults');
+                const listEl = document.getElementById('zenYouTubeList');
+                resEl.style.display = 'block';
+                listEl.innerHTML = '<div class="text-center text-muted py-3 small"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Aranıyor...</div>';
+                
+                try {
+                    const response = await fetch(`/api/YouTube/Search?query=${encodeURIComponent(q)}`);
+                    if (response.ok) {
+                        const videos = await response.json();
+                        listEl.innerHTML = '';
+                        if(videos.length === 0) listEl.innerHTML = '<div class="text-center text-muted py-2 small">Sonuç bulunamadı.</div>';
+                        videos.forEach(v => {
+                            const div = document.createElement('div');
+                            div.className = 'd-flex align-items-center gap-2 p-2 rounded hover-bg';
+                            div.style.cursor = 'pointer';
+                            div.innerHTML = `<img src="${v.imageUrl}" style="width:50px; height:30px; object-fit:cover; border-radius:4px;"> <span class="small text-white text-truncate">${v.name}</span>`;
+                            div.onclick = () => {
+                                document.getElementById('zenYouTubeIframe').src = `https://www.youtube.com/embed/${v.id}?autoplay=1`;
+                                resEl.style.display = 'none';
+                                document.getElementById('zenYouTubeUrl').value = v.name;
+                            };
+                            listEl.appendChild(div);
+                        });
+                    }
+                } catch(e) {
+                    listEl.innerHTML = '<div class="text-center text-danger py-2 small">Hata oluştu.</div>';
+                }
+            }
+
+            document.getElementById('zenYouTubeLoad').onclick = () => performSearch(document.getElementById('zenYouTubeUrl').value);
+            document.getElementById('zenYouTubeUrl').onkeydown = (e) => { 
+                if(e.key === 'Enter') performSearch(e.target.value); 
+                else if(e.target.value.length > 2) {
+                    // Quick debounce could go here
+                }
+            };
+            
+            // Close dropdown on click outside
+            document.addEventListener('click', (e) => {
+                if(!e.target.closest('.search-box')) document.getElementById('zenYouTubeResults').style.display = 'none';
+            });
+
+            // YOUTUBE PANEL RESIZE TOGGLE
+            const btnToggleSize = document.getElementById('btnToggleYTSize');
+            const mainGrid = document.querySelector('main');
+            const ytPanel = document.getElementById('ytPanel');
+            const gamePanel = document.getElementById('gamePanel');
+            let isWide = false;
+
+            btnToggleSize.onclick = () => {
+                isWide = !isWide;
+                if (isWide) {
+                    mainGrid.style.gridTemplateColumns = "1fr 0.1fr";
+                    gamePanel.style.opacity = "0.1";
+                    gamePanel.style.pointerEvents = "none";
+                    btnToggleSize.innerHTML = '<i class="fa-solid fa-compress"></i>';
+                } else {
+                    mainGrid.style.gridTemplateColumns = "1.2fr 1fr";
+                    gamePanel.style.opacity = "1";
+                    gamePanel.style.pointerEvents = "all";
+                    btnToggleSize.innerHTML = '<i class="fa-solid fa-expand"></i>';
+                }
+            };
         });
     </script>
 </body>

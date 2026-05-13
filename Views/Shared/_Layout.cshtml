@@ -5,6 +5,9 @@
     // Get billing state for navbar badge
     string navPlanBadge = "FREE";
     string navPlanColor = "#8b949e";
+    string currentUserFullName = "Kullanıcı";
+    string currentUserRole = "";
+    string navPlanKey = "free";
     if (User?.Identity?.IsAuthenticated == true)
     {
         var navEmail = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
@@ -14,9 +17,13 @@
             var navUser = navDbContext?.Users.FirstOrDefault(u => u.Email == navEmail);
             if (navUser != null)
             {
+                currentUserFullName = navUser.FullName;
+                currentUserRole = navUser.Role;
                 var navState = Billing.GetUserState(navUser.Id, navUser.Email);
                 navPlanBadge = Billing.GetPlanBadge(navState);
                 navPlanColor = Billing.GetEffectivePlan(navState).Color;
+                navPlanKey = navState.PlanKey;
+                ViewBag.CurrentUserAvatar = navUser.AvatarUrl;
             }
         }
     }
@@ -32,133 +39,211 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - GoldBranch AI</title>
-    <meta name="description" content="GoldBranch AI - Akilli Gorev ve Saglik Yonetim Sistemi" />
+    <meta name="description" content="GoldBranch AI - Akilli Gorev Yonetim Sistemi" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="manifest" href="~/manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
     <!-- PWA & Mobile Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0d1117">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/9334/9334400.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
-<body class="bg-dark text-light">
+<body class="bg-dark text-light tier-@navPlanKey">
 
-    <!-- PAGE LOADER BAR -->
-    <div id="pageLoader" class="page-loader active"></div>
+    <!-- QUANTUM TRANSITION SCANNER -->
+    <div id="gbQuantumScanner" class="gb-quantum-overlay">
+        <div class="gb-q-laser"></div>
+        <div class="gb-q-logo">
+            <i class="fa-solid fa-leaf text-warning" style="font-size:3rem;filter:drop-shadow(0 0 20px #fbbf24);"></i>
+            <div class="gb-q-text">SYSTEM INITIALIZING...</div>
+        </div>
+    </div>
 
     <!-- Animated Particle Canvas -->
     <canvas id="particleCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0.4;"></canvas>
+    <div class="gb-app-container">
+        @if (User?.Identity?.IsAuthenticated == true)
+        {
+            <aside class="gb-sidebar" id="gbSidebar">
+                <a class="gb-sidebar-logo" asp-controller="Task" asp-action="Index" title="GoldBranch AI">
+                    <i class="fa-solid fa-leaf gb-heartbeat"></i>
+                </a>
 
-    <header>
-        <div id="gbScrollProgressBar" style="position:fixed; top:0; left:0; width:0%; height:3px; background:linear-gradient(90deg, #fbbf24, #22d3ee); z-index:2000; transition: width 0.1s; box-shadow: 0 0 10px rgba(34,211,238,0.5);"></div>
-        <nav class="navbar navbar-expand-sm navbar-dark border-bottom border-secondary mb-4 py-3 sticky-top shadow">
-            <div class="container-fluid px-3 px-xl-5">
-                <div class="d-flex align-items-center">
+                <ul class="gb-nav-list">
+                    <!-- 🛰️ RADAR -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Radar" ? "active" : "")" asp-controller="Task" asp-action="Radar" title="Stratejik Radar">
+                            <i class="fa-solid fa-satellite-dish"></i>
+                        </a>
+                    </li>
+                    
+                    <!-- 🛰️ OLD RADAR (Operational) -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Dashboard" ? "active" : "")" asp-controller="Task" asp-action="Dashboard" title="@L.Get("OperationalRadar")">
+                            <i class="fa-solid fa-rocket"></i>
+                        </a>
+                    </li>
+
+                    <!-- 📋 SPRINT BOARD -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Index" && ViewContext.RouteData.Values["Controller"]?.ToString() == "Task" ? "active" : "")" asp-controller="Task" asp-action="Index" title="@L.Get("SprintBoard")">
+                            <i class="fa-solid fa-columns"></i>
+                        </a>
+                    </li>
+
+                    <!-- 💬 CHAT -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Chat" ? "active" : "")" asp-controller="Chat" asp-action="Index" title="@L.Get("ChatRoom")">
+                            <i class="fa-solid fa-comments"></i>
+                        </a>
+                    </li>
+
+                    <!-- 📹 CONFERENCE / MEETING -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Conference" ? "active" : "")" asp-controller="Conference" asp-action="Index" title="İşbirliği Merkezi (Video/Ekran Paylaşımı)">
+                            <i class="fa-solid fa-video"></i>
+                        </a>
+                    </li>
+
+                    <!-- ⚙️ SETTINGS -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Settings" asp-action="Index" title="Profil Ayarları">
+                            <i class="fa-solid fa-user-gear"></i>
+                        </a>
+                    </li>
+
+                    <!-- 💎 BILLING -->
+                    <li>
+                        <a class="gb-nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Billing" ? "active" : "")" asp-controller="Billing" asp-action="Index" title="@L.Get("SaasCenter")">
+                            <i class="fa-solid fa-gem" style="color: @navPlanColor;"></i>
+                        </a>
+                    </li>
+
+                    <!-- 🧠 AI AGENTS (Hiyerarşik) -->
+                    @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Proje Sefi" ||
+                         User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
+                    {
+                        <li>
+                            <a class="gb-nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Breakdown" ? "active" : "")" asp-controller="Ai" asp-action="Breakdown" title="@L.Get("AjanMerkezi")" style="color:var(--gb-accent-violet);">
+                                <i class="fa-solid fa-brain"></i>
+                            </a>
+                        </li>
+                    }
+                    else if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Gelistirici")
+                    {
+                        <li>
+                            <a class="gb-nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Research" ? "active" : "")" asp-controller="Ai" asp-action="Research" title="@L.Get("CodeLab")" style="color:var(--gb-accent-cyan);">
+                                <i class="fa-solid fa-code"></i>
+                            </a>
+                        </li>
+                    }
+
+
                     @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
                     {
-                        <button class="btn btn-outline-warning rounded-pill px-3 py-1 btn-sm shadow-sm me-3 d-none d-md-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas" style="border: 1px solid rgba(251,191,36,0.3); background: rgba(251,191,36,0.05); letter-spacing: 0.5px;">
-                            <i class="fa-solid fa-bars-staggered me-1"></i> @L.Get("AdminPanel")
-                        </button>
-                        <!-- Mobil icon -->
-                        <button class="btn btn-link text-warning p-0 me-3 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas">
-                            <i class="fa-solid fa-bars-staggered fs-4"></i>
-                        </button>
+                        <!-- 📊 Admin: İş Raporları -->
+                        <li>
+                            <a class="gb-nav-link text-warning @(ViewContext.RouteData.Values["Action"]?.ToString() == "WorkReports" ? "active" : "")" asp-controller="Admin" asp-action="WorkReports" title="İş Raporları">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <!-- 🖥️ Admin: Sistem Kayıtları -->
+                        <li>
+                            <a class="gb-nav-link text-info @(ViewContext.RouteData.Values["Action"]?.ToString() == "SystemLogs" ? "active" : "")" asp-controller="Admin" asp-action="SystemLogs" title="Sistem Kayıtları">
+                                <i class="fa-solid fa-server"></i>
+                            </a>
+                        </li>
                     }
-                    <a class="navbar-brand fw-bold mb-0 d-flex align-items-center me-3" asp-controller="Task" asp-action="Index" style="font-size: 1.4rem; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                        <i class="fa-solid fa-leaf text-warning me-2 gb-heartbeat" style="-webkit-text-fill-color: #fbbf24;"></i> GoldBranch AI
+                </ul>
+
+                <!-- SIDEBAR FOOTER (User Section) -->
+                <div class="gb-sidebar-footer d-flex flex-column align-items-center gap-3">
+                    <a asp-controller="Settings" asp-action="Index" class="position-relative" title="Profil Ayarları">
+                        <div class="gb-avatar-mini" style="width:40px; height:40px; border-radius:50%; overflow:hidden; border:2px solid var(--gb-gold);">
+                            <img src="@(string.IsNullOrEmpty(ViewBag.CurrentUserAvatar as string) ? "https://cdn-icons-png.flaticon.com/512/9334/9334400.png" : ViewBag.CurrentUserAvatar)" 
+                                 style="width:100%; height:100%; object-fit:cover;" />
+                        </div>
+                        <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-dark rounded-circle" style="width:12px; height:12px;"></span>
                     </a>
-                    <div class="d-none d-lg-flex align-items-center me-4" title="AI Modülü Aktif">
-                        <span class="badge rounded-pill shadow-sm" style="background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: #22d3ee; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; padding: 5px 12px; letter-spacing: 0.5px;">
-                            <i class="fa-solid fa-microchip me-1"></i> AI Active
-                        </span>
+                    
+                    <a asp-controller="Auth" asp-action="Logout" class="text-danger opacity-50 hover-opacity-100" title="Çıkış Yap" style="font-size:1.1rem;">
+                        <i class="fa-solid fa-power-off"></i>
+                    </a>
+                </div>
+            </aside>
+
+            <!-- 🔧 TOP-RIGHT TOOLBAR (Ghost Mode + AI Briefing + Timer + Lang Toggle) -->
+            <div class="gb-top-toolbar d-flex align-items-center gap-2">
+                <button id="btnGhostMode" class="btn btn-outline-secondary btn-sm rounded-pill px-2 border-0 opacity-50 hover-opacity-100" title="Ghost Mode (Hassas Verileri Gizle)">
+                    <i class="fa-solid fa-ghost"></i>
+                </button>
+                <button id="btnDailyBriefing" class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-bold" title="Güne AI Sesli Özetle Başla">
+                    <i class="fa-solid fa-microphone-lines"></i> <span class="d-none d-md-inline">GÜNE BAŞLA</span>
+                </button>
+                <span id="screenTimer" class="gb-timer">
+                    <i class="fa-solid fa-stopwatch me-1"></i>00:00:00
+                </span>
+                <button id="globalVoiceCmdBtn" class="gb-lang-toggle text-warning" style="border: 1px solid rgba(251,191,36,0.5); background: rgba(251,191,36,0.1); width: 34px; padding: 0;" title="Sesli Komut İle Görev Ekle">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <a href="/Lang/Switch?lang=@(currentLang == "tr" ? "en" : "tr")&returnUrl=@Context.Request.Path" class="gb-lang-toggle" title="@(currentLang == "tr" ? "Switch to English" : "Türkçe'ye Geç")">
+                    @(currentLang == "tr" ? "EN" : "TR")
+                </a>
+            </div>
+        }
+
+
+
+
+        <main class="gb-main-wrapper">
+            <!-- Mobile Top Bar (Hidden on Desktop) -->
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <div class="d-lg-none d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom border-secondary">
+                    <button class="btn btn-link text-warning p-0" onclick="document.getElementById('gbSidebar').classList.toggle('active')">
+                        <i class="fa-solid fa-bars-staggered fs-4"></i>
+                    </button>
+                    <a class="navbar-brand fw-bold text-warning" asp-controller="Task" asp-action="Index">GoldBranch</a>
+                    <div class="position-relative">
+                         <i class="fa-solid fa-bell text-warning fs-5"></i>
+                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display:none; font-size: 0.5rem;">0</span>
                     </div>
                 </div>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1 ms-4">
-                        <li class="nav-item"><a class="nav-link text-light px-3" asp-controller="Task" asp-action="Dashboard"><i class="fa-solid fa-rocket me-1 text-warning"></i> @L.Get("Dashboard")</a></li>
-                        <li class="nav-item"><a class="nav-link text-light px-3" asp-controller="Task" asp-action="Index"><i class="fa-solid fa-columns me-1"></i> @L.Get("Tasks")</a></li>
-                        <li class="nav-item"><a class="nav-link text-info px-3 fw-bold" asp-controller="Chat" asp-action="Index"><i class="fa-solid fa-comments"></i> @L.Get("ChatRoom")</a></li>
-                        <li class="nav-item"><a class="nav-link px-3" asp-controller="Billing" asp-action="Index"><i class="fa-solid fa-gem me-1" style="color: @navPlanColor;"></i> <span class="badge rounded-pill px-2 py-1" style="background: @navPlanColor; color: #000; font-size: 0.65rem; letter-spacing: 1px;">@navPlanBadge</span></a></li>
-                        @if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Proje Sefi" ||
-                             User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
-                        {
-                            <li class="nav-item"><a class="nav-link px-3 fw-bold" asp-controller="Ai" asp-action="Breakdown" style="color:#a78bfa;"><i class="fa-solid fa-brain me-1"></i> @L.Get("AIAgent")</a></li>
-                        }
-                        else if (User?.Claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value == "Gelistirici")
-                        {
-                            <li class="nav-item"><a class="nav-link px-3 fw-bold text-info" asp-controller="Ai" asp-action="Research"><i class="fa-solid fa-code me-1"></i> @L.Get("AIChat")</a></li>
-                        }
-                    </ul>
-                    <ul class="navbar-nav align-items-center">
-                        @if (User?.Identity?.IsAuthenticated == true)
-                        {
+            }
 
 
-                            <!-- Notification Bell -->
-                            <li class="nav-item dropdown me-3" id="notificationDropdownContainer">
-                                <a class="nav-link text-light position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-solid fa-bell text-warning" style="font-size: 1.1rem;"></i>
-                                    <span class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger border border-dark" id="notificationBadge" style="display:none; font-size: 0.65rem;">
-                                        0
-                                    </span>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-secondary bg-dark text-light" aria-labelledby="notificationDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notificationList">
-                                    <li><h6 class="dropdown-header text-warning fw-bold border-bottom border-secondary pb-2 mb-2"><i class="fa-solid fa-bolt me-1"></i> @L.Get("NotificationCenter")</h6></li>
-                                    <!-- Notifications will be injected here via JS -->
-                                    <li class="text-center py-3 text-muted small" id="noNotificationText">@L.Get("NoNotifications")</li>
-                                </ul>
-                            </li>
-                            <!-- Theme Dropdown Removed - Replaced with Floating Action Button -->
-                            <li class="nav-item me-3 d-none d-md-block" title="Günlük Aktif Mesai Suresi">
-                                <div id="globalTimerWidget" class="d-flex align-items-center px-3 py-1 rounded-pill shadow-sm" style="background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.2); transition: all 0.3s ease; box-shadow: 0 0 10px rgba(34,211,238,0.1);">
-                                    <i class="fa-solid fa-stopwatch text-info me-2" style="animation: timerPulse 2s infinite;"></i>
-                                    <span id="screenTimer" class="fw-bold text-info" style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; letter-spacing: 1px;">00:00:00</span>
-                                </div>
-                            </li>
-                            <!-- User Profile -->
-                            <li class="nav-item d-flex align-items-center px-2 py-1 rounded-pill border border-secondary" style="background: rgba(251, 191, 36, 0.05); border-color: rgba(251,191,36,0.3) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                                <span class="text-light mx-2 small fw-bold d-flex align-items-center gap-2">
-                                    <i class="fa-solid fa-user-astronaut text-warning"></i> @(User?.Identity?.Name ?? "User")
-                                </span>
-                                
-                                <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 8px;"></div>
-
-                                <!-- Logout -->
-                                <a class="btn btn-outline-danger border-0 btn-sm rounded-circle d-flex align-items-center justify-content-center" asp-controller="Auth" asp-action="Logout" style="width:28px;height:28px; transition: 0.3s;" title="@L.Get("Logout")">
-                                    <i class="fa-solid fa-power-off" style="font-size: 0.75rem;"></i>
-                                </a>
-                            </li>
-
-                            <!-- Install App Button (Hidden by default, shown by JS) -->
-                            <li class="nav-item ms-2 mt-1 d-none align-items-center" id="gbInstallContainer">
-                                <button class="btn btn-sm btn-outline-info rounded-pill fw-bold shadow-sm" id="gbInstallAppBtn" style="padding: 4px 12px; font-size: 0.85rem; border: 1px solid rgba(34,211,238,0.6);" title="Masaüstü/Mobil cihazınıza yükleyin">
-                                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> Yükle
-                                </button>
-                            </li>
-
-                            <!-- Fail-proof Language Buttons with SVG Flags -->
-                            <li class="nav-item ms-2 mt-1 d-flex gap-2 align-items-center">
-                                <a class="btn btn-sm rounded-pill d-flex align-items-center gap-1 @(currentLang == "tr" ? "btn-warning text-dark fw-bold shadow-sm" : "btn-outline-secondary text-light")" href="/Lang/Switch?lang=tr&returnUrl=@Context.Request.Path@Context.Request.QueryString" title="Türkçe" style="padding: 4px 10px; font-size: 0.85rem; border: 1px solid @(currentLang=="tr"?"rgba(251,191,36,1)":"rgba(255,255,255,0.2)"); transition: 0.3s;">
-                                    <img src="https://flagcdn.com/tr.svg" width="16" alt="Türk Bayrağı" style="border-radius: 2px;"> TR
-                                </a>
-                                <a class="btn btn-sm rounded-pill d-flex align-items-center gap-1 @(currentLang == "en" ? "btn-info text-dark fw-bold shadow-sm" : "btn-outline-secondary text-light")" href="/Lang/Switch?lang=en&returnUrl=@Context.Request.Path@Context.Request.QueryString" title="English" style="padding: 4px 10px; font-size: 0.85rem; border: 1px solid @(currentLang=="en"?"rgba(56,189,248,1)":"rgba(255,255,255,0.2)"); transition: 0.3s;">
-                                    <img src="https://flagcdn.com/gb.svg" width="16" alt="UK Flag" style="border-radius: 2px;"> EN
-                                </a>
-                            </li>
-                        }
-                    </ul>
+            <!-- 🎰 LIVE ACHIEVEMENT TICKER BAR -->
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <div id="gbTickerBar" class="gb-ticker-bar">
+                    <div class="gb-ticker-label">
+                        <i class="fa-solid fa-trophy"></i> CANLI
+                    </div>
+                    <div class="gb-ticker-track">
+                        <div class="gb-ticker-content" id="gbTickerContent">
+                            <span class="gb-ticker-item"><span class="gb-ticker-icon">🚀</span> GoldBranch AI Live Feed yükleniyor...</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </nav>
-    </header>
+            }
 
-    <div class="container-fluid px-3 px-xl-5 gb-page">
-        <main role="main" class="pb-5 mb-5">@RenderBody()</main>
+            <div id="gbScrollProgressBar" style="position:fixed; top:0; left:0; width:0%; height:3px; background:linear-gradient(90deg, #fbbf24, #22d3ee); z-index:2000; transition: width 0.1s;"></div>
+            
+            
+            <div class="fade-in">
+                @RenderBody()
+            </div>
+        </main>
     </div>
 
     <!-- GLOBAL FOOTER -->
@@ -401,9 +486,63 @@
         <a href="/Ai/VoiceChat" id="voiceAssistantBtn" class="btn btn-warning rounded-circle shadow-lg gb-fab-btn gb-fab-voice d-flex align-items-center justify-content-center" title="Sesli Asistan" style="text-decoration:none;">
             <i class="fa-solid fa-microphone text-dark" style="font-size: 1.5rem;"></i>
         </a>
+
+        <!-- 🎵 AMBIENT SOUND BUTONU -->
+        <button id="gbAmbientBtn" class="btn rounded-circle shadow-lg gb-fab-btn gb-fab-ambient d-flex align-items-center justify-content-center" title="Ortam Sesi">
+            <i class="fa-solid fa-headphones" style="font-size: 1.2rem;"></i>
+        </button>
+
+        <!-- 🍅 POMODORO FOCUS TIMER BUTONU -->
+        <button id="gbPomodoroBtn" class="btn rounded-circle shadow-lg gb-fab-btn gb-fab-pomo d-flex align-items-center justify-content-center" title="Focus Timer (Pomodoro)">
+            <i class="fa-solid fa-hourglass-half" style="font-size: 1.2rem;"></i>
+        </button>
+    </div>
+
+    <!-- 🎵 AMBIENT SOUND PANEL -->
+    <div id="gbAmbientPanel" class="gb-ambient-panel" style="display:none;"></div>
+
+    <!-- 🍅 POMODORO PANEL -->
+    <div id="gbPomodoroPanel" class="gb-pomo-panel" style="display:none;"></div>
+
+    <!-- ⌨️ COMMAND PALETTE (Ctrl+K) -->
+    <div id="gbCommandPalette" class="gb-cmd-palette" style="display:none;">
+        <div class="gb-cmd-backdrop"></div>
+        <div class="gb-cmd-container">
+            <div class="gb-cmd-header">
+                <i class="fa-solid fa-magnifying-glass gb-cmd-search-icon"></i>
+                <input type="text" id="gbCmdInput" class="gb-cmd-input" placeholder="Komut veya sayfa ara... (Ctrl+K)" autocomplete="off" spellcheck="false" />
+                <kbd class="gb-cmd-esc">ESC</kbd>
+            </div>
+            <div class="gb-cmd-results" id="gbCmdResults"></div>
+            <div class="gb-cmd-footer">
+                <span><kbd>↑↓</kbd> Gezin</span>
+                <span><kbd>Enter</kbd> Aç</span>
+                <span><kbd>Esc</kbd> Kapat</span>
+            </div>
+        </div>
     </div>
 
 
+    <!-- 🖱️ CUSTOM CONTEXT MENU -->
+    <div id="gbContextMenu" class="gb-context-menu" style="display:none;">
+        <div class="gb-cm-item" onclick="window.location.href='/Task/Create'">
+            <i class="fa-solid fa-plus text-warning"></i> Yeni Görev Oluştur
+        </div>
+        <div class="gb-cm-item" onclick="window.location.href='/Task/Dashboard'">
+            <i class="fa-solid fa-rocket text-info"></i> Komuta Merkezi
+        </div>
+        <div class="gb-cm-divider"></div>
+        <div class="gb-cm-item" onclick="document.execCommand('copy')">
+            <i class="fa-solid fa-copy text-muted"></i> Kopyala
+        </div>
+        <div class="gb-cm-item" onclick="GB.qs('#gbCmdInput') ? document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'ctrlKey': true})) : null">
+            <i class="fa-solid fa-magnifying-glass text-muted"></i> Hızlı Arama <span class="gb-cm-hint">Ctrl+K</span>
+        </div>
+        <div class="gb-cm-divider"></div>
+        <div class="gb-cm-item" data-bs-toggle="offcanvas" data-bs-target="#themeOffcanvas">
+            <i class="fa-solid fa-palette text-purple"></i> Tema Değiştir
+        </div>
+    </div>
 
     <!-- Theme Switcher Offcanvas -->
     <div class="offcanvas offcanvas-end bg-dark text-light border-0 shadow-lg" tabindex="-1" id="themeOffcanvas" style="width: 320px; background: rgba(5, 7, 10, 0.98) !important; border-left: 1px solid rgba(255,255,255,0.05) !important;">
@@ -470,6 +609,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <div id="voiceAssistantTooltip" class="bg-dark text-white p-3 rounded-4 shadow-lg border border-warning" style="position: fixed; bottom: 105px; right: 30px; z-index: 1049; display:none; max-width: 300px;">
         <div class="d-flex align-items-center mb-2">
             <i class="fa-solid fa-robot text-warning me-2"></i> <strong class="text-warning">Goldie Asistan</strong>
@@ -477,465 +617,82 @@
         <p id="voiceSpeechText" class="mb-0 small text-light">Dinliyorum...</p>
     </div>
 
-    <!-- 🌌 ZEN (HYPER-FOCUS) MODU BUTONU -->
-    <a asp-controller="Zen" asp-action="Index" class="btn btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center" title="Zen Modunu Aç" style="position: fixed; bottom: 30px; left: 30px; width: 65px; height: 65px; z-index: 1050; border: 2px solid rgba(167, 139, 250, 0.4); transition: all 0.5s; background: #0d1117; text-decoration:none;">
-        <i class="fa-solid fa-yin-yang text-purple" style="font-size: 1.5rem; color:#a855f7;"></i>
-    </a>
 
 
 
-    <!-- 💚 SAĞLIK KORUMA SİSTEMİ (Wellness Guardian) -->
-    <div id="wellnessWidget" style="position:fixed; top:80px; right:20px; z-index:1048; display:none;">
-        <div class="bg-dark text-white p-3 rounded-4 shadow-lg border" style="border-color: rgba(52,211,153,0.3) !important; max-width:280px; animation: slideInRight 0.5s ease;">
-            <div class="d-flex align-items-center mb-2">
-                <span id="wellnessIcon" style="font-size:2rem; margin-right:10px;"></span>
-                <div>
-                    <strong id="wellnessTitle" class="d-block" style="color:#34d399;"></strong>
-                    <small class="text-muted">Sağlık Koruma Sistemi</small>
-                </div>
-                <button id="wellnessDismiss" class="btn btn-sm btn-outline-secondary ms-auto rounded-circle" style="width:28px;height:28px;padding:0;">✕</button>
+
+
+
+
+
+
+    <!-- 🎙️ JARVIS HUD SYSTEM (Heads-Up Display) -->
+    <div id="jarvisHUD">
+        <div class="jarvis-hud-backdrop"></div>
+        <div class="jarvis-hud-container">
+            <div class="jarvis-ring ring-outer"></div>
+            <div class="jarvis-ring ring-inner"></div>
+            <div class="jarvis-scanline"></div>
+            <div class="jarvis-core">
+                <div class="jarvis-core-pulse"></div>
+                <i class="fa-solid fa-microphone jarvis-mic-icon"></i>
+                <svg class="jarvis-volume-svg" viewBox="0 0 100 100">
+                    <circle class="jarvis-volume-meter" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                </svg>
             </div>
-            <p id="wellnessMessage" class="mb-2 small text-light" style="line-height:1.5;"></p>
-            <div class="progress" style="height:4px; background:rgba(255,255,255,0.1); border-radius:4px;">
-                <div id="wellnessProgress" class="progress-bar" style="background:linear-gradient(90deg,#34d399,#22d3ee); width:100%; transition: width 15s linear;"></div>
+            <div class="jarvis-status">
+                <div class="jarvis-status-text">JARVIS ACTIVE</div>
+                <div class="jarvis-status-sub">GOLDBRANCH NEURAL LINK</div>
             </div>
+            <div class="jarvis-transcript" id="jarvisTranscript">Dinleniyor...</div>
+            <div class="jarvis-error-popup" id="jarvisError">Komut Anlaşılamadı</div>
         </div>
     </div>
-
-    <!-- 🛑 WELLNESS LOCK OVERLAY (Son aşama: mola zorunluluğu) -->
-    <div id="wellnessLockOverlay" class="wellness-lock-overlay" style="display:none;">
-        <div class="wellness-lock-panel">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <span style="font-size:1.8rem;">🛡️</span>
-                    <div>
-                        <div class="fw-bold" style="color: var(--gb-gold); letter-spacing: 0.5px;">Zorunlu Mola</div>
-                        <div class="small text-muted">Sağlık Koruma Sistemi</div>
-                    </div>
-                </div>
-                <span class="badge rounded-pill bg-danger">LOCK</span>
-            </div>
-
-            <h3 class="text-light fw-bold mb-2" style="line-height:1.2;">Ekranı kilitledim çünkü mola vermedin.</h3>
-            <p class="text-secondary mb-4" style="line-height:1.6;">
-                30 dk göz molası + 60 dk postür uyarısını erteledin. Şimdi <b>kısa bir mola</b> verip geri gel.
-            </p>
-
-            <div class="d-flex flex-column gap-2 mb-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted small">Kalan zorunlu mola</span>
-                    <span id="wellnessLockCountdown" class="fw-bold text-warning" style="font-family:'JetBrains Mono', monospace;">00:00</span>
-                </div>
-                <div class="progress" style="height:8px;background:rgba(255,255,255,0.06);border-radius:999px;">
-                    <div id="wellnessLockBar" class="progress-bar" style="width:0%;background:linear-gradient(90deg,var(--gb-accent-emerald),var(--gb-accent-cyan));"></div>
-                </div>
-            </div>
-
-            <div class="d-flex flex-wrap gap-2">
-                <button id="wellnessLockDoneBtn" class="btn btn-success fw-bold rounded-pill px-4" disabled>
-                    <i class="fa-solid fa-check me-2"></i>Mola Bitti, Devam
-                </button>
-                <button id="wellnessLockSnoozeBtn" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="fa-regular fa-clock me-2"></i>+2 dk uzat
-                </button>
-            </div>
-
-            <div class="text-muted small mt-3" style="opacity:0.8;">
-                İpucu: 20-20-20 kuralı, omuzları gevşetme, su içme.
-            </div>
-        </div>
-    </div>
-
-    <!-- styles moved to site.css -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"> </script>
 
     <script>
-        // 💚 SAĞLIK KORUMA SİSTEMİ (WELLNESS GUARDIAN)
         document.addEventListener("DOMContentLoaded", () => {
-            // Bildirim izni iste (1 kez)
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
-            }
-
-            const W = {
-                EYE_INTERVAL_MS: 20 * 60 * 1000,       // 20 dk (20-20-20 kuralı)
-                POSTURE_INTERVAL_MS: 60 * 60 * 1000,   // 60 dk (Postür uyarısı)
-                LOCK_AFTER_MS: 120 * 60 * 1000,        // 120 dk (Zorunlu Mola - Uyku Kalkanı)
-                MIN_BREAK_MS: 5 * 60 * 1000,           // 5 dk zorunlu dinlenme süresi
-
-                STORAGE: {
-                    lastBreakAt: 'gb_wellness_last_break_at',
-                    lastEyeAt: 'gb_wellness_last_eye_at',
-                    lastPostureAt: 'gb_wellness_last_posture_at',
-                    lockUntil: 'gb_wellness_lock_until',
-                    lockActiveSince: 'gb_wellness_lock_active_since',
-                    welcomeKey: 'gb_wellness_welcome_'
-                }
-            };
-
-            const lockOverlay = document.getElementById('wellnessLockOverlay');
-            const lockCountdown = document.getElementById('wellnessLockCountdown');
-            const lockBar = document.getElementById('wellnessLockBar');
-            const lockDoneBtn = document.getElementById('wellnessLockDoneBtn');
-            const lockSnoozeBtn = document.getElementById('wellnessLockSnoozeBtn');
-
-            function now() { return Date.now(); }
-            function getNum(key, fallback = 0) {
-                const n = parseInt(localStorage.getItem(key) || '');
-                return Number.isFinite(n) ? n : fallback;
-            }
-            function setNum(key, value) { localStorage.setItem(key, String(value)); }
-
-            async function sendSystemNotification(tip) {
-                if (!('Notification' in window)) return;
-                if (!('serviceWorker' in navigator)) return;
-                if (Notification.permission !== 'granted') return;
-
-                const title = 'GoldBranch AI - ' + tip.title;
-                const body = (tip.message || '').replace(/<[^>]*>/g, '');
-                const payload = {
-                    type: 'WELLNESS_NOTIFICATION',
-                    title,
-                    body,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/9334/9334400.png',
-                    tag: 'wellness-' + Date.now()
-                };
-
-                // Prefer SW controller messaging (shows up in OS notification center)
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage(payload);
-                    return;
-                }
-
-                // Fallback: showNotification via ready registration
-                const registration = await navigator.serviceWorker.ready;
-                await registration.showNotification(title, { body, icon: payload.icon, tag: payload.tag });
-            }
-
-            function markBreakTaken() {
-                const t = now();
-                setNum(W.STORAGE.lastBreakAt, t);
-                setNum(W.STORAGE.lastEyeAt, t);
-                setNum(W.STORAGE.lastPostureAt, t);
-            }
-
-            function isLocked() {
-                const until = getNum(W.STORAGE.lockUntil, 0);
-                return until > now();
-            }
-
-            function showLockOverlay() {
-                if (!lockOverlay) return;
-                lockOverlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-
-            function hideLockOverlay() {
-                if (!lockOverlay) return;
-                lockOverlay.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-
-            function startLock(minMs) {
-                const startAt = now();
-                const until = startAt + Math.max(W.MIN_BREAK_MS, minMs);
-                setNum(W.STORAGE.lockActiveSince, startAt);
-                setNum(W.STORAGE.lockUntil, until);
-                showLockOverlay();
-            }
-
-            function updateLockUI() {
-                if (!lockOverlay || lockOverlay.style.display === 'none') return;
-                const startAt = getNum(W.STORAGE.lockActiveSince, now());
-                const until = getNum(W.STORAGE.lockUntil, now());
-                const total = Math.max(1, until - startAt);
-                const remaining = Math.max(0, until - now());
-                const done = remaining === 0;
-
-                const m = Math.floor(remaining / 60000).toString().padStart(2, '0');
-                const s = Math.floor((remaining % 60000) / 1000).toString().padStart(2, '0');
-                if (lockCountdown) lockCountdown.textContent = `${m}:${s}`;
-
-                const pct = Math.min(100, Math.max(0, ((total - remaining) / total) * 100));
-                if (lockBar) lockBar.style.width = pct + '%';
-
-                if (lockDoneBtn) lockDoneBtn.disabled = !done;
-            }
-
-            // Hierarchical wellness engine (tek döngü)
-            async function tick() {
-                // Lock devam ediyorsa sadece UI güncelle
-                if (isLocked()) {
-                    showLockOverlay();
-                    updateLockUI();
-                    return;
-                } else {
-                    hideLockOverlay();
-                }
-
-                const t = now();
-                const lastBreakAt = getNum(W.STORAGE.lastBreakAt, t);
-                const lastEyeAt = getNum(W.STORAGE.lastEyeAt, lastBreakAt);
-                const lastPostureAt = getNum(W.STORAGE.lastPostureAt, lastBreakAt);
-                const sinceBreak = t - lastBreakAt;
-
-                // En son aşama: 90 dk molasız → kilit yerine AUTO-ZEN
-                if (sinceBreak >= W.LOCK_AFTER_MS) {
-                    setNum(W.STORAGE.lastBreakAt, t);
-                    setNum(W.STORAGE.lastEyeAt, t);
-                    setNum(W.STORAGE.lastPostureAt, t);
-                    
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: '🛑 Sistemsel Kilit (Zen Modu)',
-                            html: 'Dikkatini toplayabilmen için <b>3 dakikalık</b> mola merkezine yönlendiriliyorsun.',
-                            background: '#0d1117',
-                            color: '#f0f6fc',
-                            confirmButtonText: 'Zen Modunu Başlat',
-                            confirmButtonColor: '#fbbf24',
-                            allowOutsideClick: false
-                        }).then(() => {
-                            window.location.href = '/Zen?duration=3';
-                        });
-                    }
-                    return;
-                }
-
-                // 60 dk: postür/kalk uyarısı (gösterilmediyse)
-                if (sinceBreak >= W.POSTURE_INTERVAL_MS && (t - lastPostureAt) >= W.POSTURE_INTERVAL_MS) {
-                    setNum(W.STORAGE.lastPostureAt, t);
-                    await sendSystemNotification({
-                        title: 'Kalk & Postür (Şimdi Zen Zamanı)',
-                        message: '1 saattir ekrandasın. 5 dakika dik durma ve meditasyon sırası.'
-                    });
-
-                    if (!document.hidden && typeof Swal !== 'undefined') {
-                        const res = await Swal.fire({
-                            icon: 'info',
-                            title: '🧍 1 Saat Oldu',
-                            html: 'Ayağa kalk, esne ve <b>5 dakikalık</b> mola paneline geç.',
-                            background: '#0d1117',
-                            color: '#f0f6fc',
-                            showCancelButton: true,
-                            confirmButtonText: 'Zen Moduna Geç',
-                            cancelButtonText: 'Sonra',
-                            confirmButtonColor: '#34d399',
-                            cancelButtonColor: '#64748b',
-                            timer: 15000,
-                            timerProgressBar: true
-                        });
-                        if (res.isConfirmed) {
-                            markBreakTaken();
-                            window.location.href = '/Zen?duration=5';
-                        }
-                    }
-                    return;
-                }
-
-                // 20 dk: göz kırpma/uzağa bakma (gösterilmediyse)
-                if (sinceBreak >= W.EYE_INTERVAL_MS && (t - lastEyeAt) >= W.EYE_INTERVAL_MS) {
-                    setNum(W.STORAGE.lastEyeAt, t);
-                    await sendSystemNotification({
-                        title: 'Gözlerini Dinlendir',
-                        message: '20 dakikadır ekrana bakıyorsun. 1 dakikalık hızlı şarj zamanı.'
-                    });
-
-                    if (!document.hidden && typeof Swal !== 'undefined') {
-                        const res = await Swal.fire({
-                            icon: 'warning',
-                            title: '👁️ 20 Dakika Oldu',
-                            html: '<b>20-20-20</b> kuralı: 1 Dakikalık Çok Kısa Zen.',
-                            background: '#0d1117',
-                            color: '#f0f6fc',
-                            showCancelButton: true,
-                            confirmButtonText: 'Odaklanmaya Ara Ver',
-                            cancelButtonText: 'Sonra',
-                            confirmButtonColor: '#38bdf8',
-                            cancelButtonColor: '#64748b'
-                        });
-                        if (res.isConfirmed) {
-                            window.location.href = '/Zen?duration=1';
-                        } else {
-                            setNum(W.STORAGE.lastEyeAt, now());
-                        }
-                    }
-                }
-            }
-
-            // Lock overlay butonları
-            if (lockDoneBtn) {
-                lockDoneBtn.addEventListener('click', () => {
-                    if (isLocked()) return;
-                    markBreakTaken();
-                    localStorage.removeItem(W.STORAGE.lockUntil);
-                    localStorage.removeItem(W.STORAGE.lockActiveSince);
-                    hideLockOverlay();
-                });
-            }
-            if (lockSnoozeBtn) {
-                lockSnoozeBtn.addEventListener('click', () => {
-                    const until = getNum(W.STORAGE.lockUntil, now());
-                    setNum(W.STORAGE.lockUntil, until + (2 * 60 * 1000));
-                    updateLockUI();
-                });
-            }
-
-            // İlk kurulum veya eski session (4 saati geçmişse) sıfırla ki girişte hemen uyarmasın
-            const lastBrk = getNum(W.STORAGE.lastBreakAt, 0);
-            if (!lastBrk || (now() - lastBrk > 4 * 60 * 60 * 1000)) {
-                markBreakTaken();
-                // Kilitli kalmışsa kilidi de kaldır
-                if (isLocked()) {
-                    localStorage.removeItem(W.STORAGE.lockUntil);
-                    localStorage.removeItem(W.STORAGE.lockActiveSince);
-                }
-            }
-
-            // Sayfa yenilense bile kilit sürsün
-            if (isLocked()) showLockOverlay();
-            updateLockUI();
-
-            // Tek interval: 1 dakikada bir kontrol + lock countdown için 1sn UI
-            // setInterval(tick, 10000); // DEMO MODU TEST İÇİN            // DEVREYE ALINAN YENİ WELLNESS AUTOPILOT
-            setInterval(tick, 1000); // Otomatik Zen Modu denetleyicisi
-
-            // İlk 5 sn sonra hoşgeldin bildirimi
-            const todayKey = "gb_wellness_welcome_" + new Date().toISOString().slice(0, 10);
-            if (!localStorage.getItem(todayKey)) {
-                localStorage.setItem(todayKey, "1");
-                setTimeout(() => {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            toast: true,
-                            position: 'bottom-start',
-                            icon: 'success',
-                            title: '🔇 Sağlık Sistemi Geçici Kapatıldı',
-                            text: 'Test sürecini rahatça yapabilmen için mola uyarıları donduruldu.',
-                            showConfirmButton: false,
-                            timer: 3500,
-                            background: '#0d1117',
-                            color: '#34d399'
-                        });
-                    }
-                }, 5000);
-            }
-        });
-    </script>
-
-
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll('.theme-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const theme = btn.getAttribute('data-theme');
-                    document.documentElement.setAttribute('data-theme', theme);
-                    localStorage.setItem('gb-theme', theme);
-                });
-            });
-        });
-
-        (function() {
-            const canvas = document.getElementById('particleCanvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let w, h, particles = [];
-
-            function resize() {
-                w = canvas.width = window.innerWidth;
-                h = canvas.height = window.innerHeight;
-            }
-            resize();
-            window.addEventListener('resize', resize);
+            // 🗣️ DİNAMİK SESLİ ASİSTAN (Hoşgeldin Karşılaması)
+            const userName = "@currentUserFullName";
+            const greetingKey = "gb_wow_welcome_" + new Date().toISOString().slice(0, 10);
             
-            let mouse = { x: null, y: null, radius: 150 };
-            window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
-            window.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
+            if (!localStorage.getItem(greetingKey)) {
+                localStorage.setItem(greetingKey, "1");
+                setTimeout(() => {
+                    const hour = new Date().getHours();
+                    let msg = "";
+                    let isNight = false;
 
-
-            class Particle {
-                constructor() { this.reset(); }
-                reset() {
-                    this.x = Math.random() * w;
-                    this.y = Math.random() * h;
-                    this.size = Math.random() * 2 + 0.5;
-                    this.speedX = (Math.random() - 0.5) * 0.3;
-                    this.speedY = (Math.random() - 0.5) * 0.3;
-                    this.opacity = Math.random() * 0.5 + 0.1;
-                    this.color = Math.random() > 0.7 ? '251,191,36' : (Math.random() > 0.5 ? '34,211,238' : '167,139,250');
-                }
-                update() {
-                    if (mouse.x != null && mouse.y != null) {
-                        let dx = mouse.x - this.x;
-                        let dy = mouse.y - this.y;
-                        let dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < mouse.radius) {
-                            const forceDirX = dx / dist;
-                            const forceDirY = dy / dist;
-                            const force = (mouse.radius - dist) / mouse.radius;
-                            this.x -= forceDirX * force * 5;
-                            this.y -= forceDirY * force * 5;
-                        }
+                    if (hour >= 5 && hour < 12) msg = `Günaydın ${userName}, GoldBranch'e hoş geldin, iyi çalışmalar dilerim.`;
+                    else if (hour >= 12 && hour < 18) msg = `İyi öğlenler ${userName}, GoldBranch'e hoş geldin, iyi çalışmalar dilerim.`;
+                    else if (hour >= 18 && hour < 24) msg = `İyi akşamlar ${userName}, GoldBranch'e hoş geldin, iyi çalışmalar dilerim.`;
+                    else {
+                        msg = `İyi mesailer ${userName}, Gece Muhafızı senin için hazır.`;
+                        isNight = true;
                     }
-                    this.x += this.speedX;
-                    this.y += this.speedY;
-                    if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) this.reset();
-                }
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(' + this.color + ',' + this.opacity + ')';
-                    ctx.fill();
-                }
+
+                    if (window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance(msg);
+                        utterance.lang = 'tr-TR';
+                        window.speechSynthesis.speak(utterance);
+                    }
+
+                    Swal.fire({
+                        toast: true, position: 'bottom-start', 
+                        icon: 'success', iconColor: '#fbbf24',
+                        title: isNight ? '🦉 Gece Muhafızı Aktif' : '☀️ GoldBranch Asistanı',
+                        text: msg,
+                        showConfirmButton: false, timer: 10000, 
+                        background: '#0d1117', color: '#fbbf24'
+                    });
+                }, 3000);
             }
-
-            for (let i = 0; i < 60; i++) particles.push(new Particle());
-
-            function animate() {
-                ctx.clearRect(0, 0, w, h);
-                particles.forEach(p => { p.update(); p.draw(); });
-
-                // Draw connections
-                for (let i = 0; i < particles.length; i++) {
-                    if (mouse.x != null && mouse.y != null) {
-                        const mdx = particles[i].x - mouse.x;
-                        const mdy = particles[i].y - mouse.y;
-                        const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
-                        if (mDist < 180) {
-                            ctx.beginPath();
-                            ctx.strokeStyle = 'rgba(34,211,238,' + (0.2 * (1 - mDist / 180)) + ')';
-                            ctx.lineWidth = 1.2;
-                            ctx.moveTo(particles[i].x, particles[i].y);
-                            ctx.lineTo(mouse.x, mouse.y);
-                            ctx.stroke();
-                        }
-                    }
-                    for (let j = i + 1; j < particles.length; j++) {
-                        const dx = particles[i].x - particles[j].x;
-                        const dy = particles[i].y - particles[j].y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 120) {
-                            ctx.beginPath();
-                            ctx.strokeStyle = 'rgba(251,191,36,' + (0.06 * (1 - dist / 120)) + ')';
-                            ctx.lineWidth = 0.5;
-                            ctx.moveTo(particles[i].x, particles[i].y);
-                            ctx.lineTo(particles[j].x, particles[j].y);
-                            ctx.stroke();
-                        }
-                    }
-                }
-                requestAnimationFrame(animate);
-            }
-            animate();
-        })();
+        });
     </script>
+
     <script>
         // Service Worker & Notifications API
         if ('serviceWorker' in navigator) {
@@ -1164,8 +921,767 @@
         }
     </script>
 
+    <!-- ================================================================ -->
+    <!-- 🛸 SUPREME JARVIS: THE INTELLIGENT GUARDIAN (PHASE 3 ULTIMATE) -->
+    <!-- ================================================================ -->
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+        // ─── 🔊 CYBERNETIC AUDIO ENGINE (WebAudio API) ───
+        const JarvisAudio = {
+            ctx: null,
+            getCtx() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                return this.ctx;
+            },
+            playTone(freq, duration, type = 'sine', vol = 0.15) {
+                try {
+                    const c = this.getCtx();
+                    const o = c.createOscillator();
+                    const g = c.createGain();
+                    o.type = type;
+                    o.frequency.setValueAtTime(freq, c.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(freq * 1.5, c.currentTime + duration * 0.3);
+                    o.frequency.exponentialRampToValueAtTime(freq * 0.8, c.currentTime + duration);
+                    g.gain.setValueAtTime(vol, c.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
+                    o.connect(g); g.connect(c.destination);
+                    o.start(c.currentTime); o.stop(c.currentTime + duration);
+                } catch(e) {}
+            },
+            playActivation() {
+                this.playTone(880, 0.15, 'sine', 0.12);
+                setTimeout(() => this.playTone(1320, 0.15, 'sine', 0.1), 100);
+                setTimeout(() => this.playTone(1760, 0.2, 'triangle', 0.08), 200);
+            },
+            playDeactivation() {
+                this.playTone(1200, 0.1, 'sine', 0.08);
+                setTimeout(() => this.playTone(800, 0.15, 'sine', 0.06), 80);
+            },
+            playSuccess() {
+                this.playTone(523, 0.12, 'triangle', 0.1);
+                setTimeout(() => this.playTone(659, 0.12, 'triangle', 0.1), 120);
+                setTimeout(() => this.playTone(784, 0.18, 'triangle', 0.08), 240);
+            },
+            playError() {
+                this.playTone(200, 0.3, 'sawtooth', 0.06);
+            },
+            playAchievement() {
+                [523, 659, 784, 1047].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.2, 'triangle', 0.1), i * 150);
+                });
+            }
+        };
+
+        // ─── 🎖️ BADGE CHECK ───
+        const earnedBadge = '@TempData["EarnedBadge"]';
+        const earnedIcon = '@TempData["EarnedBadgeIcon"]';
+        if (earnedBadge && earnedBadge !== '') {
+            setTimeout(() => {
+                triggerAchievementSplash(earnedBadge, "Görevi başarıyla tamamlayarak bu rozeti kazandın!", earnedIcon || "🏆");
+            }, 2000);
+        }
+
+        // ─── 🛸 HOLOGRAPHIC HUD ───
+        function createJarvisHUD() {
+            if (document.getElementById('jarvisHUD')) return;
+            const hud = document.createElement('div');
+            hud.id = 'jarvisHUD';
+            hud.innerHTML = `
+                <div class="jarvis-hud-backdrop"></div>
+                <div class="jarvis-hud-container">
+                    <div class="jarvis-ring ring-outer"></div>
+                    <div class="jarvis-ring ring-inner"></div>
+                    <div class="jarvis-core">
+                        <div class="jarvis-core-pulse"></div>
+                        <i class="fa-solid fa-microphone jarvis-mic-icon"></i>
+                        <svg class="jarvis-volume-svg" viewBox="0 0 100 100">
+                            <circle class="jarvis-volume-meter" cx="50" cy="50" r="48"></circle>
+                        </svg>
+                    </div>
+                    <div class="jarvis-scanline"></div>
+                    <div class="jarvis-status">
+                        <div class="jarvis-status-text">SİSTEM AKTİF</div>
+                        <div class="jarvis-status-sub">Dinliyorum...</div>
+                    </div>
+                    <div class="jarvis-transcript" id="jarvisTranscript"></div>
+                    <div class="jarvis-error-popup" id="jarvisErrorPopup"></div>
+                </div>
+            `;
+            document.body.appendChild(hud);
+        }
+
+        function showJarvisHUD(active, transcript = '') {
+            let hud = document.getElementById('jarvisHUD');
+            if (!hud) { createJarvisHUD(); hud = document.getElementById('jarvisHUD'); }
+            
+            if (active) {
+                hud.classList.add('active');
+                hud.style.display = 'flex';
+                const statusText = hud.querySelector('.jarvis-status-text');
+                const statusSub = hud.querySelector('.jarvis-status-sub');
+                statusText.textContent = 'SİSTEM AKTİF';
+                statusSub.textContent = 'Dinliyorum...';
+            } else {
+                hud.classList.remove('active');
+                setTimeout(() => { if (!hud.classList.contains('active')) hud.style.display = 'none'; }, 600);
+            }
+
+            if (transcript) {
+                const tEl = document.getElementById('jarvisTranscript');
+                if (tEl) tEl.textContent = `"${transcript}"`;
+            }
+        }
+
+        function showJarvisResponse(text) {
+            const hud = document.getElementById('jarvisHUD');
+            if (!hud) return;
+            const statusText = hud.querySelector('.jarvis-status-text');
+            const statusSub = hud.querySelector('.jarvis-status-sub');
+            if (statusText) statusText.textContent = 'İŞLENİYOR';
+            if (statusSub) statusSub.textContent = text.substring(0, 60) + (text.length > 60 ? '...' : '');
+        }
+
+        // ─── 🗣️ SUPREME JARVIS ENGINE ───
+        const Jarvis = {
+            recognition: null,
+            isListening: false,
+            audioStream: null,
+            analyser: null,
+            dataArray: null,
+            animationFrame: null,
+            
+            async init() {
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SR) { console.warn("Jarvis: Speech Recognition not supported."); return; }
+                
+                this.recognition = new SR();
+                this.recognition.continuous = false;
+                this.recognition.interimResults = false;
+                this.recognition.lang = '@(currentLang == "tr" ? "tr-TR" : "en-US")';
+                
+                this.recognition.onstart = () => { 
+                    this.isListening = true;
+                    JarvisAudio.playActivation();
+                    showJarvisHUD(true);
+                    this.startVisualizer();
+                };
+                
+                this.recognition.onend = () => { 
+                    this.isListening = false;
+                    this.stopVisualizer();
+                    JarvisAudio.playDeactivation();
+                    setTimeout(() => showJarvisHUD(false), 2500);
+                };
+                
+                this.recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    showJarvisHUD(true, transcript);
+                    processSupremeCommand(transcript.toLowerCase(), transcript);
+                };
+
+                this.recognition.onerror = (event) => {
+                    console.error("Jarvis Error:", event.error);
+                    JarvisAudio.playError();
+                    this.handleSpeechError(event.error);
+                };
+            },
+
+            handleSpeechError(err) {
+                const errMap = {
+                    'no-speech': '@(currentLang == "tr" ? "Ses algılanmadı. Lütfen tekrar deneyin." : "No speech detected. Please try again.")',
+                    'audio-capture': '@(currentLang == "tr" ? "Mikrofon bulunamadı." : "Microphone not found.")',
+                    'not-allowed': '@(currentLang == "tr" ? "Mikrofon izni reddedildi!" : "Microphone permission denied!")',
+                    'network': '@(currentLang == "tr" ? "Ağ hatası: Ses tanıma servisine ulaşılamıyor." : "Network error: Cannot reach speech service.")'
+                };
+                const msg = errMap[err] || `Hata: ${err}`;
+                const popup = document.getElementById('jarvisErrorPopup');
+                if (popup) {
+                    popup.textContent = msg;
+                    popup.classList.add('show');
+                    setTimeout(() => popup.classList.remove('show'), 4000);
+                }
+                const sub = document.getElementById('jarvisHUD')?.querySelector('.jarvis-status-sub');
+                if (sub) sub.textContent = msg;
+            },
+
+            async startVisualizer() {
+                try {
+                    if (!this.audioStream) {
+                        this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    }
+                    const ctx = JarvisAudio.getCtx();
+                    const source = ctx.createMediaStreamSource(this.audioStream);
+                    this.analyser = ctx.createAnalyser();
+                    this.analyser.fftSize = 64;
+                    source.connect(this.analyser);
+                    
+                    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                    const meter = document.querySelector('.jarvis-volume-meter');
+                    
+                    const draw = () => {
+                        if (!this.isListening) return;
+                        this.animationFrame = requestAnimationFrame(draw);
+                        this.analyser.getByteFrequencyData(this.dataArray);
+                        
+                        let sum = 0;
+                        for(let i=0; i<this.dataArray.length; i++) sum += this.dataArray[i];
+                        let average = sum / this.dataArray.length;
+                        let volume = Math.min(100, average * 1.5);
+                        
+                        if (meter) {
+                           const circumference = 2 * Math.PI * 48;
+                           const offset = circumference - (volume / 100) * circumference;
+                           meter.style.strokeDasharray = `${circumference} ${circumference}`;
+                           meter.style.strokeDashoffset = offset;
+                           const core = document.querySelector('.jarvis-core-pulse');
+                           if (core) core.style.transform = `scale(${1 + (volume/200)})`;
+                        }
+                    };
+                    draw();
+                } catch(e) { console.error("Visualizer error:", e); }
+            },
+
+            stopVisualizer() {
+                if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+                const meter = document.querySelector('.jarvis-volume-meter');
+                if (meter) meter.style.strokeDashoffset = 2 * Math.PI * 48;
+            },
+            
+            toggle() {
+                if (!this.recognition) { this.init().then(() => this.toggle()); return; }
+                if (this.isListening) {
+                    this.recognition.stop();
+                } else {
+                    try { this.recognition.start(); } catch(e) { console.error("Jarvis start:", e); }
+                }
+            }
+        };
+
+        // ─── 🧠 HYBRID COMMAND PROCESSOR ───
+        async function processSupremeCommand(cmd, rawTranscript) {
+            console.log("Jarvis Duydu:", rawTranscript);
+            const statusSub = document.getElementById('jarvisHUD')?.querySelector('.jarvis-status-sub');
+
+            // LOCAL FAST PATH (instant navigation)
+            if (cmd.includes("görev") && (cmd.includes("oku") || cmd.includes("listele") || cmd.includes("neler") || cmd.includes("panel"))) {
+                JarvisAudio.playSuccess();
+                if (statusSub) statusSub.textContent = "Görev Paneli Açılıyor...";
+                showJarvisResponse("Görev paneline yönlendiriyorum...");
+                speak("Görev panelini açıyorum. İşte güncel hedeflerin.");
+                setTimeout(() => window.location.href = "/Task/Index", 2500);
+                return;
+            }
+            if (cmd.includes("dashboard") || cmd.includes("rapor") || cmd.includes("analiz") || cmd.includes("performans")) {
+                JarvisAudio.playSuccess();
+                if (statusSub) statusSub.textContent = "Dashboard Hazırlanıyor...";
+                showJarvisResponse("Dashboard açılıyor...");
+                speak("Performans panelini açıyorum.");
+                setTimeout(() => window.location.href = "/Task/Dashboard", 2500);
+                return;
+            }
+            if (cmd.includes("sohbet") || cmd.includes("chat") || cmd.includes("mesaj") || cmd.includes("ekip")) {
+                JarvisAudio.playSuccess();
+                if (statusSub) statusSub.textContent = "Sohbet Paneli Açılıyor...";
+                showJarvisResponse("Sohbet panelini açıyorum...");
+                speak("Takım sohbetine yönlendiriyorum.");
+                setTimeout(() => window.location.href = "/Chat", 2500);
+                return;
+            }
+            if (cmd.includes("selam") || cmd.includes("merhaba") || cmd.includes("nasılsın")) {
+                JarvisAudio.playSuccess();
+                speak("Merhaba efendim. Tüm sistemler hazır ve emrinizdedir. Bugün ne yapalım?");
+                showJarvisResponse("Tüm sistemler hazır.");
+                return;
+            }
+            if (cmd.includes("teşekkür") || cmd.includes("sağ ol")) {
+                JarvisAudio.playSuccess();
+                speak("Her zaman emirlerinize amadeyim. İyi çalışmalar.");
+                showJarvisResponse("Hizmetinizdeyim.");
+                return;
+            }
+
+            // AI DEEP PATH (complex commands → backend)
+            if (cmd.includes("görev") && (cmd.includes("oluştur") || cmd.includes("ata") || cmd.includes("yaz") || cmd.includes("ekle"))) {
+                JarvisAudio.playSuccess();
+                if (statusSub) statusSub.textContent = "AI Görev Analizi Yapıyor...";
+                showJarvisResponse("AI işliyor: " + rawTranscript.substring(0,40) + "...");
+                speak("Komutu işliyorum. Yapay zeka görevi oluşturuyor.");
+                try {
+                    const resp = await fetch('/Ai/ProcessVoiceCommand', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ command: rawTranscript })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        JarvisAudio.playAchievement();
+                        speak(`Görev başarıyla oluşturuldu: ${data.message}`);
+                        showJarvisResponse("✅ " + data.message);
+                    } else {
+                        JarvisAudio.playError();
+                        speak("Üzgünüm, görev oluşturulamadı. " + (data.message || ""));
+                        showJarvisResponse("❌ Başarısız");
+                    }
+                } catch(e) {
+                    JarvisAudio.playError();
+                    speak("Bağlantı hatası oluştu. Lütfen tekrar deneyin.");
+                }
+                return;
+            }
+
+            // FALLBACK
+            JarvisAudio.playSuccess();
+            speak("Komutu anladım ama tam eşleşme bulamadım. Görevler, mola, yılan oyunu veya dashboard demeyi deneyin.");
+            showJarvisResponse("Komut tanınmadı");
+        }
+
+        // Keyboard Shortcut: Ctrl + Space
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.code === 'Space') {
+                e.preventDefault();
+                Jarvis.toggle();
+            }
+        });
+
+
+        // ─── 🌞 PROACTIVE MORNING BRIEFING ───
+        (function morningBriefing() {
+            const today = new Date().toDateString();
+            const briefKey = 'gb_jarvis_briefing_' + today;
+            if (localStorage.getItem(briefKey)) return;
+            localStorage.setItem(briefKey, '1');
+
+            setTimeout(() => {
+                const userName = '@(currentUserFullName ?? "Kullanıcı")';
+                const h = new Date().getHours();
+                let greeting = '';
+                if (h >= 5 && h < 12) greeting = `Günaydın ${userName}.`;
+                else if (h >= 12 && h < 18) greeting = `İyi öğlenler ${userName}.`;
+                else if (h >= 18 && h < 24) greeting = `İyi akşamlar ${userName}.`;
+                else greeting = `Gece nöbetine hoş geldin ${userName}.`;
+
+                speak(`${greeting} Tüm sistemler hazır ve emrinizdedir. Bugün harika işler başaracağız. Jarvis, her zaman hizmetinizde.`);
+            }, 4000);
+        })();
+
+        // ─── 🎊 SUPREME ACHIEVEMENT CELEBRATION ───
+        window.triggerAchievementSplash = function(title, sub, icon = "🏆") {
+            JarvisAudio.playAchievement();
+
+            const splash = document.createElement('div');
+            splash.className = 'achievement-splash-overlay';
+            splash.innerHTML = `
+                <div class="achievement-card">
+                    <div class="achievement-glow"></div>
+                    <div class="achievement-icon-wrapper">
+                        <span class="achievement-icon-main">${icon}</span>
+                    </div>
+                    <h2 class="achievement-title">${title}</h2>
+                    <p class="achievement-sub">${sub}</p>
+                    <div class="achievement-xp-badge">+100 XP KAZANILDI</div>
+                    <button class="achievement-dismiss" onclick="this.closest('.achievement-splash-overlay').remove()">Devam Et →</button>
+                </div>
+            `;
+            document.body.appendChild(splash);
+            
+            if (typeof confetti !== 'undefined') {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#fff', '#22d3ee'] });
+                setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { y: 0.4 }, colors: ['#fbbf24', '#a78bfa'] }), 500);
+                setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.7 }, colors: ['#34d399', '#fbbf24'] }), 1000);
+            }
+
+            speak(`Tebrikler! ${title} başarısını kilitledin. Harika gidiyorsun.`);
+
+            setTimeout(() => {
+                splash.classList.add('fade-out');
+                setTimeout(() => splash.remove(), 1000);
+            }, 8000);
+        };
+
+        // ─── 🌌 ATMOSPHERIC UI (TIME-BASED PARTICLES) ───
+        const pCanvas = document.getElementById('particleCanvas');
+        if (pCanvas) {
+            const pCtx = pCanvas.getContext('2d');
+            const atmo = (() => {
+                const h = new Date().getHours();
+                if (h >= 5 && h < 12) return { c1: "#fbbf24", c2: "#f59e0b", op: 0.3, sp: 0.4, name: "dawn" };
+                if (h >= 12 && h < 18) return { c1: "#22d3ee", c2: "#06b6d4", op: 0.25, sp: 0.6, name: "day" };
+                if (h >= 18 && h < 24) return { c1: "#818cf8", c2: "#6366f1", op: 0.25, sp: 0.35, name: "twilight" };
+                return { c1: "#475569", c2: "#334155", op: 0.15, sp: 0.2, name: "night" };
+            })();
+
+            let pts = [];
+            function pInit() {
+                pCanvas.width = window.innerWidth;
+                pCanvas.height = window.innerHeight;
+                pts = [];
+                for(let i = 0; i < 70; i++) {
+                    pts.push({
+                        x: Math.random() * pCanvas.width,
+                        y: Math.random() * pCanvas.height,
+                        r: Math.random() * 2 + 0.5,
+                        dx: (Math.random() - 0.5) * atmo.sp,
+                        dy: (Math.random() - 0.5) * atmo.sp,
+                        a: Math.random() * atmo.op + 0.05,
+                        color: Math.random() > 0.5 ? atmo.c1 : atmo.c2
+                    });
+                }
+            }
+            function pLoop() {
+                pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+                pts.forEach(p => {
+                    p.x += p.dx; p.y += p.dy;
+                    if (p.x < 0 || p.x > pCanvas.width) p.dx *= -1;
+                    if (p.y < 0 || p.y > pCanvas.height) p.dy *= -1;
+                    pCtx.beginPath();
+                    pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    const hex = p.color;
+                    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+                    pCtx.fillStyle = `rgba(${r},${g},${b},${p.a})`;
+                    pCtx.fill();
+                });
+
+                // Draw connections between nearby particles
+                for (let i = 0; i < pts.length; i++) {
+                    for (let j = i + 1; j < pts.length; j++) {
+                        const dx = pts[i].x - pts[j].x;
+                        const dy = pts[i].y - pts[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 120) {
+                            pCtx.beginPath();
+                            pCtx.strokeStyle = `rgba(251,191,36,${0.06 * (1 - dist/120)})`;
+                            pCtx.lineWidth = 0.5;
+                            pCtx.moveTo(pts[i].x, pts[i].y);
+                            pCtx.lineTo(pts[j].x, pts[j].y);
+                            pCtx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(pLoop);
+            }
+            pInit(); pLoop();
+            window.addEventListener('resize', pInit);
+        }
+    });
+
+
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    @await RenderSectionAsync("Scripts", required: false)
+    <!-- 🎙️ HAFTA 6: GLOBAL VOICE COMMAND (Web Speech API) & HAFTA 8: SERVICE WORKER -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Jarvis Initialization
+            Jarvis.init();
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('Enterprise Service Worker registered.');
+                }).catch(err => console.log('SW Error:', err));
+            }
+            // Request Notification Permission on first load
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+
+            // Global Voice Command Setup
+            const voiceBtn = document.getElementById('globalVoiceCmdBtn');
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (voiceBtn && SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'tr-TR';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                voiceBtn.addEventListener('click', () => {
+                    recognition.start();
+                    voiceBtn.innerHTML = '<i class="fa-solid fa-microphone-lines fa-fade"></i>';
+                    voiceBtn.classList.replace('text-warning', 'text-danger');
+                    
+                    Swal.fire({
+                        title: 'Dinleniyor...',
+                        text: "Lütfen komutunuzu söyleyin (Örn: 'Görev ekle yeni modül tasarımı')",
+                        icon: 'info',
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
+                    });
+                });
+
+                recognition.onresult = (e) => {
+                    const text = e.results[0][0].transcript;
+                    Swal.fire({
+                        title: 'Sesli Komut Algılandı',
+                        text: `"${text}"`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Hemen Ekle',
+                        cancelButtonText: 'İptal',
+                        background: '#0d1117', color: '#fbbf24'
+                    }).then((result) => {
+                        if(result.isConfirmed) {
+                            window.location.href = `/Task/Create?title=${encodeURIComponent(text)}`;
+                        }
+                    });
+                };
+
+                recognition.onend = () => {
+                    voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                    voiceBtn.classList.replace('text-danger', 'text-warning');
+                };
+                recognition.onerror = () => {
+                    voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                    voiceBtn.classList.replace('text-danger', 'text-warning');
+                    Swal.fire({toast: true, position: 'top-end', icon: 'error', title: 'Mikrofon algılanamadı veya kapatıldı.'});
+                };
+            } else if (voiceBtn) {
+                voiceBtn.style.display = 'none'; // Tarayıcı desteklemiyorsa gizle
+            }
+        });
+    </script>
+
+    <!-- 🎰 LIVE ACHIEVEMENT TICKER ENGINE -->
+    <script>
+        (function() {
+            const tickerEl = document.getElementById('gbTickerContent');
+            if (!tickerEl) return;
+
+            async function loadTickerFeed() {
+                try {
+                    const res = await fetch('/Zen/LiveFeed');
+                    if (!res.ok) return;
+                    const items = await res.json();
+                    if (!items || items.length === 0) return;
+
+                    // Shuffle items for variety
+                    for (let i = items.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [items[i], items[j]] = [items[j], items[i]];
+                    }
+
+                    // Build ticker HTML
+                    let html = '';
+                    items.forEach(item => {
+                        const iconColor = item.type === 'badge' ? '#fbbf24' : 
+                                         item.type === 'highscore' ? '#22d3ee' :
+                                         item.type === 'discount' ? '#10b981' : '#a78bfa';
+                        html += `<span class="gb-ticker-item">
+                            <span class="gb-ticker-icon">${item.icon}</span>
+                            <span style="color:${iconColor}">${item.text}</span>
+                        </span>`;
+                    });
+
+                    // Duplicate content for seamless infinite loop
+                    tickerEl.innerHTML = html + html;
+
+                    // Calculate scroll duration based on content width
+                    requestAnimationFrame(() => {
+                        const contentWidth = tickerEl.scrollWidth / 2;
+                        const speed = 60; // pixels per second
+                        const duration = contentWidth / speed;
+                        tickerEl.style.setProperty('--ticker-duration', duration + 's');
+                    });
+
+                } catch(e) {
+                    console.log('Ticker feed error:', e);
+                }
+            }
+
+            // Load immediately and refresh every 2 minutes
+            loadTickerFeed();
+            setInterval(loadTickerFeed, 120000);
+        })();
+    </script>
+
+    <!-- 🔊 NEURAL SOUNDSCAPE (Ambient Focus) -->
+    <div id="neuralSoundscape" class="gb-soundscape-mini">
+        <div class="d-flex align-items-center gap-2">
+            <button id="btnSoundToggle" class="btn btn-link text-warning p-0" title="Neural Soundscape">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <select id="soundSelect" class="form-select form-select-sm bg-transparent border-0 text-muted smallest p-0" style="width: 80px;">
+                <option value="none">Sessiz</option>
+                <option value="rain">Yağmur</option>
+                <option value="forest">Orman</option>
+                <option value="space">Derin Uzay</option>
+                <option value="cafe">Cafe</option>
+            </select>
+        </div>
+        <audio id="ambientAudio" loop></audio>
+    </div>
+
+    <style>
+        /* 🛡️ GHOST MODE STYLES */
+        body.ghost-mode-active .gb-task-title,
+        body.ghost-mode-active .gb-user-name,
+        body.ghost-mode-active .gb-email,
+        body.ghost-mode-active .gb-price,
+        body.ghost-mode-active .cert-user-name {
+            filter: blur(5px);
+            user-select: none;
+            pointer-events: none;
+            transition: filter 0.3s ease;
+        }
+        body.ghost-mode-active #btnGhostMode {
+            background: #ef4444 !important;
+            color: white !important;
+            opacity: 1 !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+
+        .gb-soundscape-mini { 
+            position: fixed; left: 80px; bottom: 20px; z-index: 9999; 
+            background: rgba(13, 17, 23, 0.8); backdrop-filter: blur(10px);
+            padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(251, 191, 36, 0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* 🎙️ JARVIS 2.0 HOLOGRAPHIC OVERLAY */
+        #jarvisHUD.premium {
+            background: radial-gradient(circle at center, rgba(251, 191, 36, 0.05) 0%, rgba(13, 17, 23, 0.98) 100%);
+        }
+        .holo-ring {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 300px; border: 2px solid var(--gb-gold); border-radius: 50%;
+            box-shadow: 0 0 50px var(--gb-gold-glow), inset 0 0 50px var(--gb-gold-glow);
+            animation: holoSpin 10s linear infinite;
+        }
+        .holo-ring::after {
+            content: ''; position: absolute; inset: -15px; border: 1px dashed var(--gb-gold);
+            border-radius: 50%; animation: holoSpinRev 15s linear infinite; opacity: 0.5;
+        }
+        @@keyframes holoSpin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @@keyframes holoSpinRev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        
+        .voice-wave-premium {
+            display: flex; align-items: center; gap: 5px; height: 60px;
+        }
+        .v-bar {
+            width: 4px; height: 10px; background: var(--gb-gold); border-radius: 2px;
+            animation: vWave 1s ease-in-out infinite;
+        }
+        @@keyframes vWave { 0%, 100% { height: 10px; opacity: 0.5; } 50% { height: 50px; opacity: 1; } }
+    </style>
+
+    <script>
+        // --- GHOST MODE ---
+        document.getElementById('btnGhostMode').onclick = () => {
+            document.body.classList.toggle('ghost-mode-active');
+            const isActive = document.body.classList.contains('ghost-mode-active');
+            localStorage.setItem('ghost-mode', isActive);
+        };
+        if (localStorage.getItem('ghost-mode') === 'true') document.body.classList.add('ghost-mode-active');
+
+        // --- AI DAILY BRIEFING ---
+        document.getElementById('btnDailyBriefing').onclick = async () => {
+            const btn = document.getElementById('btnDailyBriefing');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            // Generate Summary Text (In a real app, this would fetch from server)
+            const userName = "@currentUserFullName";
+            const summary = `Merhaba ${userName}, GoldBranch AI günlük brifingine hoş geldin. Bugün senin için seçtiğim 3 kritik önceliğin var. Birincisi, bekleyen onay süreçlerini tamamlamak. İkincisi, veritabanı optimizasyonu üzerine çalışmak. Ve üçüncüsü, haftalık raporu hazırlamak. Şu anki nöral yükün %72 seviyesinde, öğleden sonra kısa bir mola vermeni öneririm. İyi çalışmalar!`;
+
+            const utterance = new SpeechSynthesisUtterance(summary);
+            utterance.lang = 'tr-TR';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+
+            window.speechSynthesis.speak(utterance);
+
+            utterance.onend = () => {
+                btn.innerHTML = '<i class="fa-solid fa-microphone-lines"></i> <span class="d-none d-md-inline">GÜNE BAŞLA</span>';
+                btn.disabled = false;
+            };
+        };
+
+        // --- SOUNDSCAPE LOGIC ---
+        const ambientAudio = document.getElementById('ambientAudio');
+        const soundSelect = document.getElementById('soundSelect');
+        const soundUrls = {
+            rain: 'https://www.soundjay.com/nature/rain-07.mp3',
+            forest: 'https://www.soundjay.com/nature/forest-wind-1.mp3',
+            space: 'https://www.soundjay.com/misc/sounds/space-ambient-1.mp3',
+            cafe: 'https://www.soundjay.com/misc/sounds/coffee-shop-1.mp3'
+        };
+
+        soundSelect.onchange = (e) => {
+            const val = e.target.value;
+            if (val === 'none') {
+                ambientAudio.pause();
+            } else {
+                ambientAudio.src = soundUrls[val];
+                ambientAudio.play();
+            }
+        };
+
+        // --- JARVIS 2.0 TOGGLE (CTRL+K) ---
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                toggleJarvisPremium();
+            }
+        });
+
+        function toggleJarvisPremium() {
+            let hud = document.getElementById('jarvisPremiumHUD');
+            if (!hud) {
+                hud = document.createElement('div');
+                hud.id = 'jarvisPremiumHUD';
+                hud.className = 'fixed-top w-100 h-100 d-flex flex-column align-items-center justify-content-center';
+                hud.style.zIndex = '10000';
+                hud.style.background = 'rgba(13, 17, 23, 0.95)';
+                hud.style.backdropFilter = 'blur(15px)';
+                hud.innerHTML = `
+                    <div class="holo-ring"></div>
+                    <div class="text-center" style="z-index: 10001;">
+                        <i class="fa-solid fa-microchip text-warning mb-3 fs-1 animate-pulse"></i>
+                        <h2 class="text-warning fw-bold letter-spacing-5 mb-4">NEURAL INTERFACE ACTIVE</h2>
+                        <div class="voice-wave-premium mb-4">
+                            ${Array(15).fill('<div class="v-bar"></div>').join('')}
+                        </div>
+                        <p class="text-muted small">Sizi dinliyorum... "Bugünkü işlerimi özetle" veya "Zen moduna geç" diyebilirsiniz.</p>
+                        <button class="btn btn-outline-warning rounded-pill mt-4" onclick="this.parentElement.parentElement.remove()">BAĞLANTIYI KES</button>
+                    </div>
+                `;
+                document.body.appendChild(hud);
+                hud.querySelectorAll('.v-bar').forEach((bar, i) => {
+                    bar.style.animationDelay = `${i * 0.1}s`;
+                });
+            } else {
+                hud.remove();
+            }
+        }
+
+        function toggleSupport() {
+            const panel = document.getElementById('gbSupportPanel');
+            const isVisible = panel.style.display === 'flex';
+            panel.style.display = isVisible ? 'none' : 'flex';
+        }
+
+        function sendSupportMsg() {
+            const input = document.getElementById('gbSupportInput');
+            const chat = document.getElementById('gbSupportChat');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const userDiv = document.createElement('div');
+            userDiv.className = 'gb-chat-msg user';
+            userDiv.textContent = msg;
+            chat.appendChild(userDiv);
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            setTimeout(() => {
+                const botDiv = document.createElement('div');
+                botDiv.className = 'gb-chat-msg bot';
+                botDiv.textContent = "Mesajınız alındı! Teknik bir temsilci en kısa sürede size geri dönüş yapacaktır.";
+                chat.appendChild(botDiv);
+                chat.scrollTop = chat.scrollHeight;
+            }, 1000);
+        }
+    </script>
 </body>
 </html>

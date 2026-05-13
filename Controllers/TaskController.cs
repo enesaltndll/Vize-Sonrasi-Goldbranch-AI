@@ -17,13 +17,15 @@ namespace GoldBranchAI.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IHubContext<NotificationHub> _notificationHub;
         private readonly EmailService _emailService;
+        private readonly BillingService _billing;
 
-        public TaskController(AppDbContext context, IWebHostEnvironment webHostEnvironment, IHubContext<NotificationHub> notificationHub, EmailService emailService)
+        public TaskController(AppDbContext context, IWebHostEnvironment webHostEnvironment, IHubContext<NotificationHub> notificationHub, EmailService emailService, BillingService billing)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _notificationHub = notificationHub;
             _emailService = emailService;
+            _billing = billing;
         }
 
         private AppUser? GetCurrentUser()
@@ -81,6 +83,85 @@ namespace GoldBranchAI.Controllers
                 chartSource.Count(t => t.Status == "Tamamlandi" || t.IsCompleted)
             });
 
+            // --- SUPREME AI: NEURAL LOAD ANALYSIS ---
+            var activeCountGlobal = allTasks.Count(t => !t.IsCompleted);
+            int neuralLoadGlobal = Math.Min(100, (activeCountGlobal * 8) + 10);
+            ViewBag.NeuralLoad = neuralLoadGlobal;
+
+            // --- GAMIFICATION & ACHIEVEMENT SYSTEM (Oyun Başarı Kartı İçin) ---
+            ViewBag.UserXP = currentUser.ExperiencePoints;
+            ViewBag.UserHighScore = currentUser.SnakeHighScore;
+            ViewBag.BadgeCount = _context.UserBadges.Count(b => b.AppUserId == currentUser.Id);
+
+            // Enterprise Player Rank Algorithm (XP tabanlı kademeli rütbe sistemi)
+            int xp = currentUser.ExperiencePoints;
+            string playerRank;
+            string rankIcon;
+            if (xp >= 5000)      { playerRank = "LEGENDARY";   rankIcon = "👑"; }
+            else if (xp >= 2500) { playerRank = "S-CLASS";     rankIcon = "💎"; }
+            else if (xp >= 1000) { playerRank = "ELITE";       rankIcon = "⭐"; }
+            else if (xp >= 500)  { playerRank = "VETERAN";     rankIcon = "🥇"; }
+            else if (xp >= 100)  { playerRank = "RISING STAR"; rankIcon = "🌟"; }
+            else                 { playerRank = "ROOKIE";       rankIcon = "🔰"; }
+
+            ViewBag.PlayerRank = playerRank;
+            ViewBag.RankIcon = rankIcon;
+
+            var billingState = _billing.GetUserState(currentUser.Id, currentUser.Email);
+            ViewBag.DashboardPlanKey = billingState.PlanKey;
+
+            // --- 🧠 AI TEAM BURNOUT & STRESS RADAR (BUSINESS ONLY) ---
+            if (billingState.PlanKey == "business")
+            {
+                var burnoutData = _context.Users
+                    .Where(u => u.Role == "Gelistirici")
+                    .Take(5)
+                    .Select(u => new {
+                        Name = u.FullName,
+                        ActiveTasks = _context.Tasks.Count(t => t.AppUserId == u.Id && !t.IsCompleted),
+                        OverdueTasks = _context.Tasks.Count(t => t.AppUserId == u.Id && !t.IsCompleted && t.DueDate < DateTime.Now)
+                    })
+                    .ToList()
+                    .Select(u => new {
+                        u.Name,
+                        StressScore = Math.Min(100, (u.ActiveTasks * 12) + (u.OverdueTasks * 25))
+                    })
+                    .ToList();
+
+                ViewBag.BurnoutLabels = System.Text.Json.JsonSerializer.Serialize(burnoutData.Select(b => b.Name));
+                ViewBag.BurnoutScores = System.Text.Json.JsonSerializer.Serialize(burnoutData.Select(b => b.StressScore));
+
+                // --- 📊 AI Z-RAPORU (DAILY SUMMARY) ---
+                var today = DateTime.Today;
+                var todayTasks = allTasks.Where(t => t.IsCompleted && t.CreatedAt >= today).ToList();
+                ViewBag.TodayCompletedCount = todayTasks.Count;
+                ViewBag.TodayXPGain = todayTasks.Count * 10;
+                
+                string recommendation = "Ekip verimliliği stabil. ";
+                if (activeCountGlobal > 15) recommendation += "Sistem yükü yüksek, yeni görev atamadan önce mevcutların tamamlanması kritik.";
+                else recommendation += "Stabil ilerleme devam ediyor, odağı koruyun.";
+                ViewBag.ZReportRecommendation = recommendation;
+            }
+            else
+            {
+                ViewBag.BurnoutLabels = "[]";
+                ViewBag.BurnoutScores = "[]";
+                ViewBag.TodayCompletedCount = 0;
+                ViewBag.TodayXPGain = 0;
+                ViewBag.ZReportRecommendation = "Bu özellik sadece Diamond (Business) planında mevcuttur.";
+            }
+
+            // --- 💓 PROJECT HEALTH PULSE ALGORITHM ---
+            int healthScore = 100;
+            var completionRatio = allTasks.Count > 0 ? (allTasks.Count(t => t.IsCompleted) * 100 / allTasks.Count) : 100;
+            var overdueCount = allTasks.Count(t => !t.IsCompleted && t.DueDate < DateTime.Now);
+            var overduePenalty = Math.Min(30, overdueCount * 5);
+            var activeCount = allTasks.Count(t => !t.IsCompleted);
+            var loadPenalty = Math.Min(30, activeCount * 2);
+
+            healthScore = Math.Max(5, (completionRatio * 40 / 100) + (100 - overduePenalty - loadPenalty) * 60 / 100);
+            ViewBag.HealthScore = healthScore;
+
             return View();
         }
 
@@ -90,7 +171,7 @@ namespace GoldBranchAI.Controllers
             var currentUser = GetCurrentUser();
             if (currentUser == null) return RedirectToAction("Logout", "Auth");
 
-            List<TodoTask> tasks;
+            List<TodoTask> tasks = new List<TodoTask>();
             ViewBag.UserRole = currentUser.Role;
 
             DateTime urgentThreshold = DateTime.Now.AddHours(72);
@@ -112,13 +193,12 @@ namespace GoldBranchAI.Controllers
                 ViewBag.TotalDevelopers = _context.Users.Count(u => u.Role == "Gelistirici");
             }
             // 3. ADMIN VERİLERİ (Sadece istatistikler, liste boş)
-            else
-            {
-                tasks = new List<TodoTask>();
-                ViewBag.TotalTasks = _context.Tasks.Count();
-                ViewBag.CompletedTasks = _context.Tasks.Count(t => t.IsCompleted);
-                ViewBag.UrgentTasks = _context.Tasks.Count(t => t.DueDate < urgentThreshold && !t.IsCompleted);
-            }
+            // --- SUPREME AI: NEURAL LOAD ANALYSIS ---
+            var activeTasksCount = tasks.Count(t => !t.IsCompleted);
+            var overdueTasksCount = tasks.Count(t => !t.IsCompleted && t.DueDate < DateTime.Now);
+            int neuralLoad = Math.Min(100, (activeTasksCount * 12) + (overdueTasksCount * 25) + 10);
+            ViewBag.NeuralLoad = neuralLoad;
+            ViewBag.NeuralStatus = neuralLoad > 80 ? "CRITICAL" : (neuralLoad > 50 ? "WARNING" : "OPTIMAL");
 
             return View(tasks);
         }
@@ -198,47 +278,79 @@ namespace GoldBranchAI.Controllers
             return RedirectToAction("Index");
         }
 
-        // YENİ EKLENEN ONAY VE REVİZE ALGORİTMASI (Eski Delete metodunun yerini aldı)
-        public async Task<IActionResult> ChangeStatus(int id, string newStatus)
+        [HttpPost]
+        public async Task<IActionResult> UpdateStatus(int id, string newStatus)
         {
-            var task = _context.Tasks.Include(t => t.AppUser).Include(t => t.DependsOnTask).FirstOrDefault(t => t.Id == id);
             var currentUser = GetCurrentUser();
-            var currentUserRole = currentUser?.Role ?? "";
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
-            if (task != null)
+            if (currentUser == null) 
             {
-                // HİYERARŞİ KONTROLÜ
-                if ((newStatus == "Devam Ediyor" || newStatus == "Onay Bekliyor" || newStatus == "Tamamlandı") && task.DependsOnTask != null && !task.DependsOnTask.IsCompleted)
+                if (isAjax) return Unauthorized("Oturum süresi dolmuş.");
+                return RedirectToAction("Logout", "Auth");
+            }
+
+            var task = _context.Tasks
+                .Include(t => t.AppUser)
+                .Include(t => t.DependsOnTask)
+                .FirstOrDefault(t => t.Id == id);
+                
+            if (task == null) 
+            {
+                if (isAjax) return NotFound("Görev bulunamadı.");
+                return NotFound();
+            }
+
+            // HİYERARŞİ KONTROLÜ (GÜVENLİK)
+            if ((newStatus == "Devam Ediyor" || newStatus == "Onay Bekliyor" || newStatus == "Tamamlandı") && 
+                task.DependsOnTask != null && !task.DependsOnTask.IsCompleted)
+            {
+                var msg = $"[GÜVENLİK PROTOKOLÜ] Kilitli Görev! Bu göreve başlamadan önce '{task.DependsOnTask.Title}' tamamlanmalıdır.";
+                if (isAjax) return BadRequest(msg);
+                TempData["Error"] = msg;
+                return RedirectToAction("Index");
+            }
+
+            // KATI YETKİ KONTROLÜ (FSM)
+            if (currentUser.Role == "Gelistirici")
+            {
+                if (task.AppUserId != currentUser.Id) 
                 {
-                    string errMsg = $"[HİYERARŞİ KİLİDİ] Bu göreve başlamadan önce '{task.DependsOnTask.Title}' görevinin tamamlanması gerekiyor.";
-                    if (Request.Headers["Accept"].ToString().Contains("application/json") || Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Sec-Fetch-Dest"] == "empty")
-                    {
-                        return BadRequest(errMsg);
-                    }
-                    TempData["Error"] = errMsg;
+                    var msg = "[YETKİ İHLALİ] Başka bir personele ait görevin durumunu değiştiremezsiniz.";
+                    if (isAjax) return StatusCode(403, msg);
+                    TempData["Error"] = msg;
                     return RedirectToAction("Index");
                 }
 
-                // Geliştirici doğrudan Tamamlandı yapamaz
-                if (newStatus == "Tamamlandı" && currentUserRole == "Gelistirici")
+                if (newStatus == "Tamamlandı") 
                 {
-                    if (Request.Headers["Accept"].ToString().Contains("application/json") || Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Sec-Fetch-Dest"] == "empty")
-                        return BadRequest("Geliştiriciler görevleri doğrudan tamamlayamaz. Onaya sunmalısınız.");
-                    TempData["Error"] = "Yetki Hatası: Sadece onay bekliyor yapabilirsiniz.";
+                    var msg = "[SÜREÇ İHLALİ] Geliştiriciler görevleri doğrudan 'Tamamlandı' yapamaz. Code Review için 'Onay Bekliyor' aşamasına alın.";
+                    if (isAjax) return BadRequest(msg);
+                    TempData["Error"] = msg;
                     return RedirectToAction("Index");
                 }
 
+                if (task.Status == "Tamamlandı")
+                {
+                    var msg = "[SÜREÇ İHLALİ] Kapanmış bir görevi sadece Proje Şefi veya Admin tekrar açabilir.";
+                    if (isAjax) return BadRequest(msg);
+                    TempData["Error"] = msg;
+                    return RedirectToAction("Index");
+                }
+            }
+
+            if (task.Status != newStatus)
+            {
                 task.Status = newStatus;
 
-                // Eğer Şef "Tamamlandı" derse ancak o zaman sistemden düşer
-                if (newStatus == "Tamamlandı" && currentUserRole == "Proje Sefi")
+                if (newStatus == "Tamamlandı" && (currentUser.Role == "Proje Sefi" || currentUser.Role == "Admin"))
                 {
                     task.IsCompleted = true;
+                    task.CompletedAt = DateTime.Now;
                     
-                    // 🎮 OYUNLAŞTIRMA (GAMIFICATION) MANTIĞI: XP ve Rozet Ataması
-                    if (task.AppUser != null)
-                    {
-                        task.AppUser.ExperiencePoints += 50; // Her başarılı görev = 50 XP
+                    // GAMIFICATION
+                    if (task.AppUser != null) {
+                        task.AppUser.ExperiencePoints += 50;
                         
                         // 1. Rozet: İlk Adım
                         bool hasFirstTaskBadge = _context.UserBadges.Any(b => b.AppUserId == task.AppUser.Id && b.BadgeName == "İlk Adım");
@@ -278,6 +390,35 @@ namespace GoldBranchAI.Controllers
                                         Link = "/Profile"
                                     });
                                 }
+                            }
+                        }
+                        
+                        // --- Phase 3 WoW Additions ---
+                        var completionHour = DateTime.Now.Hour;
+                        if (completionHour >= 5 && completionHour < 10) // Erkenci Kuş (05:00 - 10:00)
+                        {
+                            bool hasEarlyBird = _context.UserBadges.Any(b => b.AppUserId == task.AppUser.Id && b.BadgeName == "Erkenci Kuş");
+                            if (!hasEarlyBird) {
+                                _context.UserBadges.Add(new UserBadge {
+                                    AppUserId = task.AppUser.Id, BadgeName = "Erkenci Kuş",
+                                    Description = "Güne fırtına gibi başladın! Sabah mahmurluğuna meydan okuyorsun.",
+                                    IconUrl = "https://cdn-icons-png.flaticon.com/512/3616/3616851.png"
+                                });
+                                TempData["EarnedBadge"] = "Erkenci Kuş";
+                                TempData["EarnedBadgeIcon"] = "🌅";
+                            }
+                        }
+                        else if (completionHour >= 0 && completionHour < 5) // Gece Nöbetçisi (00:00 - 05:00)
+                        {
+                            bool hasNightOwl = _context.UserBadges.Any(b => b.AppUserId == task.AppUser.Id && b.BadgeName == "Gece Nöbetçisi");
+                            if (!hasNightOwl) {
+                                _context.UserBadges.Add(new UserBadge {
+                                    AppUserId = task.AppUser.Id, BadgeName = "Gece Nöbetçisi",
+                                    Description = "Karanlığın efendisi! Proje için geceyi gündüzüne katıyorsun.",
+                                    IconUrl = "https://cdn-icons-png.flaticon.com/512/3653/3653147.png"
+                                });
+                                TempData["EarnedBadge"] = "Gece Nöbetçisi";
+                                TempData["EarnedBadgeIcon"] = "🦉";
                             }
                         }
 
@@ -355,6 +496,7 @@ namespace GoldBranchAI.Controllers
 
                 await _context.SaveChangesAsync();
             }
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest") return Ok();
             return RedirectToAction("Index");
         }
 
@@ -539,6 +681,60 @@ namespace GoldBranchAI.Controllers
         {
             public int TaskId { get; set; }
             public int MinutesAdded { get; set; }
+        }
+        [HttpGet]
+        public IActionResult ProjectReport()
+        {
+            var currentUser = GetCurrentUser();
+            var billingState = _billing.GetUserState(currentUser.Id, currentUser.Email);
+            
+            // Feature Gate: Only Pro and Business
+            if (billingState.PlanKey == "free")
+            {
+                return RedirectToAction("Dashboard");
+            }
+
+            var allTasks = _context.Tasks.Include(t => t.AppUser).ToList();
+            ViewBag.TotalTasks = allTasks.Count;
+            ViewBag.CompletedTasks = allTasks.Count(t => t.IsCompleted);
+            ViewBag.CompletionRate = allTasks.Count > 0 ? (allTasks.Count(t => t.IsCompleted) * 100 / allTasks.Count) : 0;
+            
+            ViewBag.ReportDate = DateTime.Now.ToString("dd MMMM yyyy HH:mm");
+            ViewBag.PlanName = billingState.PlanKey == "business" ? "Diamond (Enterprise)" : "Gold (Pro)";
+
+            // Group tasks by status for report
+            ViewBag.TasksByStatus = allTasks.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToList();
+            
+            return View(allTasks);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Radar()
+        {
+            var tasks = await _context.Tasks
+                .Where(t => !t.IsCompleted)
+                .Include(t => t.AppUser)
+                .ToListAsync();
+            return View(tasks);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLiveStats()
+        {
+            var totalTasks = await _context.Tasks.CountAsync();
+            var completedTasks = await _context.Tasks.CountAsync(t => t.IsCompleted);
+            var activeTasks = totalTasks - completedTasks;
+            
+            // Calculate pseudo system load
+            int systemLoad = Math.Min(100, (activeTasks * 7) + 5);
+            
+            return Json(new {
+                total = totalTasks,
+                completed = completedTasks,
+                active = activeTasks,
+                load = systemLoad,
+                timestamp = DateTime.Now.ToString("HH:mm:ss")
+            });
         }
     }
 }

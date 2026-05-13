@@ -5,15 +5,47 @@
 }
 
 <div class="gb-page">
-    <!-- HERO SECTION -->
-    <div class="mb-5 fade-in-up">
-        <div class="system-title gb-stagger-1">System Intelligence v4.0</div>
-        <h1 class="gb-hero-title gb-stagger-2">
-            @(userRole == "Admin" ? L.Get("AdminCommandCenter") : (userRole == "Proje Sefi" ? L.Get("OperationControlPanel") : L.Get("DeveloperWorkspace")))
-        </h1>
-        <p class="gb-hero-subtitle gb-stagger-3">
-            @L.Get("Welcome") <span class="text-warning fw-bold">@(User?.Identity?.Name ?? L.Get("Commander"))</span>. @L.Get("AllSystemDataAtYourCommand")
-        </p>
+    <!-- 🛰️ RADAR HERO SECTION -->
+    <div class="mb-5 fade-in-up d-flex align-items-center justify-content-between">
+        <div>
+            <div class="system-title gb-stagger-1" style="letter-spacing: 4px;">OPERASYONEL RADAR v4.5</div>
+            <h1 class="gb-hero-title gb-stagger-2" style="font-size:clamp(2rem, 5vw, 3rem); font-weight:900;">
+                @(userRole == "Admin" ? "Yönetim Komuta Merkezi" : (userRole == "Proje Sefi" ? "Stratejik Operasyon Paneli" : "Geliştirici Çalışma Alanı"))
+            </h1>
+            <p class="gb-hero-subtitle gb-stagger-3 text-muted">
+                Sakin bir zihin, verimli bir çalışma demektir. <span class="text-warning fw-bold">@(User?.Identity?.Name)</span>, tüm sistem verileri hazır.
+            </p>
+        </div>
+        <div class="gb-stagger-3 d-flex align-items-center gap-4">
+            <!-- 💓 PROJECT HEALTH PULSE -->
+            <div class="d-flex align-items-center gb-glass-card px-3 py-2 border-0" style="background: rgba(255,255,255,0.05);">
+                @{
+                    int score = ViewBag.HealthScore ?? 0;
+                    string healthColor = score > 80 ? "var(--gb-accent-emerald)" : (score > 50 ? "var(--gb-gold)" : "var(--gb-accent-rose)");
+                    string heartIcon = score > 80 ? "fa-heart" : (score > 50 ? "fa-heart-pulse" : "fa-heart-crack");
+                }
+                <div class="pulse-container me-3">
+                    <i class="fa-solid @heartIcon fa-2xl" style="color: @healthColor; filter: drop-shadow(0 0 8px @healthColor);"></i>
+                </div>
+                <div class="text-start">
+                    <div class="small text-muted fw-bold" style="font-size: 0.6rem; letter-spacing: 1px;">PROJECT HEALTH</div>
+                    <div class="h4 mb-0 fw-900" style="color: @healthColor;">%@score</div>
+                </div>
+            </div>
+
+            @if (ViewBag.DashboardPlanKey == "business")
+            {
+                <button class="btn btn-warning rounded-pill px-4 py-2 fw-bold shadow-lg gb-btn-shine" data-bs-toggle="modal" data-bs-target="#zReportModal">
+                    <i class="fa-solid fa-file-invoice me-2"></i>AI Z-RAPORU
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-dark rounded-pill px-4 py-2 fw-bold shadow-lg opacity-50 border border-secondary" disabled title="Sadece Diamond Plan">
+                    <i class="fa-solid fa-lock me-2"></i>AI Z-RAPORU
+                </button>
+            }
+        </div>
     </div>
 
     <!-- KPI GRID -->
@@ -66,6 +98,94 @@
             </div>
         </div>
     </div>
+    <!-- SUPREME AI: NEURAL HEALTH HUB -->
+    <div class="row mb-5 fade-in-up gb-stagger-3">
+        <div class="col-12">
+            <div class="gb-glass-card p-4 d-flex align-items-center justify-content-between overflow-hidden position-relative" style="background: linear-gradient(90deg, rgba(251,191,36,0.05) 0%, rgba(0,0,0,0) 100%); min-height: 180px;">
+                <!-- Decorative BG Animation -->
+                <div class="position-absolute" style="top:-50px; right:-50px; width:200px; height:200px; background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(30px); animation: pulse 4s infinite;"></div>
+                
+                <div class="d-flex align-items-center gap-4 z-1">
+                    <div class="neural-pulse-container">
+                        <svg width="100" height="100" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(251,191,36,0.1)" stroke-width="2" />
+                            <circle id="neuralProgress" cx="50" cy="50" r="45" fill="none" stroke="var(--gb-gold)" stroke-width="4" 
+                                    stroke-dasharray="283" stroke-dashoffset="@(283 - (283 * (ViewBag.NeuralLoad ?? 15) / 100))" 
+                                    style="transition: stroke-dashoffset 2s ease-out; filter: drop-shadow(0 0 8px var(--gb-gold));" />
+                            <path fill="var(--gb-gold)" d="M50 30c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 36c-8.8 0-16-7.2-16-16s7.2-16 16-16 16 7.2 16 16-7.2 16-16 16z" opacity="0.3">
+                                <animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="2s" repeatCount="indefinite" />
+                            </path>
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle fw-bold text-warning" style="font-size: 1.2rem;">
+                            @(ViewBag.NeuralLoad ?? 15)%
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="system-title gold-text mb-1"><i class="fa-solid fa-microchip me-1"></i> @L.Get("StrategicAnalysis")</div>
+                        <h4 class="fw-bold text-light mb-1">@L.Get("NeuralLoad") & @L.Get("CognitiveCapacity")</h4>
+                        <p class="text-muted small mb-0" style="max-width: 500px;">
+                            <i class="fa-solid fa-brain me-1 text-warning"></i>
+                            @(ViewBag.NeuralLoad > 70 ? L.Get("CriticalLoadAdvice") : (ViewBag.NeuralLoad > 40 ? L.Get("StableLoadAdvice") : L.Get("OptimalLoadAdvice")))
+                        </p>
+                    </div>
+                </div>
+
+                <div class="text-end z-1 d-none d-md-block">
+                    <div class="badge rounded-pill @(ViewBag.NeuralLoad > 70 ? "bg-danger" : (ViewBag.NeuralLoad > 40 ? "bg-warning text-dark" : "bg-success")) px-3 mb-2">
+                        Status: @L.Get(ViewBag.NeuralLoad > 70 ? "Critical" : (ViewBag.NeuralLoad > 40 ? "Stable" : "Optimal"))
+                    </div>
+                    <div class="small font-monospace text-muted opacity-50">SYNC_ID: GB-@(DateTime.Now.ToString("HHmmSS"))</div>
+                </div>
+            </div>
+        </div>
+    <!-- 🧠 AI TEAM BURNOUT RADAR & ANALYSIS -->
+    <div class="row mb-5 fade-in-up gb-stagger-4 position-relative">
+        @if (ViewBag.DashboardPlanKey != "business")
+        {
+            <!-- Lock Overlay -->
+            <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center z-3" style="background: rgba(13,17,23,0.6); backdrop-filter: blur(4px); border-radius: 1rem; top:0; left:0;">
+                <div class="text-center p-4 gb-glass-card border-warning">
+                    <i class="fa-solid fa-lock fa-3x text-warning mb-3"></i>
+                    <h5 class="fw-bold">Kurumsal Analitik Kilitli</h5>
+                    <p class="small text-muted mb-3">Ekip tükenmişlik analizi ve stres radarı sadece <strong>Diamond (Business)</strong> planında mevcuttur.</p>
+                    <a asp-controller="Billing" asp-action="Index" class="btn btn-warning btn-sm rounded-pill px-4">Yükselt</a>
+                </div>
+            </div>
+        }
+        <div class="col-lg-8">
+            <div class="gb-glass-card p-4 h-100 @(ViewBag.DashboardPlanKey != "business" ? "opacity-25" : "")">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-fire-flame-curved text-danger me-2"></i>AI Team Stress Radar</h5>
+                    <span class="badge rounded-pill bg-dark border border-secondary text-muted">Real-time Analysis</span>
+                </div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="burnoutRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="gb-glass-card p-4 h-100 border-left-rose @(ViewBag.DashboardPlanKey != "business" ? "opacity-25" : "")" style="border-left: 4px solid var(--gb-accent-rose) !important;">
+                <h5 class="fw-bold mb-3">Tükenmişlik Riski Analizi</h5>
+                <p class="small text-muted">AI motorumuz, ekip üyelerinin üzerindeki yükü, yaklaşan teslim tarihlerini ve son 48 saatteki aktivite yoğunluğunu analiz ederek stres skorlarını hesaplar.</p>
+                
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Kritik Eşik (>80)</span>
+                        <span class="text-danger fw-bold">DİKKAT</span>
+                    </div>
+                    <div class="progress" style="height: 4px; background: rgba(255,255,255,0.05);">
+                        <div class="progress-bar bg-danger" style="width: 85%;"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded-3" style="background: rgba(251,113,133,0.05); border: 1px solid rgba(251,113,133,0.1);">
+                    <small class="text-rose d-block fw-bold mb-1"><i class="fa-solid fa-brain me-1"></i> AI Tavsiyesi:</small>
+                    <small class="text-muted">@ViewBag.ZReportRecommendation</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MAIN CONTENT -->
     <div class="row g-4">
@@ -100,6 +220,21 @@
                                 <div><h6 class="mb-0 fw-bold">@L.Get("Logs")</h6><small class="text-muted">@L.Get("SystemTracking")</small></div>
                             </a>
                         </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Conference" asp-action="Index" class="quick-action-card hover-glow-card" style="border-left: 4px solid var(--gb-accent-cyan);">
+                                <div class="quick-action-icon" style="background:rgba(34,211,238,0.1); color:var(--gb-accent-cyan);"><i class="fa-solid fa-headset"></i></div>
+                                <div><h6 class="mb-0 fw-bold">Canlı Toplantı</h6><small class="text-muted">Ekran paylaşımı ve sunum.</small></div>
+                            </a>
+                        </div>
+                        @if (ViewBag.DashboardPlanKey != "free")
+                        {
+                            <div class="col-md-12">
+                                <a asp-controller="Task" asp-action="ProjectReport" class="quick-action-card hover-glow-card" style="border-left: 4px solid #fff; background: rgba(255,255,255,0.05);">
+                                    <div class="quick-action-icon" style="background:#fff; color:#000;"><i class="fa-solid fa-file-pdf"></i></div>
+                                    <div><h6 class="mb-0 fw-bold">AI Proje Raporu (Auto-Doc)</h6><small class="text-muted">Tek tıkla profesyonel dokümantasyon oluştur.</small></div>
+                                </a>
+                            </div>
+                        }
                     }
                     else if (userRole == "Proje Sefi")
                     {
@@ -136,6 +271,12 @@
                                 <div><h6 class="mb-0 fw-bold">@L.Get("CommsWithLead")</h6><small class="text-muted">@L.Get("AskOrReport")</small></div>
                             </a>
                         </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Conference" asp-action="Index" class="quick-action-card hover-glow-card" style="border-left: 4px solid var(--gb-accent-cyan);">
+                                <div class="quick-action-icon" style="background:rgba(34,211,238,0.1); color:var(--gb-accent-cyan);"><i class="fa-solid fa-headset"></i></div>
+                                <div><h6 class="mb-0 fw-bold">Canlı Toplantı</h6><small class="text-muted">Projenizi sunun.</small></div>
+                            </a>
+                        </div>
                     }
                 </div>
             </div>
@@ -151,6 +292,48 @@
             </div>
         </div>
     </div>
+
+    <!-- WEEKLY TREND CHART (WOW FACTOR) -->
+    <div class="row mt-4 fade-in-up gb-stagger-4">
+        <div class="col-lg-8">
+            <div class="gb-glass-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-chart-line text-success me-2"></i>Haftalık Geliştirme Hızı (Velocity)</h5>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success"><i class="fa-solid fa-arrow-trend-up me-1"></i> +24% Yükseliş</span>
+                </div>
+                <div style="height: 350px; position: relative;">
+                    <canvas id="weeklyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📡 LIVE ACTIVITY FEED -->
+        <div class="col-lg-4">
+            <div class="gb-glass-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0"><i class="fa-solid fa-satellite-dish text-info me-2" style="animation: pulse 2s infinite;"></i>Canlı Sistem Akışı</h6>
+                    <span class="badge rounded-pill" style="background:rgba(34,211,238,0.15);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);font-size:0.6rem;letter-spacing:1px;">
+                        <span class="gb-live-dot"></span> LIVE
+                    </span>
+                </div>
+                <div id="gbActivityFeed" class="gb-activity-feed">
+                    <div class="text-center text-muted py-4">
+                        <i class="fa-solid fa-spinner fa-spin-pulse me-2"></i> Yükleniyor...
+                    </div>
+                </div>
+
+                <!-- Keyboard Shortcuts Hint -->
+                <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                    <div class="small text-muted mb-2 fw-bold" style="font-size:0.65rem;letter-spacing:1px;">KLAVYE KISAYOLLARI</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="gb-shortcut-badge"><kbd>Ctrl+K</kbd> Komut</span>
+                        <span class="gb-shortcut-badge"><kbd>↑↑↓↓←→←→BA</kbd> 🎮</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- DEVELOPMENT SUCCESS SECTION (Only Developer) -->
     @if (userRole == "Gelistirici")
@@ -239,86 +422,104 @@
                     const w = canvas.width;
                     const h = canvas.height;
 
-                    // Dark Certificate Background
-                    ctx.fillStyle = '#0f172a'; // Deep Slate
+                    // --- ENTERPRISE ACHIEVEMENT CARD (CANVAS API) ---
+
+                    // Deep Background with Gradient
+                    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+                    bgGrad.addColorStop(0, '#0a0e1a');
+                    bgGrad.addColorStop(1, '#0f172a');
+                    ctx.fillStyle = bgGrad;
                     ctx.fillRect(0, 0, w, h);
 
-                    // Inner border (Certificate style)
-                    ctx.strokeStyle = '#fbbf24'; // Gold
+                    // Outer Gold Border
+                    ctx.strokeStyle = '#fbbf24';
                     ctx.lineWidth = 4;
-                    ctx.strokeRect(20, 20, w - 40, h - 40);
-                    
-                    // Thinner inner border
+                    ctx.strokeRect(12, 12, w - 24, h - 24);
+                    // Inner Thin Border
+                    ctx.strokeStyle = 'rgba(251,191,36,0.3)';
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(26, 26, w - 52, h - 52);
+                    ctx.strokeRect(18, 18, w - 36, h - 36);
 
-                    // Certificate Header
+                    // Header Section
                     ctx.fillStyle = '#fbbf24';
                     ctx.textAlign = 'center';
-                    ctx.font = 'bold 30px "Inter"';
-                    ctx.fillText('CERTIFICATE OF', w/2, 80);
-                    ctx.font = 'bold 22px "Inter"';
-                    ctx.fillText('ACHIEVEMENT', w/2, 110);
+                    ctx.font = 'bold 26px "Inter"';
+                    ctx.fillText('CERTIFICATE OF', w/2, 62);
+                    ctx.font = 'bold 20px "Inter"';
+                    ctx.fillText('ACHIEVEMENT', w/2, 88);
 
-                    // Ribbon Icon
-                    ctx.font = '50px "Inter"';
-                    ctx.fillText('🎓', w/2, 180);
+                    // Rank Icon (Big Emoji)
+                    ctx.font = '44px "Inter"';
+                    ctx.fillText('@(ViewBag.RankIcon ?? "🎓")', w/2, 145);
+
+                    // Rank Title
+                    ctx.font = 'bold 18px "Inter"';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.fillText('@(ViewBag.PlayerRank ?? "ROOKIE") RANK', w/2, 175);
 
                     // Presenter
-                    ctx.font = '16px "Inter"';
+                    ctx.font = '13px "Inter"';
                     ctx.fillStyle = '#94a3b8';
-                    ctx.fillText('PROUDLY PRESENTED TO', w/2, 230);
+                    ctx.fillText('PROUDLY PRESENTED TO', w/2, 205);
 
                     // User Name
-                    ctx.font = 'bold 35px "Inter"';
+                    ctx.font = 'bold 30px "Inter"';
                     ctx.fillStyle = '#ffffff';
-                    ctx.fillText('@(User?.Identity?.Name ?? "Elite Dev")', w/2, 275);
-                    
-                    ctx.font = '500 13px "Inter"';
-                    ctx.fillStyle = '#fbbf24';
-                    // letterSpacing API is modern, may require simple fallback but let's use it for styling
-                    if(ctx.letterSpacing) ctx.letterSpacing = "2px";
-                    ctx.fillText('FOR REACHING S-CLASS RANK', w/2, 310);
-                    if(ctx.letterSpacing) ctx.letterSpacing = "0px";
+                    ctx.fillText('@(User?.Identity?.Name ?? "Elite Dev")', w/2, 238);
 
-                    // Stats Area (Lighter background block)
-                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                    // Divider Line
                     ctx.beginPath();
-                    ctx.roundRect(40, 335, w-80, 155, 10);
+                    ctx.moveTo(60, 255); ctx.lineTo(w - 60, 255);
+                    ctx.strokeStyle = 'rgba(251,191,36,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+
+                    // --- STATS PANEL (Task + Game Stats Combined) ---
+                    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+                    ctx.beginPath();
+                    ctx.roundRect(30, 270, w - 60, 240, 12);
                     ctx.fill();
-                    
-                    const stats = [
-                        { label: 'COMPLETED TASKS', val: '@(ViewBag.MyCompletedTasks ?? "0")' },
-                        { label: 'TOTAL CONTRIBUTION', val: '@(ViewBag.MyTotalTasks ?? "0")' },
-                        { label: 'CERTIFICATE DATE', val: '@DateTime.Now.ToString("dd.MM.yyyy")' }
+
+                    const allStats = [
+                        { label: '📋 COMPLETED TASKS',  val: '@(ViewBag.MyCompletedTasks ?? "0")' },
+                        { label: '📁 TOTAL CONTRIBUTION', val: '@(ViewBag.MyTotalTasks ?? "0")' },
+                        { label: '⚡ EXPERIENCE POINTS',  val: '@(ViewBag.UserXP ?? 0) XP' },
+                        { label: '🐍 SNAKE HIGH SCORE',   val: '@(ViewBag.UserHighScore ?? 0)' },
+                        { label: '🏅 BADGES EARNED',      val: '@(ViewBag.BadgeCount ?? 0)' },
+                        { label: '📅 CERTIFICATE DATE',   val: '@DateTime.Now.ToString("dd.MM.yyyy")' }
                     ];
 
                     ctx.textAlign = 'center';
-                    stats.forEach((s, i) => {
-                        ctx.font = 'normal 11px "Inter"';
+                    allStats.forEach((s, i) => {
+                        const row = Math.floor(i / 2);
+                        const col = i % 2;
+                        const x = col === 0 ? w / 4 : (w / 4) * 3;
+                        const y = 305 + (row * 68);
+
+                        ctx.font = '10px "Inter"';
                         ctx.fillStyle = '#94a3b8';
-                        ctx.fillText(s.label, w/2, 365 + (i * 45));
-                        ctx.font = 'bold 15px "Inter"';
+                        ctx.fillText(s.label, x, y);
+                        ctx.font = 'bold 16px "Inter"';
                         ctx.fillStyle = '#ffffff';
-                        ctx.fillText(s.val, w/2, 385 + (i * 45));
+                        ctx.fillText(s.val, x, y + 20);
                     });
 
-                    // Signatures/Footer
-                    ctx.font = 'italic 15px "Inter"';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText('GoldBranch AI Systems', w/2, 530);
-                    
+                    // --- FOOTER ---
                     ctx.beginPath();
-                    ctx.moveTo(w/2 - 80, 540);
-                    ctx.lineTo(w/2 + 80, 540);
-                    ctx.strokeStyle = '#94a3b8';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
+                    ctx.moveTo(w/2 - 90, 530); ctx.lineTo(w/2 + 90, 530);
+                    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1; ctx.stroke();
 
-                    ctx.font = 'bold 12px "Inter"';
+                    ctx.font = 'italic 14px "Inter"';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText('GoldBranch AI Systems', w/2, 550);
+
+                    ctx.font = 'bold 11px "Inter"';
                     ctx.fillStyle = '#fbbf24';
-                    if(ctx.letterSpacing) ctx.letterSpacing = "4px";
-                    ctx.fillText('GOLDBRANCH AI', w/2, 555);
+                    ctx.fillText('ENTERPRISE ACHIEVEMENT CARD', w/2, 570);
+
+                    // Corner decorations (small gold dots)
+                    ctx.fillStyle = '#fbbf24';
+                    [[24,24],[w-24,24],[24,h-24],[w-24,h-24]].forEach(([cx,cy]) => {
+                        ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+                    });
                 });
 
                 downloadBtn?.addEventListener('click', () => {
@@ -351,6 +552,62 @@
                     }, 500);
                 });
             }
+            const weeklyEl = document.getElementById('weeklyTrendChart');
+            if (weeklyEl) {
+                const ctx2 = weeklyEl.getContext('2d');
+                
+                let gradient = ctx2.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); 
+                gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+                
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+                        datasets: [{
+                            label: 'Tamamlanan Görevler',
+                            data: [3, 5, 4, 8, 12, 2, 4],
+                            borderColor: '#10b981',
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#10b981',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(13, 17, 23, 0.9)',
+                                titleColor: '#fff',
+                                bodyColor: '#10b981',
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                                ticks: { color: '#8b949e', font: { family: 'Inter' }, stepSize: 2 }
+                            },
+                            x: {
+                                grid: { display: false, drawBorder: false },
+                                ticks: { color: '#8b949e', font: { family: 'Inter' } }
+                            }
+                        }
+                    }
+                });
+            }
         });
 
         // Path2D polyfill for roundRect if needed
@@ -368,5 +625,95 @@
                 return this;
             };
         }
-    </script>
+
+        // --- 🧠 AI TEAM BURNOUT RADAR CHART ---
+        const radarEl = document.getElementById('burnoutRadarChart');
+        if (radarEl) {
+            const ctxRadar = radarEl.getContext('2d');
+            new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: @Html.Raw(ViewBag.BurnoutLabels ?? "[]"),
+                    datasets: [{
+                        label: 'Stres Skoru',
+                        data: @Html.Raw(ViewBag.BurnoutScores ?? "[]"),
+                        backgroundColor: 'rgba(251, 113, 133, 0.2)',
+                        borderColor: '#fb7185',
+                        pointBackgroundColor: '#fb7185',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#fb7185',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            pointLabels: { color: '#8b949e', font: { size: 10 } },
+                            ticks: { display: false, max: 100, stepSize: 20 },
+                            min: 0,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+<!-- 📊 AI Z-REPORT MODAL -->
+<div class="modal fade" id="zReportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content gb-glass-card border-warning" style="background: rgba(13, 17, 23, 0.95) !important;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-file-invoice me-2"></i>Günlük Z-Raporu (AI Summary)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="system-title mb-2">@DateTime.Now.ToString("dd MMMM yyyy")</div>
+                    <h2 class="fw-900 text-light">OPERASYONEL ÖZET</h2>
+                </div>
+
+                <div class="row g-3 mb-4 text-center">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <div class="small text-muted mb-1">Tamamlanan</div>
+                            <div class="h3 mb-0 text-success fw-bold">@ViewBag.TodayCompletedCount</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3" style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2);">
+                            <div class="small text-muted mb-1">XP Kazanımı</div>
+                            <div class="h3 mb-0 text-warning fw-bold">+@ViewBag.TodayXPGain</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(167, 139, 250, 0.1)); border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fa-solid fa-robot fa-3x"></i>
+                    </div>
+                    <h6 class="fw-bold text-light mb-3"><i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>AI Yönetici Notu:</h6>
+                    <p class="text-muted small mb-0" style="line-height: 1.6;">
+                        "@ViewBag.ZReportRecommendation"
+                    </p>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-4" onclick="window.print()">
+                        <i class="fa-solid fa-print me-2"></i>Raporu Yazdır
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 }

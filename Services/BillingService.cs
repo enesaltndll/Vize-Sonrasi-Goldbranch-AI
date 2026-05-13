@@ -73,6 +73,7 @@ namespace GoldBranchAI.Services
             public string Expiry { get; set; } = "";
             public string Cvv { get; set; } = "";
             public string PlanKey { get; set; } = "";
+            public string? PromoCode { get; set; }
         }
 
         public sealed class PaymentResult
@@ -88,40 +89,116 @@ namespace GoldBranchAI.Services
         {
             new()
             {
-                Key = "free", Name = "Free", NameTr = "Ücretsiz Başlangıç",
+                Key = "free", Name = "Silver (Free)", NameTr = "Silver (Başlangıç)",
                 MonthlyPrice = 0m, AiMonthlyLimit = 30,
                 MaxUsers = 3, MaxActiveTasks = 25, MaxChatGroups = 1, MaxFileSizeMB = 5,
-                HasAdvancedReports = false, HasAiBreakdown = false, HasAiVoice = false,
-                HasAiSummarize = false, HasAiSprintReport = false, HasExcelExport = false,
-                HasBurnoutMap = false, HasFocusTimer = false, HasAllThemes = false,
-                Badge = "🆓", Color = "#8b949e",
-                Highlights = new() { "3 kullanıcıya kadar", "25 aktif görev", "30 AI kredi/ay", "Temel görev yönetimi", "1 sohbet grubu", "14 gün Pro deneme" }
+                HasAdvancedReports = false, HasAiBreakdown = false, HasAiVoice = false, HasAiSummarize = false, HasAiSprintReport = false, HasExcelExport = false, HasBurnoutMap = false, HasFocusTimer = false, HasAllThemes = false,
+                Badge = "🥈", Color = "#8b949e",
+                Highlights = new() { 
+                    "Sadece Kendi API Anahtarınla Çalışır",
+                    "Temel Kanban ve Görev Yönetimi",
+                    "30 Sistem AI Kredisi (Acil Durum)",
+                    "3 Ekip Üyesi",
+                    "Standart Raporlama"
+                }
             },
             new()
             {
-                Key = "pro", Name = "Pro", NameTr = "Profesyonel",
+                Key = "pro", Name = "Gold (Pro)", NameTr = "Gold (Profesyonel)",
                 MonthlyPrice = 12m, AiMonthlyLimit = 400,
                 MaxUsers = 15, MaxActiveTasks = 200, MaxChatGroups = 5, MaxFileSizeMB = 25,
-                HasAdvancedReports = true, HasAiBreakdown = true, HasAiVoice = true,
-                HasAiSummarize = false, HasAiSprintReport = false, HasExcelExport = true,
-                HasBurnoutMap = false, HasFocusTimer = true, HasAllThemes = true,
+                HasAdvancedReports = true, HasAiBreakdown = true, HasAiVoice = true, HasAiSummarize = false, HasAiSprintReport = false, HasExcelExport = true, HasBurnoutMap = false, HasFocusTimer = true, HasAllThemes = true,
                 Badge = "⭐", Color = "#fbbf24",
-                Highlights = new() { "15 kullanıcıya kadar", "200 aktif görev", "400 AI kredi/ay", "AI Görev Bölme", "AI Sesli Komut", "Excel Export", "Tüm Temalar", "E-posta Destek" }
+                Highlights = new() { 
+                    "Managed AI: Anahtar Gerekmez (Hızlı)",
+                    "AI Sesli Komut Kontrolü",
+                    "AI Smart-Breakdown (Görev Bölme)",
+                    "15 Ekip Üyesi + Excel Export",
+                    "Zen Modu & Odaklanma Analitiği"
+                }
             },
             new()
             {
-                Key = "business", Name = "Business", NameTr = "Kurumsal",
+                Key = "business", Name = "Diamond (Business)", NameTr = "Diamond (Kurumsal)",
                 MonthlyPrice = 39m, AiMonthlyLimit = 2000,
                 MaxUsers = 9999, MaxActiveTasks = 99999, MaxChatGroups = 9999, MaxFileSizeMB = 100,
-                HasAdvancedReports = true, HasAiBreakdown = true, HasAiVoice = true,
-                HasAiSummarize = true, HasAiSprintReport = true, HasExcelExport = true,
-                HasBurnoutMap = true, HasFocusTimer = true, HasAllThemes = true,
+                HasAdvancedReports = true, HasAiBreakdown = true, HasAiVoice = true, HasAiSummarize = true, HasAiSprintReport = true, HasExcelExport = true, HasBurnoutMap = true, HasFocusTimer = true, HasAllThemes = true,
                 Badge = "🏢", Color = "#a78bfa",
-                Highlights = new() { "Sınırsız kullanıcı", "Sınırsız görev", "2000 AI kredi/ay", "Tüm AI Özellikleri", "Sprint Raporu", "Burnout Haritası", "Sohbet Özeti", "Öncelikli Destek" }
+                Highlights = new() { 
+                    "Limitsiz Enterprise AI Engine",
+                    "AI Team Burnout Map (Duygu Analizi)",
+                    "AI Sprint Strategy & Raporlama",
+                    "AI Chat Summarize (Sohbet Özeti)",
+                    "Sınırsız Kullanıcı & Özel Destek"
+                }
             }
         };
 
+        // ==================== PROMO CODE SYSTEM ====================
+
+        public sealed class PromoResult
+        {
+            public bool Valid { get; set; }
+            public string Message { get; set; } = "";
+            public decimal DiscountPercent { get; set; }
+            public string TargetPlanKey { get; set; } = "";
+        }
+
+        public PromoResult ValidatePromoCode(string code, string planKey)
+        {
+            code = code?.Trim().ToUpper() ?? "";
+            
+            // Snake Game Reward: SNAKESILVER24 (Silver Plan Reward)
+            if (code == "SNAKESILVER24")
+            {
+                if (planKey != "free")
+                {
+                    return new PromoResult 
+                    { 
+                        Valid = false, 
+                        Message = "Bu kod sadece Silver paketi için geçerlidir. Daha üst paketler için oyunlarda daha yüksek skor yapmalısın! 😉" 
+                    };
+                }
+                return new PromoResult 
+                { 
+                    Valid = true, 
+                    Message = "Tebrikler! Snake başarınız uygulandı. Silver Plan (1 Ay Hediye)!", 
+                    DiscountPercent = 100, 
+                    TargetPlanKey = "free" 
+                };
+            }
+
+            // Diğer kodlar buraya eklenebilir...
+            if (code == "GOLDBRANCH10")
+            {
+                return new PromoResult 
+                { 
+                    Valid = true, 
+                    Message = "Kurumsal indirim uygulandı! %10 İndirim.", 
+                    DiscountPercent = 10, 
+                    TargetPlanKey = "" // Boş ise tüm planlarda geçerli
+                };
+            }
+
+            return new PromoResult { Valid = false, Message = "Geçersiz veya süresi dolmuş kod." };
+        }
+
         // ==================== STATE MANAGEMENT ====================
+
+        public void ForceUpdatePlan(int userId, string planKey)
+        {
+            lock (_lock)
+            {
+                var list = ReadStates();
+                var st = list.FirstOrDefault(x => x.UserId == userId);
+                if (st != null)
+                {
+                    st.PlanKey = planKey;
+                    st.TrialUsed = true;
+                    WriteStates(list);
+                }
+            }
+        }
 
         public List<UserState> GetAllStates()
         {
@@ -255,11 +332,24 @@ namespace GoldBranchAI.Services
                 if (string.IsNullOrWhiteSpace(req.Cvv) || req.Cvv.Length < 3)
                     return new PaymentResult { Success = false, Message = "Geçerli bir CVV giriniz." };
 
-                var plans = GetPlans().Select(p => p.Key).ToHashSet();
-                if (!plans.Contains(req.PlanKey))
+                var plans = GetPlans();
+                var targetPlan = plans.FirstOrDefault(p => p.Key == req.PlanKey);
+                if (targetPlan == null)
                     return new PaymentResult { Success = false, Message = "Geçersiz plan seçimi." };
 
-                var targetPlan = GetPlans().First(p => p.Key == req.PlanKey);
+                decimal finalAmount = targetPlan.MonthlyPrice;
+
+                // --- PROMO CODE VALIDATION (No cheating!) ---
+                if (!string.IsNullOrWhiteSpace(req.PromoCode))
+                {
+                    var promo = ValidatePromoCode(req.PromoCode, req.PlanKey);
+                    if (!promo.Valid)
+                    {
+                        return new PaymentResult { Success = false, Message = $"Geçersiz Promosyon Kodu: {promo.Message}" };
+                    }
+                    // Apply discount
+                    finalAmount = finalAmount * (1 - (promo.DiscountPercent / 100));
+                }
 
                 // Demo mode: always approve payment
                 var list = ReadStates();
@@ -277,7 +367,7 @@ namespace GoldBranchAI.Services
                 {
                     Id = txnId,
                     PlanKey = req.PlanKey,
-                    Amount = targetPlan.MonthlyPrice,
+                    Amount = finalAmount,
                     CardMasked = maskedCard,
                     PaidAtUtc = DateTime.UtcNow,
                     Status = "success"
@@ -295,7 +385,7 @@ namespace GoldBranchAI.Services
                 return new PaymentResult
                 {
                     Success = true,
-                    Message = $"{targetPlan.Name} planına başarıyla geçiş yapıldı! İşlem: {txnId}",
+                    Message = $"{targetPlan.Name} planına başarıyla geçiş yapıldı! Ödenen: ${finalAmount:F2}. İşlem: {txnId}",
                     TransactionId = txnId
                 };
             }

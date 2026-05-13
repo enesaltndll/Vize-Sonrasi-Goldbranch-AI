@@ -37,6 +37,19 @@ namespace GoldBranchAI.Controllers
             ViewBag.EffectivePlan = _billing.GetEffectivePlan(state);
             ViewBag.PlanBadge = _billing.GetPlanBadge(state);
             ViewBag.TrialDaysLeft = _billing.GetTrialDaysLeft(state);
+
+            // --- GAME REWARD DISCOUNT SYSTEM ---
+            // Kullanıcının oyun başarılarına göre plan ücretlerinden indirim hesapla
+            var user = _context.Users.FirstOrDefault(x => x.Id == u.Value.Id);
+            int badgeCount = _context.UserBadges.Count(b => b.AppUserId == u.Value.Id);
+            int highScore = user?.SnakeHighScore ?? 0;
+
+            // İndirim Algoritması: Her rozet %5, High Score 50+ ise ekstra %5 (Maks %25)
+            int discountPercent = Math.Min(25, (badgeCount * 5) + (highScore >= 50 ? 5 : 0));
+            ViewBag.GameDiscount = discountPercent;
+            ViewBag.BadgeCount = badgeCount;
+            ViewBag.UserHighScore = highScore;
+
             return View();
         }
 
@@ -90,6 +103,12 @@ namespace GoldBranchAI.Controllers
                 effectivePlan = effectivePlan.Key,
                 feature
             });
+        }
+        [HttpPost]
+        public IActionResult ValidatePromo(string code, string planKey)
+        {
+            var result = _billing.ValidatePromoCode(code, planKey);
+            return Json(result);
         }
     }
 }

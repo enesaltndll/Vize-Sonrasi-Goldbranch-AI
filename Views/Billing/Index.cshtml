@@ -6,6 +6,9 @@
     var effectivePlan = ViewBag.EffectivePlan as BillingService.Plan;
     var planBadge = ViewBag.PlanBadge as string ?? "FREE";
     int trialDays = ViewBag.TrialDaysLeft ?? 0;
+    int gameDiscount = ViewBag.GameDiscount ?? 0;
+    int badges = ViewBag.BadgeCount ?? 0;
+    int hs = ViewBag.UserHighScore ?? 0;
 }
 
 <div class="gb-page" style="max-width: 1100px; margin: 0 auto;">
@@ -74,6 +77,16 @@
             </div>
         </div>
 
+        <!-- PROMO CODE SECTION -->
+        <div class="gb-glass-card p-4 mb-4 fade-in-up gb-stagger-2">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-ticket text-warning me-2"></i>Promosyon Kodu</h5>
+            <div class="d-flex gap-2">
+                <input type="text" id="promoCodeInput" class="form-control" placeholder="Örn: SNAKEPRO24" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary); max-width: 300px;">
+                <button class="btn btn-outline-warning px-4 fw-bold" onclick="applyPromoCode()">Uygula</button>
+            </div>
+            <div id="promoMessage" class="mt-2 small" style="display: none;"></div>
+        </div>
+
         <!-- USAGE STATS -->
         <div class="row g-3 mb-4">
             <div class="col-md-4 fade-in-up gb-stagger-2">
@@ -108,6 +121,43 @@
             </div>
         </div>
 
+        <!-- 🎮 GAME REWARD DISCOUNT BANNER -->
+        @if (gameDiscount > 0)
+        {
+            <div class="gb-glass-card p-4 mb-4 fade-in-up gb-stagger-5" style="border: 2px solid rgba(16,185,129,0.4) !important; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(34,211,238,0.05)) !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="font-size: 2.5rem;">🎮</div>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-1" style="color: #34d399;">Oyun Başarısı İndirimi Aktif!</h6>
+                        <p class="text-muted small mb-0">
+                            <strong class="text-warning">@badges rozet</strong> kazandın
+                            @if (hs >= 50) { <text> ve <strong class="text-warning">@hs rekor skor</strong>una ulaştın</text> }!
+                            Sistem sana tüm ücretli planlarda <strong class="text-success" style="font-size: 1.1rem;">%@gameDiscount indirim</strong> tanımlıyor.
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge rounded-pill px-4 py-2 fw-bold" style="background: linear-gradient(135deg, #10b981, #22d3ee); color: #000; font-size: 1.2rem;">
+                            -%@gameDiscount
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="gb-glass-card p-3 mb-4 fade-in-up gb-stagger-5" style="border: 1px dashed rgba(255,255,255,0.15) !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="font-size: 1.8rem; opacity: 0.6;">🎮</div>
+                    <div>
+                        <span class="small text-muted">
+                            <strong>İpucu:</strong> Zen Modu'ndaki oyunlarda rozet kazanarak ücretli planlarda <strong class="text-warning">%25'e varan indirim</strong> elde edebilirsin!
+                            <a asp-controller="Zen" asp-action="Index" class="text-info ms-1">Oyna →</a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+
         <!-- PLAN SELECTION + PAYMENT -->
         <div class="row g-4">
             <!-- PLANS -->
@@ -133,9 +183,41 @@
                                     {
                                         <span class="badge rounded-pill px-3" style="background: rgba(255,255,255,0.1);">Seç</span>
                                     }
+                                    <div class="mt-3 text-start small text-muted">
+                                        <ul class="list-unstyled mb-0" style="font-size: 0.72rem; line-height: 1.6;">
+                                            @foreach(var highlight in plan.Highlights) {
+                                                <li class="mb-1"><i class="fa-solid fa-check text-success me-1"></i> @highlight</li>
+                                            }
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         }
+                    </div>
+
+                    <!-- 📚 THE DEFENSE: WHY UPGRADE? -->
+                    <div class="mt-5 p-4 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                        <h6 class="fw-bold mb-3 text-info"><i class="fa-solid fa-circle-info me-2"></i>Neden GoldBranch AI Aboneliği?</h6>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="small fw-bold text-muted mb-2">KENDİ API ANAHTARIN (BYOK)</div>
+                                <ul class="list-unstyled small text-muted">
+                                    <li class="mb-1"><i class="fa-solid fa-xmark text-danger me-2"></i>Sadece ham GPT yanıtları</li>
+                                    <li class="mb-1"><i class="fa-solid fa-xmark text-danger me-2"></i>Gelişmiş algoritmalar kilitli</li>
+                                    <li class="mb-1"><i class="fa-solid fa-xmark text-danger me-2"></i>Düşük öncelikli işlem hızı</li>
+                                    <li class="mb-1"><i class="fa-solid fa-check text-success me-2"></i>Sınırsız mesaj (kendi limitin)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="small fw-bold text-warning mb-2">GOLDBRANCH MANAGED AI</div>
+                                <ul class="list-unstyled small text-muted">
+                                    <li class="mb-1"><i class="fa-solid fa-bolt text-warning me-2"></i>Enterprise "Fine-Tuned" Modeller</li>
+                                    <li class="mb-1"><i class="fa-solid fa-brain text-warning me-2"></i>Özel Burnout & Sprint Algoritmaları</li>
+                                    <li class="mb-1"><i class="fa-solid fa-shield-check text-warning me-2"></i>Yüksek Güvenlikli Veri İşleme</li>
+                                    <li class="mb-1"><i class="fa-solid fa-wand-magic-sparkles text-warning me-2"></i>AI Sesli Komut & Akıllı Analiz</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -156,6 +238,7 @@
                             <div id="selectedPlanDisplay" class="form-control" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--gb-text-primary);">
                                 Plan seçin...
                             </div>
+                            <div id="priceDisplay" class="mt-1 small fw-bold text-success" style="display: none;"></div>
                         </div>
 
                         <div class="mb-3">
@@ -237,15 +320,34 @@
 
 @section Scripts {
     <script>
+        let currentDiscount = 0;
+        let activePromoCode = "";
+
         function selectPlan(key) {
             document.getElementById('selectedPlan').value = key;
-            const planNames = { free: '🆓 Free — $0/ay', pro: '⭐ Pro — $12/ay', business: '🏢 Business — $39/ay' };
+            const planNames = { 
+                free: '🥈 Silver (Free) — $0/ay', 
+                pro: '⭐ Gold (Pro) — $12/ay', 
+                business: '🏢 Diamond (Business) — $39/ay' 
+            };
+            const planPrices = { free: 0, pro: 12, business: 39 };
+
             document.getElementById('selectedPlanDisplay').textContent = planNames[key] || key;
             document.getElementById('payBtn').disabled = (key === 'free');
             
+            // Update Price Display
+            const priceDisp = document.getElementById('priceDisplay');
+            if (key !== 'free') {
+                let basePrice = planPrices[key];
+                let finalPrice = basePrice * (1 - (currentDiscount / 100));
+                priceDisp.style.display = 'block';
+                priceDisp.innerHTML = `Tutar: <span style="text-decoration: ${currentDiscount > 0 ? 'line-through' : 'none'}; opacity: 0.6;">$${basePrice}</span> ${currentDiscount > 0 ? '→ $' + finalPrice.toFixed(2) : ''}`;
+            } else {
+                priceDisp.style.display = 'none';
+            }
+
             if (key === 'free') {
-                // Free plan: just redirect
-                if (confirm('Free plana geçmek istediğinize emin misiniz? AI limitlileriniz düşecek.')) {
+                if (confirm('Silver (Free) plana geçmek istediğinize emin misiniz? AI limitleriniz düşecek.')) {
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = '/Billing/ChangePlan';
@@ -255,6 +357,47 @@
                     document.body.appendChild(form);
                     form.submit();
                 }
+            }
+        }
+
+        async function applyPromoCode() {
+            const code = document.getElementById('promoCodeInput').value;
+            const planKey = document.getElementById('selectedPlan').value;
+            const msgEl = document.getElementById('promoMessage');
+
+            if (!planKey) {
+                Swal.fire({ icon: 'warning', title: 'Önce Plan Seçin', text: 'Kodu uygulamadan önce hangi planı almak istediğinizi seçmelisiniz.', background: '#0d1117', color: '#fff' });
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('code', code);
+                formData.append('planKey', planKey);
+
+                const res = await fetch('/Billing/ValidatePromo', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                msgEl.style.display = 'block';
+                if (data.valid) {
+                    currentDiscount = data.discountPercent;
+                    activePromoCode = code;
+                    msgEl.className = "mt-2 small text-success fw-bold";
+                    msgEl.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${data.message}`;
+                    selectPlan(planKey); // Refresh price display
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } });
+                } else {
+                    currentDiscount = 0;
+                    activePromoCode = "";
+                    msgEl.className = "mt-2 small text-danger fw-bold";
+                    msgEl.innerHTML = `<i class="fa-solid fa-circle-xmark me-1"></i> ${data.message}`;
+                    selectPlan(planKey); // Reset price
+                }
+            } catch (e) {
+                console.error(e);
             }
         }
 
@@ -283,7 +426,8 @@
                 cardHolder: document.getElementById('cardHolder').value,
                 expiry: document.getElementById('cardExpiry').value,
                 cvv: document.getElementById('cardCvv').value,
-                planKey: planKey
+                planKey: planKey,
+                promoCode: activePromoCode
             };
 
             try {

@@ -5,7 +5,7 @@
     var userRole = ViewBag.UserRole as string;
     
     // Sort tasks into lanes
-    var activeTasks = Model.Where(t => t.Status != "Tamamlandi").OrderBy(t => t.DueDate).ToList();
+    var activeTasks = Model.Where(t => t.Status != "Tamamlandı").OrderBy(t => t.DueDate).ToList();
     var gecikenler = activeTasks.Where(t => t.DueDate < DateTime.Now).ToList();
     var buHafta = activeTasks.Where(t => t.DueDate >= DateTime.Now && t.DueDate <= DateTime.Now.AddDays(7)).ToList();
     var gelecekHafta = activeTasks.Where(t => t.DueDate > DateTime.Now.AddDays(7) && t.DueDate <= DateTime.Now.AddDays(14)).ToList();
@@ -33,10 +33,15 @@
                 <i class="fa-solid fa-laptop-code text-warning me-2"></i> @L.Get("WorkingDesk")
             </h2>
             <p class="gb-subtitle mb-0">@L.Get("ManageTasksTimeline")</p>
-        </div>
+               <div class="gb-actions" style="min-width: min(600px, 100%);">
+            <!-- 🕰️ PROJECT TIME MACHINE SLIDER -->
+            <div class="d-flex align-items-center gap-3 me-3 p-2 rounded-pill bg-dark border border-secondary border-opacity-25 shadow-sm" style="flex: 1; max-width: 300px;">
+                <i class="fa-solid fa-clock-rotate-left text-warning ms-2" title="Proje Zaman Makinesi"></i>
+                <input type="range" id="timeMachineSlider" class="form-range" min="0" max="30" value="0" style="height: 4px;">
+                <span id="timeMachineLabel" class="smallest fw-bold text-nowrap me-2" style="width: 70px;">BUGÜN</span>
+            </div>
 
-        <div class="gb-actions" style="min-width: min(520px, 100%);">
-            <div class="input-group" style="flex: 1; min-width: 260px;">
+            <div class="input-group" style="flex: 1; min-width: 200px;">
                 <span class="input-group-text bg-transparent border-0 pe-0" style="color: var(--gb-text-secondary);">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </span>
@@ -44,14 +49,20 @@
             </div>
 
             <div class="d-flex gap-2 align-items-center">
+                <button type="button" id="btnToggleCompact" class="btn btn-outline-secondary rounded-pill px-3 fw-bold btn-sm" title="Kompakt Görünüm">
+                    <i class="fa-solid fa-compress me-1"></i>
+                </button>
+                <div class="vr mx-1 opacity-25"></div>
                 @if (userRole == "Proje Sefi" || userRole == "Admin")
                 {
                     <form asp-action="DeleteAllTasks" asp-controller="Task" method="post" class="m-0" onsubmit="return confirm('@L.Get("DeleteAllConfirm")');">
                         <button type="submit" class="btn btn-outline-danger rounded-pill px-3 fw-bold btn-sm">
-                            <i class="fa-solid fa-trash-can me-1"></i> @L.Get("DeleteAllTasks")
+                            <i class="fa-solid fa-trash-can me-1"></i>
                         </button>
                     </form>
                 }
+            </div>
+        </div>
                 <a asp-action="Kanban" class="btn btn-outline-warning rounded-pill px-3 fw-bold btn-sm">
                     <i class="fa-solid fa-chess-board me-1"></i> @L.Get("Kanban")
                 </a>
@@ -61,6 +72,11 @@
             </div>
         </div>
     </div>
+
+    <!-- Fullscreen Exit Button (Hidden by default) -->
+    <button id="btnExitFS" class="btn btn-danger kanban-exit-fs rounded-pill fw-bold shadow-lg">
+        <i class="fa-solid fa-compress me-2"></i> TAM EKRANDAN ÇIK
+    </button>
 
     <!-- GREETING + QUICK STATS -->
     <div class="row g-3 mb-4 fade-in-up" style="animation-delay: 0.1s;">
@@ -88,23 +104,32 @@
         {
             <div class="col-lg-7">
                 <div class="row g-3 h-100">
-                    <div class="col-4">
-                        <div class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3">
-                            <div class="quick-action-icon bg-warning text-dark"><i class="fa-solid fa-list-check"></i></div>
-                            <div><div class="small text-muted">@L.Get("Total")</div><h4 class="mb-0 fw-bold">@ViewBag.MyTotal</h4></div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3">
-                            <div class="quick-action-icon bg-success text-white"><i class="fa-solid fa-circle-check"></i></div>
-                            <div><div class="small text-muted">@L.Get("Completed")</div><h4 class="mb-0 fw-bold">@ViewBag.MyCompleted</h4></div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="gb-glass-card p-3 h-100 d-flex align-items-center gap-3">
-                            <div class="quick-action-icon bg-danger text-white"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                            <div><div class="small text-muted">@L.Get("DelayedLabel")</div><h4 class="mb-0 fw-bold">@ViewBag.MyUrgent</h4></div>
-                        </div>
+                    <div class="col-12">
+                         <div class="gb-glass-card p-3 d-flex align-items-center justify-content-between overflow-hidden position-relative" style="background: linear-gradient(90deg, rgba(251,191,36,0.05) 0%, rgba(0,0,0,0) 100%);">
+                            <div class="d-flex align-items-center gap-3 z-1">
+                                <div class="position-relative" style="width: 45px; height: 45px;">
+                                    <svg width="45" height="45" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(251,191,36,0.1)" stroke-width="8" />
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="var(--gb-gold)" stroke-width="8" 
+                                                stroke-dasharray="283" stroke-dashoffset="@(283 - (283 * (ViewBag.NeuralLoad ?? 15) / 100))" 
+                                                style="transition: stroke-dashoffset 2s; filter: drop-shadow(0 0 5px var(--gb-gold));" />
+                                    </svg>
+                                    <div class="position-absolute top-50 start-50 translate-middle smallest fw-bold text-warning" style="font-size: 0.65rem;">@(ViewBag.NeuralLoad ?? 15)%</div>
+                                </div>
+                                <div>
+                                    <div class="smallest fw-bold text-warning mb-0 opacity-75">JARVIS: @L.Get("NeuralLoad").ToUpper()</div>
+                                    <div class="smallest text-muted" style="font-size: 0.7rem;">
+                                         <i class="fa-solid fa-microchip me-1"></i>
+                                         @(ViewBag.NeuralLoad > 70 ? L.Get("CriticalLoadAdvice") : L.Get("OptimalLoadAdvice"))
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge @(ViewBag.NeuralLoad > 70 ? "bg-danger" : "bg-success") bg-opacity-25 text-@(ViewBag.NeuralLoad > 70 ? "danger" : "success") fw-bold" style="font-size: 0.6rem;">
+                                    @L.Get(ViewBag.NeuralStatus ?? "Optimal")
+                                </span>
+                            </div>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -293,13 +318,21 @@
                         {
                             bool isLocked = task.DependsOnTask != null && !task.DependsOnTask.IsCompleted;
                             var searchable = (task.Title + " " + (task.AppUser?.FullName ?? "") + " " + task.Status).ToLower();
+                            bool hasAttachment = !string.IsNullOrEmpty(task.AttachedFilePath);
+
                             <div class="compact-task gb-task" 
                                  data-search="@searchable"
                                  data-task-id="@task.Id"
+                                 data-created="@task.CreatedAt.ToString("yyyy-MM-dd")"
+                                 data-completed="@(task.CompletedAt?.ToString("yyyy-MM-dd") ?? "9999-12-31")"
                                  style="border-left: 4px solid @(task.Status == "Revize" ? "#fb923c" : (task.Status == "Onay Bekliyor" ? "#c084fc" : "#38bdf8")); @(isLocked ? "opacity:0.6;" : "")">
                                 
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="text-light fw-bold mb-0" style="font-size: 0.9rem;">@task.Title</h6>
+                                    <h6 class="gb-task-title text-light fw-bold mb-0" style="font-size: 0.9rem;">@task.Title</h6>
+                                    @if(hasAttachment)
+                                    {
+                                        <i class="fa-solid fa-paperclip text-muted small" title="Ek dosya var"></i>
+                                    }
                                 </div>
                                 
                                 @if(isLocked)
@@ -316,8 +349,8 @@
                                     <div class="mb-2"><span class="badge bg-warning text-dark w-100 text-start small"><i class="fa-solid fa-rotate-left me-1"></i> Revize İsteği</span></div>
                                 }
 
-                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
-                                    <span class="badge bg-dark border border-secondary small">
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary" style="border-color: rgba(255,255,255,0.05) !important;">
+                                    <span class="text-muted smallest">
                                         <i class="fa-regular fa-clock me-1"></i> @task.DueDate.ToString("dd MMM")
                                     </span>
                                     <a asp-action="Details" asp-route-id="@task.Id" class="text-info text-decoration-none small fw-bold">
@@ -337,39 +370,62 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const searchInput = document.getElementById('gbTaskSearch');
+            const tmSlider = document.getElementById('timeMachineSlider');
+            const tmLabel = document.getElementById('timeMachineLabel');
 
             function applyFilters() {
-                const q = (searchInput.value || "").toLowerCase().trim();
+                const q = (searchInput?.value || "").toLowerCase().trim();
+                const daysAgo = parseInt(tmSlider?.value || 0);
+                
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() - daysAgo);
+                targetDate.setHours(0,0,0,0);
+
+                if (daysAgo === 0) {
+                    tmLabel.textContent = "BUGÜN";
+                    tmLabel.classList.remove('text-warning');
+                } else {
+                    tmLabel.textContent = daysAgo + " GÜN ÖNCE";
+                    tmLabel.classList.add('text-warning');
+                }
+
                 document.querySelectorAll('.gb-task').forEach(card => {
                     const text = card.getAttribute('data-search') || "";
-                    card.style.display = (!q || text.includes(q)) ? "" : "none";
+                    const createdStr = card.getAttribute('data-created');
+                    const completedStr = card.getAttribute('data-completed');
+                    
+                    const createdDate = new Date(createdStr);
+                    const completedDate = new Date(completedStr);
+                    
+                    // Logic: Task must exist at targetDate
+                    // It was created on or before targetDate AND (not completed yet OR completed after targetDate)
+                    const wasExists = createdDate <= targetDate;
+                    const wasActive = wasExists && (completedStr === "9999-12-31" || completedDate > targetDate);
+                    
+                    const matchesSearch = !q || text.includes(q);
+                    
+                    if (wasActive && matchesSearch) {
+                        card.style.display = "";
+                        card.style.opacity = daysAgo > 0 ? "0.8" : "1";
+                    } else {
+                        card.style.display = "none";
+                    }
                 });
             }
 
-            if (searchInput) {
-                searchInput.addEventListener('input', applyFilters);
-            }
+            if (searchInput) searchInput.addEventListener('input', applyFilters);
+            if (tmSlider) tmSlider.addEventListener('input', applyFilters);
 
-            // Productivity Tips rotation
-            const tips = [
-                '"Pomodoro: 25 dk çalış, 5 dk mola. 4 turdan sonra uzun mola."',
-                '"En zor görevi güne ilk başladığında yap — Eat the Frog!"',
-                '"Multitasking verimliliği %40 düşürür. Tek göreve odaklan."',
-                '"2 dakikada bitirebileceğin işi erteleme, hemen yap!"',
-                '"Her gün için max 3 öncelikli görev belirle."',
-                '"Görev tanımını net yaz. Belirsizlik = erteleme."',
-                '"90 dakikalık derin çalışma bloğu oluştur."'
-            ];
-            const tipEl = document.getElementById('dailyTipText');
-            if (tipEl) {
-                tipEl.textContent = tips[Math.floor(Math.random() * tips.length)];
-                setInterval(() => {
-                    tipEl.style.opacity = '0';
-                    setTimeout(() => {
-                        tipEl.textContent = tips[Math.floor(Math.random() * tips.length)];
-                        tipEl.style.opacity = '1';
-                    }, 300);
-                }, 12000);
+            // --- KANBAN MODES ---
+            const btnCompact = document.getElementById('btnToggleCompact');
+            const kanbanBoard = document.querySelector('.kanban-board');
+
+            if (btnCompact && kanbanBoard) {
+                btnCompact.addEventListener('click', () => {
+                    kanbanBoard.classList.toggle('compact');
+                    btnCompact.classList.toggle('active');
+                    btnCompact.classList.toggle('btn-warning');
+                });
             }
         });
     </script>

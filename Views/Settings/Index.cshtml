@@ -1,0 +1,235 @@
+@model GoldBranchAI.Models.AppUser
+@{
+    ViewData["Title"] = "Profil Ayarları";
+    var plan = ViewBag.Plan;
+    bool canUseAnimated = ViewBag.CanUseAnimatedAvatar;
+}
+
+<div class="gb-page">
+    <div class="gb-page-header fade-in-up">
+        <div>
+            <h2 class="gb-title">
+                <i class="fa-solid fa-user-gear text-warning me-2"></i> Profil & Hesap Ayarları
+            </h2>
+            <p class="gb-subtitle mb-0">Kişisel bilgilerinizi ve hesap güvenliğinizi yönetin.</p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success bg-success bg-opacity-10 border-success text-success fade-in-up">
+            <i class="fa-solid fa-circle-check me-2"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger bg-danger bg-opacity-10 border-danger text-danger fade-in-up">
+            <i class="fa-solid fa-circle-exclamation me-2"></i> @TempData["Error"]
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Sol Kolon: Profil Özeti -->
+        <div class="col-lg-4 fade-in-up" style="animation-delay: 0.1s;">
+            <div class="gb-glass-card p-4 text-center h-100">
+                <div class="position-relative d-inline-block mb-4">
+                    <div class="gb-avatar-large shadow-lg" style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid var(--gb-gold); margin: 0 auto;">
+                        <img src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://cdn-icons-png.flaticon.com/512/9334/9334400.png" : Model.AvatarUrl)" 
+                             alt="Profile" style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                    <div class="position-absolute bottom-0 end-0 bg-warning text-dark px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem; transform: translate(10%, -10%);">
+                        @plan.Name.ToUpper()
+                    </div>
+                </div>
+
+                <h4 class="fw-bold text-light mb-1">@Model.FullName</h4>
+                <p class="text-muted small mb-3">@Model.Email</p>
+                
+                <div class="gb-glass-card p-3 mb-4 text-start" style="background: rgba(255,255,255,0.02);">
+                    <div class="small text-warning fw-bold mb-1"><i class="fa-solid fa-quote-left me-1"></i> Biyografi</div>
+                    <p class="text-muted smallest mb-0 italic">@(string.IsNullOrEmpty(Model.Bio) ? "Henüz bir biyografi eklenmemiş..." : Model.Bio)</p>
+                </div>
+
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <div class="gb-stat-pill">
+                        <div class="small text-muted">Deneyim</div>
+                        <div class="fw-bold text-warning">@Model.ExperiencePoints XP</div>
+                    </div>
+                    <div class="gb-stat-pill">
+                        <div class="small text-muted">Katılım</div>
+                        <div class="fw-bold text-info">@Model.CreatedAt.ToString("MMM yyyy")</div>
+                    </div>
+                </div>
+
+                <!-- 🎰 AI Z-REPORT BUTTON -->
+                <button id="btnZReport" class="btn btn-outline-warning w-100 rounded-pill fw-bold mb-3">
+                    <i class="fa-solid fa-bolt-lightning me-2"></i> GÜNLÜK AI Z-RAPORU
+                </button>
+
+                <!-- 📜 ACHIEVEMENT CERTIFICATE BUTTON -->
+                <button id="btnShowCertificate" class="btn btn-warning w-100 rounded-pill fw-bold mb-4">
+                    <i class="fa-solid fa-certificate me-2"></i> BAŞARI SERTİFİKASI (PDF)
+                </button>
+
+                <!-- 🔥 NEON ACTIVITY HEATMAP -->
+                <div class="text-start mb-2">
+                    <div class="smallest text-muted fw-bold text-uppercase letter-spacing-1">Aktivite Geçmişi (120 Gün)</div>
+                </div>
+                <div class="gb-heatmap-container mb-4">
+                    @{
+                        var activityData = ViewBag.ActivityData as Dictionary<DateTime, int> ?? new Dictionary<Dictionary<DateTime, int>, int>().Keys.FirstOrDefault() as Dictionary<DateTime, int> ?? new Dictionary<DateTime, int>();
+                        var today = DateTime.Today;
+                    }
+                    <div class="gb-heatmap">
+                        @for (int i = 119; i >= 0; i--)
+                        {
+                            var date = today.AddDays(-i);
+                            int count = activityData.ContainsKey(date) ? activityData[date] : 0;
+                            var intensity = count == 0 ? "none" : (count < 2 ? "low" : (count < 4 ? "medium" : "high"));
+                            <div class="gb-heatmap-cell @intensity" title="@date.ToShortDateString(): @count görev"></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ... Formlar ... -->
+    </div>
+</div>
+
+<!-- 🏆 CERTIFICATE MODAL -->
+<div class="modal fade" id="certModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 bg-transparent">
+            <div class="gb-certificate-card landscape">
+                <!-- Certificate Border Decor -->
+                <div class="cert-border"></div>
+                <div class="cert-corner tl"></div><div class="cert-corner tr"></div>
+                <div class="cert-corner bl"></div><div class="cert-corner br"></div>
+
+                <div class="cert-content text-center">
+                    <div class="cert-header mb-4">
+                        <i class="fa-solid fa-leaf text-warning fs-1 mb-2"></i>
+                        <h1 class="cert-brand">GOLDBRANCH AI</h1>
+                        <div class="cert-badge">RESMİ ONAY BELGESİ</div>
+                    </div>
+
+                    <p class="cert-intro">Bu sertifika, üstün performans ve verimlilik gösteren</p>
+                    <h2 class="cert-user-name">@Model.FullName</h2>
+                    <p class="cert-text">
+                        kişisinin GoldBranch AI ekosisteminde toplam <strong>@Model.ExperiencePoints XP</strong> 
+                        deneyim puanına ulaştığını ve <strong>@Model.TodoTasks.Count(t => t.IsCompleted)</strong> 
+                        projeyi başarıyla tamamladığını resmen onaylar.
+                    </p>
+
+                    <div class="cert-footer d-flex justify-content-between align-items-end mt-5">
+                        <div class="cert-date text-start">
+                            <div class="smallest text-muted">VERİLİŞ TARİHİ</div>
+                            <div class="fw-bold">@DateTime.Now.ToString("dd MMMM yyyy")</div>
+                        </div>
+                        <div class="cert-seal">
+                            <div class="seal-inner"><i class="fa-solid fa-award"></i></div>
+                        </div>
+                        <div class="cert-signature text-end">
+                            <div class="signature-line mb-1">
+                                <span class="e-signature">Enes Altındal</span>
+                            </div>
+                            <div class="smallest text-muted">GoldBranch AI Yetkilisi</div>
+                            <div class="smallest text-warning fw-bold">DİJİTAL ONAYLI</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Social Share Bar -->
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button class="btn btn-outline-info rounded-pill share-btn"><i class="fa-brands fa-linkedin me-2"></i> LinkedIn</button>
+                <button class="btn btn-outline-primary rounded-pill share-btn"><i class="fa-brands fa-twitter me-2"></i> Twitter</button>
+                <button class="btn btn-outline-danger rounded-pill share-btn"><i class="fa-brands fa-instagram me-2"></i> Instagram</button>
+                <button class="btn btn-success rounded-pill px-4" onclick="window.print()"><i class="fa-solid fa-download me-2"></i> İndir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* CERTIFICATE STYLES */
+    .gb-certificate-card {
+        background: #fff;
+        color: #1a1a1a;
+        padding: 60px;
+        position: relative;
+        overflow: hidden;
+        width: 1000px;
+        height: 700px;
+        margin: 0 auto;
+        box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+    }
+    .cert-border { position: absolute; inset: 20px; border: 2px solid #fbbf24; }
+    .cert-corner { position: absolute; width: 60px; height: 60px; border: 8px solid #fbbf24; }
+    .cert-corner.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+    .cert-corner.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+    .cert-corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+    .cert-corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+    .cert-brand { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: 5px; color: #111; }
+    .cert-badge { display: inline-block; background: #fbbf24; color: #fff; padding: 5px 20px; font-weight: 800; font-size: 0.8rem; margin-top: 10px; }
+    .cert-user-name { font-size: 3.5rem; font-weight: 800; color: #fbbf24; margin: 20px 0; text-transform: uppercase; }
+    .cert-text { font-size: 1.2rem; line-height: 1.8; color: #444; max-width: 80%; margin: 0 auto; }
+    
+    .e-signature { font-family: 'Dancing Script', cursive; font-size: 2rem; color: #111; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+    .cert-seal { width: 100px; height: 100px; background: #fbbf24; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #fff; box-shadow: 0 0 0 10px rgba(251,191,36,0.1); }
+    
+    @@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+
+    @@media print {
+        body * { visibility: hidden; }
+        .gb-certificate-card, .gb-certificate-card * { visibility: visible; }
+        .gb-certificate-card { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+    }
+</style>
+
+<script>
+    document.getElementById('btnShowCertificate').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('certModal')).show();
+    });
+
+    document.getElementById('btnZReport').addEventListener('click', async function() {
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> ANALİZ EDİLİYOR...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/Settings/GetAIZReport', { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.success) {
+                alert("🤖 AI GÜNLÜK Z-RAPORU:\n\n" + data.report);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById('btnTestTelegram').addEventListener('click', async function() {
+        const btn = this;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/Settings/TestTelegram', { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
+        } catch (e) {
+            alert("Bir hata oluştu.");
+        } finally {
+            btn.innerHTML = 'Test Bildirimi Gönder';
+            btn.disabled = false;
+        }
+    });
+</script>
+

@@ -59,6 +59,57 @@
         </div>
     }
 
+    <!-- JARVIS STRATEGIC ANALYSIS -->
+    @{
+        // Simulation of deep AI analysis for the "WOW" factor
+        int successProb = 90;
+        if (Model.DueDate < DateTime.Now) successProb -= 40;
+        else if ((Model.DueDate - DateTime.Now).TotalHours < 48) successProb -= 15;
+        if (Model.EstimatedTimeHours > 10) successProb -= 10;
+        if (Model.DependsOnTaskId != null) successProb -= 10;
+        if (!string.IsNullOrEmpty(Model.AttachedFilePath)) successProb += 5;
+        successProb = Math.Clamp(successProb, 5, 98);
+
+        string riskLevel = successProb < 40 ? "KRITIK" : (successProb < 70 ? "ORTA" : "DÜŞÜK");
+        string riskColor = successProb < 40 ? "#ef4444" : (successProb < 70 ? "#fbbf24" : "#10b981");
+    }
+    <div class="gb-glass-card p-4 mb-4 border-start border-4 fade-in-up" style="border-color: @riskColor !important; background: linear-gradient(90deg, @(riskColor)15 0%, rgba(0,0,0,0) 100%);">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
+            <div class="d-flex align-items-center gap-4">
+                <div class="position-relative" style="width: 80px; height: 80px;">
+                    <svg width="80" height="80" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="@riskColor" stroke-width="8" 
+                                stroke-dasharray="283" stroke-dashoffset="@(283 - (283 * successProb / 100))" 
+                                style="transition: stroke-dashoffset 2s ease-in-out; filter: drop-shadow(0 0 10px @riskColor);" />
+                    </svg>
+                    <div class="position-absolute top-50 start-50 translate-middle text-center">
+                        <div class="fw-bold text-light" style="font-size: 1.1rem;">%@successProb</div>
+                        <div class="smallest text-muted" style="font-size: 0.5rem; margin-top: -4px;">SUCCESS</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="system-title mb-1" style="color: @riskColor;"><i class="fa-solid fa-microchip me-1"></i> @L.Get("TacticalAdvice")</div>
+                    <h5 class="fw-bold text-light mb-1">@L.Get("StrategicAnalysis")</h5>
+                    <p class="text-muted small mb-0" style="max-width: 500px;">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1" style="color: @riskColor;"></i>
+                        @if(successProb < 40) { 
+                            <span>@L.Get("KritikAnalysis")</span>
+                        } else if(successProb < 70) {
+                            <span>@L.Get("OrtaAnalysis")</span>
+                        } else {
+                            <span>@L.Get("DusukAnalysis")</span>
+                        }
+                    </p>
+                </div>
+            </div>
+            <div class="ms-md-auto text-end">
+                <div class="small text-muted mb-1 fw-bold">@L.Get("RiskIndex")</div>
+                <div class="h4 fw-900 mb-0" style="color: @riskColor;">@L.Get(riskLevel == "KRITIK" ? "Critical" : (riskLevel == "ORTA" ? "Stable" : "Optimal"))</div>
+            </div>
+        </div>
+    </div>
+
     <div class="gb-section">
         <div class="gb-section-body">
                 
@@ -97,9 +148,31 @@
                         <h5 class="text-light border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-paperclip text-info me-2"></i> @L.Get("AttachedFile")</h5>
                         
                         @{
+                            string fileName = System.IO.Path.GetFileName(Model.AttachedFilePath);
                             string ext = System.IO.Path.GetExtension(Model.AttachedFilePath).ToLower();
                             bool isImage = ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp";
+                            string fileIcon = "fa-file-lines";
+                            string iconColor = "text-info";
+
+                            if (ext == ".pdf") { fileIcon = "fa-file-pdf"; iconColor = "text-danger"; }
+                            else if (ext == ".xlsx" || ext == ".xls" || ext == ".csv") { fileIcon = "fa-file-excel"; iconColor = "text-success"; }
+                            else if (ext == ".docx" || ext == ".doc") { fileIcon = "fa-file-word"; iconColor = "text-primary"; }
+                            else if (ext == ".pptx" || ext == ".ppt") { fileIcon = "fa-file-powerpoint"; iconColor = "text-warning"; }
+                            else if (isImage) { fileIcon = "fa-file-image"; iconColor = "text-warning"; }
                         }
+
+                        <div class="gb-glass-card p-3 mb-3 d-flex align-items-center gap-3" style="background: rgba(255,255,255,0.02);">
+                            <div class="fs-1 @iconColor">
+                                <i class="fa-solid @fileIcon"></i>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="text-light fw-bold text-truncate" style="font-size: 0.9rem;">@fileName</div>
+                                <div class="text-muted smallest">@ext.ToUpper() Belgesi</div>
+                            </div>
+                            <a href="@Model.AttachedFilePath" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                                <i class="fa-solid fa-download me-1"></i> İndir
+                            </a>
+                        </div>
 
                         @if (isImage)
                         {
@@ -107,10 +180,6 @@
                                 <img src="@Model.AttachedFilePath" style="max-height: 400px; max-width: 100%; object-fit: contain;" />
                             </div>
                         }
-                        
-                        <a href="@Model.AttachedFilePath" target="_blank" class="btn btn-outline-info rounded-pill px-4">
-                            <i class="fa-solid fa-cloud-arrow-down me-2"></i> @L.Get("DownloadFile")
-                        </a>
                     </div>
                 }
 
@@ -129,18 +198,25 @@
                 {
                     if (currentUserRole == "Gelistirici" && (Model.Status == "Devam Ediyor" || Model.Status == "Revize" || Model.Status == "Bekliyor"))
                     {
-                        <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Onay Bekliyor" class="btn btn-info fw-bold rounded-pill text-dark px-4">
-                            <i class="fa-solid fa-paper-plane me-2"></i> @L.Get("SendToLead")
-                        </a>
+                        <form asp-action="UpdateStatus" method="post" class="m-0">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="newStatus" value="Onay Bekliyor" />
+                            <button type="submit" class="btn btn-info fw-bold rounded-pill text-dark px-4">
+                                <i class="fa-solid fa-paper-plane me-2"></i> Şefe Sun
+                            </button>
+                        </form>
                     }
                     else if (currentUserRole == "Proje Sefi" && Model.Status == "Onay Bekliyor")
                     {
-                        <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Revize" class="btn btn-warning fw-bold rounded-pill text-dark px-4">
-                            <i class="fa-solid fa-rotate-left me-2"></i> @L.Get("RequestRevision")
-                        </a>
-                        <a asp-action="ChangeStatus" asp-route-id="@Model.Id" asp-route-newStatus="Tamamlandi" class="btn btn-success fw-bold rounded-pill text-dark px-4">
-                            <i class="fa-solid fa-check-double me-2"></i> @L.Get("AcceptWork")
-                        </a>
+                        <form asp-action="UpdateStatus" method="post" class="m-0 d-flex gap-2">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button name="newStatus" value="Revize" type="submit" class="btn btn-warning fw-bold rounded-pill text-dark px-4">
+                                <i class="fa-solid fa-rotate-left me-2"></i> Revize İste
+                            </button>
+                            <button name="newStatus" value="Tamamlandı" type="submit" class="btn btn-success fw-bold rounded-pill text-dark px-4">
+                                <i class="fa-solid fa-check-double me-2"></i> Onayla & Bitir
+                            </button>
+                        </form>
                     }
                 }
             </div>
