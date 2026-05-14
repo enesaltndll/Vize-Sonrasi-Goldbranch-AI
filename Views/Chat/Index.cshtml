@@ -112,12 +112,14 @@
         position: absolute;
         bottom: -1px;
         right: -1px;
-        width: 10px;
-        height: 10px;
-        background: #22c55e;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         border: 2px solid #161b22;
+        transition: background 0.3s, box-shadow 0.3s;
     }
+    .status-online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    .status-offline { background: #64748b; box-shadow: none; }
 
     .category-label {
         padding: 8px 18px;
@@ -248,33 +250,35 @@
                     </div>
                 }
 
-                <!-- DİREKT MESAJLAR -->
+                <!-- DİREKT MESAJLAR (ARKADAŞLAR) -->
                 <div class="category-label">
-                    <i class="fa-solid fa-user-shield"></i> @L.Get("DirectMessages")
+                    <i class="fa-solid fa-user-group"></i> @L.Get("DirectMessages") (Arkadaşlar)
                 </div>
-                @foreach (var user in Model)
+                @if (Model != null && Model.Any())
                 {
-                    <a href="javascript:void(0)" onclick="loadChat(@user.Id, null, this)" class="contact-item" data-search-name="@user.FullName.ToLower()">
-                        <div class="avatar-box" style="background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(34,211,238,0.02)); border: 1px solid rgba(34,211,238,0.12);">
-                            <i class="fa-solid fa-user-astronaut text-info" style="font-size:1rem;"></i>
-                            <span class="online-dot"></span>
-                        </div>
-                        <div class="flex-grow-1 overflow-hidden">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 text-light fw-bold text-truncate" style="font-size:0.85rem;">@user.FullName</h6>
-                                <div class="d-flex align-items-center gap-1">
-                                    <span class="badge rounded-pill" style="background:rgba(56,189,248,0.08);color:#38bdf8;font-size:0.55rem;border:1px solid rgba(56,189,248,0.15);">@user.Role</span>
-                                    @if (currentUserRole == "Admin" || currentUserRole == "Proje Sefi")
-                                    {
-                                        <button onclick="deleteConversation(event, @user.Id)" class="btn btn-link text-danger p-0 ms-1 border-0" style="opacity:1 !important;" title="@L.Get("Delete")">
-                                            <i class="fa-solid fa-trash-can" style="font-size: 0.8rem;"></i>
-                                        </button>
-                                    }
-                                </div>
+                    @foreach (var user in Model)
+                    {
+                        <a href="javascript:void(0)" onclick="loadChat(@user.Id, null, this)" class="contact-item" data-search-name="@user.FullName.ToLower()" data-user-id="@user.Id">
+                            <div class="avatar-box" style="background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(251,191,36,0.02)); border: 1px solid rgba(251,191,36,0.15);">
+                                <img src="@(string.IsNullOrEmpty(user.AvatarUrl) ? "https://ui-avatars.com/api/?name="+user.FullName : user.AvatarUrl)" class="w-100 h-100 rounded-3" style="object-fit:cover;" />
+                                <span class="online-dot status-offline" id="status-@user.Id"></span>
                             </div>
-                            <small class="text-muted text-truncate d-block" style="font-size:0.7rem;">@user.Email</small>
-                        </div>
-                    </a>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-light fw-bold text-truncate" style="font-size:0.85rem;">@user.FullName</h6>
+                                    <span class="badge rounded-pill smallest" style="background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.4);">@user.Role</span>
+                                </div>
+                                <small class="text-muted text-truncate d-block smallest mt-1" id="last-seen-@user.Id">Çevrimdışı</small>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="p-4 text-center opacity-50">
+                        <p class="small mb-0">Henüz arkadaş eklenmemiş.</p>
+                        <small>Profillerden arkadaş ekleyebilirsin.</small>
+                    </div>
                 }
 
                 @if (currentUserRole == "Admin")
@@ -429,6 +433,23 @@
                 item.style.display = (!q || name.includes(q)) ? '' : 'none';
             });
         });
+
+        // --- SIGNALR STATUS TRACKING ---
+        const statusConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .withAutomaticReconnect()
+            .build();
+
+        statusConnection.on("UserStatusChanged", (userId, isOnline) => {
+            const dot = document.getElementById('status-' + userId);
+            const label = document.getElementById('last-seen-' + userId);
+            if (dot) {
+                dot.className = isOnline ? 'online-dot status-online' : 'online-dot status-offline';
+                if (label) label.innerText = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+            }
+        });
+
+        statusConnection.start().catch(err => console.error("Status Hub Error:", err));
 
         // Delete group
         function deleteGroup(event, groupId) {

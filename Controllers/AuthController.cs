@@ -197,7 +197,8 @@ namespace GoldBranchAI.Controllers
                     Email = email,
                     Password = "GithubOAuthLogin_" + Guid.NewGuid().ToString("N"),
                     Role = "Gelistirici",
-                    PreferredAiProvider = "default"
+                    PreferredAiProvider = "default",
+                    GithubUsername = name // GitHub'dan gelen kullanıcı adını kaydet
                 };
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();

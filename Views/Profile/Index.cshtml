@@ -3,90 +3,145 @@
 @{
     ViewData["Title"] = L.Get("Profile");
     var percent = ViewBag.OverallTasks > 0 ? (ViewBag.CompletedTasks * 100) / ViewBag.OverallTasks : 0;
+    bool isOwnProfile = ViewBag.IsOwnProfile ?? false;
 }
 
-<div class="gb-page fade-in-up" style="max-width: 1100px; margin: 0 auto;">
-    <!-- Header: Gamified Stats -->
-    <div class="gb-section">
-        <div class="gb-section-body">
-            <div class="row align-items-center" style="background: linear-gradient(135deg, rgba(88,28,135,0.35) 0%, rgba(15,23,42,0.65) 100%); border-radius: 18px; border: 1px solid rgba(139, 92, 246, 0.22); padding: 22px;">
-        
-        <div class="col-md-3 text-center position-relative">
-            <!-- Avatar Ring Effect -->
-            <div class="avatar-wrapper mx-auto mb-3" style="width:150px; height:150px; border-radius: 50%; padding: 5px; background: conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6); animation: spinRing 4s linear infinite;">
-                <div class="inner-avatar w-100 h-100 rounded-circle overflow-hidden bg-dark position-relative cursor-pointer" onclick="changeAvatar()" title="@L.Get("ChangeAvatar")">
-                    <img id="userAvatarImg" src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://cdn-icons-png.flaticon.com/512/9334/9334400.png" : Model.AvatarUrl)" class="w-100 h-100" style="object-fit:cover;" />
-                    <div class="overlay-hover position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,0.6); opacity:0; transition:0.3s;"><i class="fa-solid fa-pen text-white fa-2x"></i></div>
-                </div>
-            </div>
-            
-            <h3 class="fw-bold text-white mb-0" style="text-shadow: 0 0 10px rgba(255,255,255,0.3);">@Model.FullName</h3>
-            <span class="badge bg-warning text-dark mt-2 fw-bold px-3 py-1 shadow" style="font-size:0.9rem; letter-spacing:1px;"><i class="fa-solid fa-crown me-1"></i> @Model.Role</span>
-        </div>
+<style>
+    .gh-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; transition: all 0.3s; height: 100%; }
+    .gh-card:hover { background: rgba(255,255,255,0.05); transform: translateY(-5px); border-color: #fbbf24; }
+    .gh-lang { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .profile-glass { background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(13, 17, 23, 0.8) 100%); backdrop-filter: blur(20px); border: 1px solid rgba(251, 191, 36, 0.15); border-radius: 24px; }
+</style>
 
-        <div class="col-md-9 mt-4 mt-md-0">
-            <h4 class="text-purple mb-4 fw-bold" style="color:#d8b4e2;">🎯 @L.Get("TaskCareerStats")</h4>
-            
-            <div class="row text-center mb-3">
-                <div class="col-4">
-                    <h1 class="display-5 fw-bold text-success mb-0 gb-counter" data-target="@ViewBag.CompletedTasks" style="text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">0</h1>
-                    <p class="text-muted text-uppercase small fw-bold">@L.Get("CompletedTasks")</p>
-                </div>
-                <div class="col-4 border-start border-end border-secondary">
-                    <h1 class="display-5 fw-bold text-info mb-0 gb-counter" data-target="@Model.ExperiencePoints" style="text-shadow: 0 0 15px rgba(6, 182, 212, 0.4);">0</h1>
-                    <p class="text-muted text-uppercase small fw-bold">@L.Get("ExperiencePoints")</p>
-                </div>
-                <div class="col-4">
-                    <h1 class="display-5 fw-bold text-warning mb-0 gb-counter" data-target="@(Model.UserBadges?.Count ?? 0)" style="text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);">0</h1>
-                    <p class="text-muted text-uppercase small fw-bold">@L.Get("BadgesEarned")</p>
-                </div>
-            </div>
-
-            <!-- XP / Level Progress Bar -->
-            <p class="text-secondary small mb-1">@L.Get("SuccessSync") (@percent%)</p>
-            <div class="progress" style="height: 12px; background: rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden;">
-                <div class="progress-bar gb-liquid-progress" role="progressbar" style="width: @percent%; border-radius: 6px;"></div>
-            </div>
-        </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rozet Vitrini (Badge Collection) -->
-    <div class="gb-page-header">
-        <div>
-            <h3 class="gb-title" style="font-size: 1.45rem;"><i class="fa-solid fa-medal text-warning me-2"></i> @L.Get("BadgeRoom")</h3>
-            <p class="gb-subtitle mb-0">Kazandığın rozetler burada birikir.</p>
-        </div>
-    </div>
+<div class="gb-page fade-in-up" style="max-width: 1200px; margin: 0 auto;">
     
-    <div class="row g-4">
-        @if (Model.UserBadges != null && Model.UserBadges.Any())
-        {
-            foreach (var badge in Model.UserBadges.OrderByDescending(b => b.EarnedAt))
-            {
-                <div class="col-md-3 col-sm-6 text-center">
-                    <div class="card bg-dark border-secondary h-100 badge-card gb-neon-border" style="border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s;">
-                        <div class="card-body py-4">
-                            <img src="@badge.IconUrl" style="width: 80px; height: 80px; filter: drop-shadow(0 0 10px rgba(251,191,36,0.8));" class="mb-3 badge-img" />
-                            <h5 class="fw-bold text-light mb-1">@badge.BadgeName</h5>
-                            <p class="text-muted small mb-3">@badge.Description</p>
-                            <span class="badge bg-secondary opacity-75">@badge.EarnedAt.ToString("dd MMM yyyy")</span>
-                        </div>
+    <!-- HEADER CARD -->
+    <div class="profile-glass p-4 mb-5 shadow-lg">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="position-relative d-inline-block">
+                    <img id="userAvatarImg" src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://ui-avatars.com/api/?name=" + Model.FullName + "&background=fbbf24&color=000" : Model.AvatarUrl)" 
+                         class="rounded-circle border border-4 border-warning shadow" style="width: 160px; height: 160px; object-fit: cover;" />
+                    @if(isOwnProfile) {
+                        <button onclick="changeAvatar()" class="btn btn-sm btn-warning position-absolute bottom-0 end-0 rounded-circle shadow">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <h1 class="fw-bold text-white mb-0">@Model.FullName</h1>
+                    <span class="badge bg-warning text-dark fw-bold">@Model.Role</span>
+                </div>
+                <p class="text-muted mb-4">@Model.Bio</p>
+                <div class="d-flex gap-4">
+                    <div>
+                        <h4 class="fw-bold text-warning mb-0">@ViewBag.CompletedTasks</h4>
+                        <small class="text-muted text-uppercase">Tamamlanan</small>
+                    </div>
+                    <div class="border-start border-secondary ps-4">
+                        <h4 class="fw-bold text-info mb-0">@Model.ExperiencePoints</h4>
+                        <small class="text-muted text-uppercase">XP Puanı</small>
+                    </div>
+                    <div class="border-start border-secondary ps-4">
+                        <h4 class="fw-bold text-success mb-0">@(Model.UserBadges?.Count ?? 0)</h4>
+                        <small class="text-muted text-uppercase">Rozetler</small>
                     </div>
                 </div>
-            }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="alert alert-dark text-center py-5 border-secondary rounded-4 shadow">
-                    <i class="fa-solid fa-ghost fa-4x text-muted mb-3 opacity-50"></i>
-                    <h4 class="text-secondary fw-bold">@L.Get("NoBadgeYet")</h4>
-                    <p class="text-muted">@L.Get("NoBadgeDesc")</p>
-                </div>
             </div>
-        }
+            <div class="col-md-3 text-end">
+                @if(isOwnProfile) {
+                    <a href="/Profile/Details/@Model.Id" class="btn btn-outline-warning rounded-pill px-4 mb-2 w-100">
+                        <i class="fa-solid fa-share-nodes me-2"></i>Kamu Profili
+                    </a>
+                } else {
+                    @if(ViewBag.FriendshipStatus == null) {
+                        <button onclick="addFriend(@Model.Id)" class="btn btn-warning rounded-pill px-4 mb-2 w-100">
+                            <i class="fa-solid fa-user-plus me-2"></i>Arkadaş Ekle
+                        </button>
+                    } else {
+                        <button class="btn btn-success rounded-pill px-4 mb-2 w-100" disabled>
+                            <i class="fa-solid fa-check me-2"></i>Arkadaşsınız
+                        </button>
+                    }
+                }
+                @if(!string.IsNullOrEmpty(Model.GithubUsername)) {
+                    <a href="https://github.com/@Model.GithubUsername" target="_blank" class="btn btn-dark rounded-pill px-4 w-100 border-secondary">
+                        <i class="fa-brands fa-github me-2"></i>GitHub Takip Et
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- LEFT: GITHUB STATS & REPOS -->
+        <div class="col-lg-8">
+            <h3 class="fw-bold text-white mb-4"><i class="fa-brands fa-github text-warning me-2"></i> GitHub Projesi & Başarımlar</h3>
+            
+            @if(ViewBag.GithubRepos != null) {
+                <div class="row g-3">
+                    @foreach (var repo in ViewBag.GithubRepos) {
+                        <div class="col-md-6">
+                            <div class="gh-card p-3 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="fw-bold mb-0 text-info">
+                                        <i class="fa-solid fa-book-bookmark me-2 opacity-50"></i>
+                                        <a href="@repo.html_url" target="_blank" class="text-decoration-none text-info">@repo.name</a>
+                                    </h6>
+                                    <span class="badge bg-secondary opacity-50 small">@repo.visibility</span>
+                                </div>
+                                <p class="text-muted small mb-3 flex-grow-1">@(repo.description ?? "Açıklama belirtilmemiş.")</p>
+                                <div class="d-flex align-items-center gap-3 mt-auto">
+                                    @if(repo.language != null) {
+                                        <span class="small text-muted"><span class="gh-lang" style="background:#fbbf24;"></span> @repo.language</span>
+                                    }
+                                    <span class="small text-muted"><i class="fa-regular fa-star me-1"></i> @repo.stargazers_count</span>
+                                    <span class="small text-muted"><i class="fa-solid fa-code-fork me-1"></i> @repo.forks_count</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            } else if (!string.IsNullOrEmpty(Model.GithubUsername)) {
+                <div class="alert bg-dark border-secondary text-center py-5 rounded-4">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x text-warning mb-3"></i>
+                    <p class="mb-0">GitHub verileri yüklenemedi veya kullanıcı bulunamadı.</p>
+                </div>
+            } else {
+                <div class="alert bg-dark border-secondary text-center py-5 rounded-4">
+                    <i class="fa-brands fa-github fa-3x text-muted mb-3 opacity-25"></i>
+                    <p class="mb-0 text-muted">GitHub hesabı henüz bağlanmamış.</p>
+                </div>
+            }
+        </div>
+
+        <!-- RIGHT: BADGES & RADAR -->
+        <div class="col-lg-4">
+            <h3 class="fw-bold text-white mb-4"><i class="fa-solid fa-medal text-warning me-2"></i> Başarı Vitrini</h3>
+            <div class="d-flex flex-wrap gap-2">
+                @if (Model.UserBadges != null && Model.UserBadges.Any()) {
+                    foreach (var badge in Model.UserBadges) {
+                        <div class="badge-item text-center p-2 rounded-3 mb-3" style="width: 45%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);" title="@badge.Description">
+                            <img src="@badge.IconUrl" style="width: 50px; height: 50px;" class="mb-2" />
+                            <div class="small fw-bold text-white">@badge.BadgeName</div>
+                        </div>
+                    }
+                } else {
+                    <p class="text-muted italic">Henüz kazanılmış rozet bulunmuyor.</p>
+                }
+            </div>
+
+            <!-- TASK RADAR MINI -->
+            <div class="profile-glass p-4 mt-4">
+                <h6 class="fw-bold text-warning text-uppercase small mb-3">Sistem Verimliliği</h6>
+                <div class="progress mb-2" style="height: 10px; background: rgba(255,255,255,0.05);">
+                    <div class="progress-bar bg-warning" style="width: @percent%;"></div>
+                </div>
+                <small class="text-muted">Proje Başarı Oranı: %@percent</small>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -94,19 +149,13 @@
     <script>
         function changeAvatar() {
             Swal.fire({
-                title: '@L.Get("UpdateAvatar")',
+                title: 'Profil Resmini Güncelle',
                 input: 'url',
-                inputLabel: '@L.Get("NewAvatarUrl")',
-                inputPlaceholder: 'https://...',
-                background: '#0d1117',
-                color: '#fff',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa-solid fa-save"></i> @L.Get("Save")',
-                cancelButtonText: '@L.Get("Close")',
-                confirmButtonColor: '#34d399',
+                inputPlaceholder: 'Avatar URL adresi girin...',
+                background: '#0d1117', color: '#fff',
+                showCancelButton: true, confirmButtonColor: '#fbbf24', confirmButtonText: 'Kaydet'
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
-                    // Send to backend
                     fetch('/Profile/UpdateAvatar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -114,9 +163,22 @@
                     }).then(res => res.json()).then(data => {
                         if(data.success) {
                             document.getElementById('userAvatarImg').src = result.value;
-                            Swal.fire({ icon: 'success', title: 'Harika!', text: 'Avatar güncellendi.', background: '#0d1117', color: '#34d399', timer: 2000, showConfirmButton: false });
+                            Swal.fire({ icon: 'success', title: 'Güncellendi!', background: '#0d1117', color: '#fbbf24', timer: 1500, showConfirmButton: false });
                         }
                     });
+                }
+            });
+        }
+
+        function addFriend(id) {
+            fetch('/Profile/AddFriend?friendId=' + id, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({ icon: 'success', title: 'Eklendi!', text: 'Arkadaş listenize eklendi.', background: '#0d1117', color: '#fbbf24', timer: 2000, showConfirmButton: false })
+                    .then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Hata', text: data.message, background: '#0d1117', color: '#f87171' });
                 }
             });
         }

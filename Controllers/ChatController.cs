@@ -27,7 +27,7 @@ namespace GoldBranchAI.Controllers
             return _context.Users.FirstOrDefault(u => u.Email == email);
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var currentUser = GetCurrentUser();
             if (currentUser == null) return RedirectToAction("Logout", "Auth", new { area = "" });
@@ -39,41 +39,36 @@ namespace GoldBranchAI.Controllers
             List<ChatGroup> activeGroups;
             if (currentUser.Role == "Admin")
             {
-                activeGroups = _context.ChatGroups.Include(g => g.Members).ToList();
+                activeGroups = await _context.ChatGroups.Include(g => g.Members).ToListAsync();
             }
             else
             {
-                var myGroupIds = _context.ChatGroupMembers
+                var myGroupIds = await _context.ChatGroupMembers
                     .Where(m => m.AppUserId == currentUser.Id)
                     .Select(m => m.ChatGroupId)
-                    .ToList();
+                    .ToListAsync();
 
-                activeGroups = _context.ChatGroups
+                activeGroups = await _context.ChatGroups
                     .Include(g => g.Members)
                     .Where(g => myGroupIds.Contains(g.Id))
-                    .ToList();
+                    .ToListAsync();
             }
             ViewBag.Groups = activeGroups;
 
-            // 2. Kişileri Getir
-            List<AppUser> contacts = new List<AppUser>();
+            // 2. Kişileri (Arkadaşları) Getir
+            var friendIds = await _context.Friendships
+                .Where(f => f.UserId == currentUser.Id || f.FriendId == currentUser.Id)
+                .Select(f => f.UserId == currentUser.Id ? f.FriendId : f.UserId)
+                .ToListAsync();
+
+            var contacts = await _context.Users
+                .Where(u => friendIds.Contains(u.Id))
+                .ToListAsync();
+
+            // Admin için izleme modunda şefleri/devleri göstermeye devam et (isteğe bağlı ama kullanıcı "direk mesaj yerine düşsün" dediği için arkadaşlık ana kriter)
             if (currentUser.Role == "Admin")
             {
-                // Admin hem Proje Şeflerine mesaj atabilir hem de Geliştirici-Şef konuşmalarını izleyebilir
-                // Şef listesini getir (Direkt Mesaj için)
-                contacts = _context.Users.Where(u => u.Role == "Proje Sefi").ToList();
-                
-                // İzleme modunda gösterilecek "Konuşma Çiftleri" Sidebar için özel bir yapı gerekebilir.
-                // Şimdilik sadece aktif kullanıcıları gösteriyoruz, izleme modunu Room üzerinden kontrol edeceğiz.
-                ViewBag.DevsForMonitoring = _context.Users.Where(u => u.Role == "Gelistirici").ToList();
-            }
-            else if (currentUser.Role == "Gelistirici")
-            {
-                contacts = _context.Users.Where(u => u.Role == "Proje Sefi").ToList();
-            }
-            else // Proje Şefi
-            {
-                contacts = _context.Users.Where(u => u.Role == "Gelistirici").ToList();
+                ViewBag.DevsForMonitoring = await _context.Users.Where(u => u.Role != "Admin").ToListAsync();
             }
 
             return View(contacts);

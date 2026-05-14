@@ -36,6 +36,8 @@ namespace GoldBranchAI.Models
         public string? CustomAiApiKey { get; set; }
         public string? CustomAiModel { get; set; }
 
+        public string? GithubUsername { get; set; }
+
         public ICollection<TodoTask> TodoTasks { get; set; } = new List<TodoTask>();
         public ICollection<ChatGroupMember> Memberships { get; set; } = new List<ChatGroupMember>();
         public ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();

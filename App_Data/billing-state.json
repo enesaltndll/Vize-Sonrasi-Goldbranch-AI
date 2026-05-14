@@ -100,5 +100,17 @@
     "LastCardMasked": null,
     "LastPaymentAtUtc": null,
     "PaymentHistory": []
+  },
+  {
+    "UserId": 2007,
+    "Email": "ercan@test.com",
+    "PlanKey": "free",
+    "UsageMonth": "2026-05",
+    "AiUsedInMonth": 0,
+    "TrialEndsAtUtc": "2026-05-28T08:42:56.6089293Z",
+    "TrialUsed": false,
+    "LastCardMasked": null,
+    "LastPaymentAtUtc": null,
+    "PaymentHistory": []
   }
 ]
