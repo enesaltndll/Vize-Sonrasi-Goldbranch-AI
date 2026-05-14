@@ -101,6 +101,7 @@ pie title 10 Haftalık Efor Gerçekleşme Oranları (Total: 107 Saat)
 ```
 
 ### 🌟 Masterclass Güncellemeleri (v2.5)
+*   **🔑 GitHub OAuth Integration:** Geliştiriciler için tek tıkla güvenli giriş ve otomatik profil oluşturma sistemi.
 *   **🛡️ Ghost Mode:** Halka açık alanlarda çalışırken hassas verileri (görev başlıkları, kullanıcı isimleri) tek tuşla buzlayan (blur) gizlilik katmanı.
 *   **🎙️ AI Daily Briefing:** Güne başlarken o günkü önceliklerini, nöral yükünü ve stratejik tavsiyelerini sesli olarak dinleyebileceğin yapay zeka asistanı.
 *   **🕰️ Project Time Machine:** Kanban tahtasında geçmişteki 30 güne kadar yolculuk yapmanı sağlayan interaktif zaman çizelgesi.

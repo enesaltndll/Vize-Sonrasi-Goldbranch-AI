@@ -107,43 +107,57 @@ namespace GoldBranchAI.Controllers
                 return View(newUser);
             }
 
-            newUser.Role = "Gelistirici";
-            newUser.CreatedAt = DateTime.Now;
-            newUser.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password); // BCrypt Hash
-
-            _context.Users.Add(newUser);
-
-            // YENİ EKLENEN KISIM: Sisteme kayıt olan kişiyi anında Terminale (Log'a) düşür
-            var log = new SystemLog
+            try 
             {
-                ActionType = "KAYIT",
-                Message = $"Sisteme yeni bir Geliştirici katıldı: {newUser.FullName} ({newUser.Email})"
-            };
-            _context.SystemLogs.Add(log);
+                newUser.Role = "Gelistirici";
+                newUser.CreatedAt = DateTime.Now;
+                newUser.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password); // BCrypt Hash
+                newUser.PreferredAiProvider = "default"; // Varsayılan değer
 
-            _context.SaveChanges();
+                _context.Users.Add(newUser);
 
-            // Smtp Mail Gönderimi Mimarisi
-            string emailBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
-                    <h2 style='color: #fbbf24; text-align: center;'>GoldBranch AI'a Hoş Geldin! 🚀</h2>
-                    <p style='color: #555; font-size: 16px;'>Merhaba <strong>{newUser.FullName}</strong>,</p>
-                    <p style='color: #555; font-size: 16px;'>Hesabın başarıyla oluşturuldu ve görev bekleyen sistemimizde yerini aldın. Artık yöneticilerin sana atadığı görevleri görebilir, yapay zeka ile entegre ekranları kullanabilirsin.</p>
-                    <br>
-                    <p style='color: #333; font-weight: bold;'>Giriş Bilgilerin:</p>
-                    <ul>
-                        <li><strong>E-Posta:</strong> {newUser.Email}</li>
-                        <li><strong>Şifre:</strong> Güvenliğiniz için gizlenmiştir.</li>
-                    </ul>
-                    <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>
-                    <p style='text-align: center; color: #999; font-size: 12px;'>Bu mesaj otomatik sistem tarafından gönderilmiştir.</p>
-                </div>";
-            
-            // Asenkron olduğu için beklemiyoruz direkt arka plana atıyoruz
-            _ = _emailService.SendEmailAsync(newUser.Email, "GoldBranch AI'a Hoş Geldin!", emailBody);
+                var log = new SystemLog
+                {
+                    ActionType = "KAYIT",
+                    Message = $"Sisteme yeni bir Geliştirici katıldı: {newUser.FullName} ({newUser.Email})"
+                };
+                _context.SystemLogs.Add(log);
 
-            TempData["Success"] = "Kayıt başarılı! Şimdi giriş yapabilirsiniz.";
-            return RedirectToAction("Login");
+                int result = _context.SaveChanges();
+                
+                if (result > 0)
+                {
+                    // Smtp Mail Gönderimi
+                    string emailBody = $@"
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                            <h2 style='color: #fbbf24; text-align: center;'>GoldBranch AI'a Hoş Geldin! 🚀</h2>
+                            <p style='color: #555; font-size: 16px;'>Merhaba <strong>{newUser.FullName}</strong>,</p>
+                            <p style='color: #555; font-size: 16px;'>Hesabın başarıyla oluşturuldu.</p>
+                            <br>
+                            <p style='color: #333; font-weight: bold;'>Giriş Bilgilerin:</p>
+                            <ul>
+                                <li><strong>E-Posta:</strong> {newUser.Email}</li>
+                            </ul>
+                            <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>
+                            <p style='text-align: center; color: #999; font-size: 12px;'>Bu mesaj otomatik sistem tarafından gönderilmiştir.</p>
+                        </div>";
+                    
+                    _ = _emailService.SendEmailAsync(newUser.Email, "GoldBranch AI'a Hoş Geldin!", emailBody);
+
+                    TempData["Success"] = "Kayıt başarılı! Şimdi giriş yapabilirsiniz.";
+                    return RedirectToAction("Login");
+                }
+                else 
+                {
+                    ViewBag.Error = "Veritabanına kayıt yapılamadı. Lütfen tekrar deneyin.";
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Kayıt sırasında teknik bir hata oluştu: " + ex.Message;
+            }
+
+            return View(newUser);
         }
 
         public async Task<IActionResult> Logout()
@@ -160,7 +174,8 @@ namespace GoldBranchAI.Controllers
 
         public async Task<IActionResult> GithubResponse()
         {
-            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            // DÜZELTME: "GitHub" şeması üzerinden authenticate olmalı, cookie üzerinden değil!
+            var result = await HttpContext.AuthenticateAsync("GitHub");
             if (!result.Succeeded) return RedirectToAction("Login");
 
             var claims = result.Principal.Identities.FirstOrDefault()?.Claims;
@@ -170,7 +185,6 @@ namespace GoldBranchAI.Controllers
 
             if (email == null)
             {
-                // GitHub bazen email dönmeyebilir (ayarlara bağlı), bu durumda id ile eşleştirme yapabiliriz
                 email = $"{githubId}@github.user";
             }
 
@@ -181,8 +195,9 @@ namespace GoldBranchAI.Controllers
                 {
                     FullName = name ?? "GitHub User",
                     Email = email,
-                    Password = "GithubOAuthLogin",
-                    Role = "Gelistirici"
+                    Password = "GithubOAuthLogin_" + Guid.NewGuid().ToString("N"),
+                    Role = "Gelistirici",
+                    PreferredAiProvider = "default"
                 };
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
